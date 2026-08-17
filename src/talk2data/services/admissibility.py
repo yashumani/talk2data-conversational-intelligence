@@ -130,9 +130,14 @@ class QuestionAdmissibilityEngine:
                 next_action="STOP_OR_REPHRASE_WITH_INTERNAL_BUSINESS_ANCHOR",
             )
 
+        required_classifications = [
+            *[metric.classification for metric in metrics],
+            *[entity.classification for entity in entities],
+            *[domain.classification for domain in domains],
+        ]
         classification_decisions = [
-            self._policy.can_access_classification(request.access_context, item.classification)
-            for item in [*metrics, *entities, *domains]
+            self._policy.can_access_classification(request.access_context, classification)
+            for classification in required_classifications
         ]
         denied_classifications = [decision for decision in classification_decisions if not decision.allowed]
         if denied_classifications:
