@@ -1,0 +1,230 @@
+name: One-time Business Query IR hardening retry
+
+on:
+  push:
+    branches: [feat/business-query-ir]
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: contains(github.event.head_commit.message, '[hardening-retry]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Apply hardening changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def swap(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"missing marker in {path}: {old!r}")
+              file.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          model_marker = "class BusinessQueryIR(BaseModel):\n    query_id: UUID = Field(default_factory=uuid4)\n"
+          swap(
+              "src/talk2data/domain/models.py",
+              model_marker,
+              model_marker + "    session_id: UUID\n    decision_id: UUID\n",
+          )
+
+          filter_marker = "        filters = self._resolve_filters(request.question, pack, metric)\n"
+          filter_gate = '''        try:
+              self._semantics.resolve_dimensions(
+                  access=request.access_context,
+                  pack=pack,
+                  metric=metric,
+                  dimension_ids=[item.dimension_id for item in filters],
+              )
+          except DimensionNotAllowedError as exc:
+              return self._outcome(
+                  session_id=session_id,
+                  decision=decision,
+                  status=QueryCompilationStatus.INVALID,
+                  issue=CompilationIssue(
+                      code="FILTER_DIMENSION_NOT_ALLOWED_FOR_METRIC",
+                      message=str(exc),
+                      field="filters",
+                  ),
+              )
+          except SemanticAccessDeniedError:
+              return self._outcome(
+                  session_id=session_id,
+                  decision=decision,
+                  status=QueryCompilationStatus.NOT_ELIGIBLE,
+                  issue=CompilationIssue(
+                      code="FILTER_DIMENSION_ACCESS_DENIED",
+                      message="A detected filter dimension is not available to this user.",
+                      field="filters",
+                  ),
+              )
+          '''
+          swap(
+              "src/talk2data/services/query_compiler.py",
+              filter_marker,
+              filter_marker + filter_gate,
+          )
+          swap(
+              "src/talk2data/services/query_compiler.py",
+              "        query_ir = BusinessQueryIR(\n",
+              "        query_ir = BusinessQueryIR(\n"
+              "            session_id=session_id,\n"
+              "            decision_id=decision.decision_id,\n",
+          )
+          swap(
+              "src/talk2data/services/query_compiler.py",
+              "        if len(iso_dates) == 2:\n"
+              "            start_date = date.fromisoformat(iso_dates[0])\n"
+              "            end_date = date.fromisoformat(iso_dates[1])\n",
+              '''        if len(iso_dates) == 2:
+              try:
+                  start_date = date.fromisoformat(iso_dates[0])
+                  end_date = date.fromisoformat(iso_dates[1])
+              except ValueError:
+                  return (
+                      None,
+                      [],
+                      CompilationIssue(
+                          code="INVALID_EXPLICIT_DATE",
+                          message="At least one explicit date is not a valid calendar date.",
+                          field="time_window",
+                      ),
+                  )
+          ''',
+          )
+          swap(
+              "src/talk2data/services/query_compiler.py",
+              "            selected_date = date.fromisoformat(iso_dates[0])\n",
+              '''            try:
+                  selected_date = date.fromisoformat(iso_dates[0])
+              except ValueError:
+                  return (
+                      None,
+                      [],
+                      CompilationIssue(
+                          code="INVALID_EXPLICIT_DATE",
+                          message="The explicit date is not a valid calendar date.",
+                          field="time_window",
+                      ),
+                  )
+          ''',
+          )
+
+          fixture_path = Path("src/talk2data/resources/domain_packs/telecom-demo.yaml")
+          fixture = fixture_path.read_text(encoding="utf-8")
+          fixture = fixture.replace('version: "2026.08.2"', 'version: "2026.08.3"', 1)
+          start = fixture.index("  - id: TECHNOLOGY\n")
+          end = fixture.index("\n\nexternal_adjacencies:", start)
+          block = fixture[start:end]
+          if not block.endswith("    classification: INTERNAL"):
+              raise SystemExit("unexpected TECHNOLOGY block")
+          block = block[: -len("    classification: INTERNAL")] + "    classification: RESTRICTED"
+          fixture_path.write_text(fixture[:start] + block + fixture[end:], encoding="utf-8")
+
+          test_path = Path("tests/test_query_compiler_api.py")
+          test_text = test_path.read_text(encoding="utf-8")
+          assertion = (
+              '    assert body["status"] == "COMPILED"\n'
+              '    query_ir = body["query_ir"]\n'
+              '    assert query_ir["metric_id"] == "POSTPAID_CHURN"\n'
+          )
+          replacement = (
+              '    assert body["status"] == "COMPILED"\n'
+              '    query_ir = body["query_ir"]\n'
+              '    assert query_ir["session_id"] == body["session_id"]\n'
+              '    assert query_ir["decision_id"] == body["decision"]["decision_id"]\n'
+              '    assert query_ir["metric_id"] == "POSTPAID_CHURN"\n'
+          )
+          if assertion not in test_text:
+              raise SystemExit("query IR assertion marker not found")
+          test_text = test_text.replace(assertion, replacement, 1)
+          test_text += '''
+
+          def test_rejects_invalid_explicit_calendar_date(
+              client: TestClient,
+              full_access: dict[str, object],
+          ) -> None:
+              body = compile_query(
+                  client,
+                  "What were mobile activations on 2026-02-30?",
+                  full_access,
+              )
+
+              assert body["status"] == "INVALID"
+              assert body["issues"][0]["code"] == "INVALID_EXPLICIT_DATE"
+              assert body["query_ir"] is None
+
+
+          def test_rechecks_classification_for_detected_filter_dimensions(
+              client: TestClient,
+              full_access: dict[str, object],
+          ) -> None:
+              body = compile_query(
+                  client,
+                  "What was network congestion for 5G last month?",
+                  full_access,
+              )
+
+              assert body["decision"]["verdict"] == "ACCEPT_INTERNAL"
+              assert body["status"] == "NOT_ELIGIBLE"
+              assert body["issues"][0]["code"] == "FILTER_DIMENSION_ACCESS_DENIED"
+              assert body["query_ir"] is None
+          '''.replace("          ", "")
+          test_path.write_text(test_text, encoding="utf-8")
+
+          for path in ("tests/test_admissibility_api.py", "tests/test_semantics_api.py"):
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if "2026.08.2" not in text:
+                  raise SystemExit(f"version assertion missing in {path}")
+              file.write_text(text.replace("2026.08.2", "2026.08.3"), encoding="utf-8")
+
+          docs_path = Path("docs/semantic-registry.md")
+          docs = docs_path.read_text(encoding="utf-8")
+          audit = (
+              "The original wording is intentionally excluded. Semantically equivalent questions "
+              "therefore produce the same plan hash under the same governed context."
+          )
+          docs = docs.replace(
+              audit,
+              audit
+              + "\n\nEach IR records its originating session and admissibility-decision IDs for "
+              "audit reconstruction. Those lineage IDs are excluded from the canonical plan hash.",
+              1,
+          )
+          trust = (
+              "The compiler accepts only IDs that have already passed the admissibility and semantic "
+              "checks."
+          )
+          docs = docs.replace(
+              trust,
+              trust
+              + " It revalidates every grouping and detected filter dimension against the user's "
+              "classification clearance before emitting an IR.",
+              1,
+          )
+          docs_path.write_text(docs, encoding="utf-8")
+          PY
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff format .
+      - run: ruff check .
+      - run: mypy src
+      - run: pytest --cov=talk2data --cov-report=term-missing --cov-fail-under=85
+      - name: Remove one-time workflows and commit
+        run: |
+          rm .github/workflows/harden-business-query-ir-once.yml
+          rm .github/workflows/harden-business-query-ir-retry.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "fix: harden Business Query IR lineage and filter authorization"
+          git push origin HEAD:feat/business-query-ir
