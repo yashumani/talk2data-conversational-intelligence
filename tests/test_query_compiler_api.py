@@ -36,6 +36,8 @@ def test_compiles_governed_metric_to_business_query_ir(
 
     assert body["status"] == "COMPILED"
     query_ir = body["query_ir"]
+    assert query_ir["session_id"] == body["session_id"]
+    assert query_ir["decision_id"] == body["decision"]["decision_id"]
     assert query_ir["metric_id"] == "POSTPAID_CHURN"
     assert query_ir["semantic_version"] == "2.0"
     assert query_ir["aggregation"] == "RATIO"
@@ -194,3 +196,34 @@ def test_rejects_unsupported_time_grain(
 
     assert body["status"] == "INVALID"
     assert body["issues"][0]["code"] == "TIME_GRAIN_NOT_SUPPORTED"
+
+
+def test_rejects_invalid_explicit_calendar_date(
+    client: TestClient,
+    full_access: dict[str, object],
+) -> None:
+    body = compile_query(
+        client,
+        "What were mobile activations on 2026-02-30?",
+        full_access,
+    )
+
+    assert body["status"] == "INVALID"
+    assert body["issues"][0]["code"] == "INVALID_EXPLICIT_DATE"
+    assert body["query_ir"] is None
+
+
+def test_rechecks_classification_for_detected_filter_dimensions(
+    client: TestClient,
+    full_access: dict[str, object],
+) -> None:
+    body = compile_query(
+        client,
+        "What was network congestion for 5G last month?",
+        full_access,
+    )
+
+    assert body["decision"]["verdict"] == "ACCEPT_INTERNAL"
+    assert body["status"] == "NOT_ELIGIBLE"
+    assert body["issues"][0]["code"] == "FILTER_DIMENSION_ACCESS_DENIED"
+    assert body["query_ir"] is None

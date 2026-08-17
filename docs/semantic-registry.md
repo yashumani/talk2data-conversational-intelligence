@@ -103,10 +103,12 @@ The semantic snapshot hash covers the tenant, Domain Pack version, calendar, cur
 
 The plan hash covers the semantic snapshot, metric, dimensions, filters, time window, comparison, connector, access scope, and external-context requirement. The original wording is intentionally excluded. Semantically equivalent questions therefore produce the same plan hash under the same governed context.
 
+Each IR records its originating session and admissibility-decision IDs for audit reconstruction. Those lineage IDs are excluded from the canonical plan hash.
+
 The plan hash is not a database result hash. A later execution receipt will include the final source-specific query, source snapshot, policy decision, freshness, quality status, and result hash.
 
 ## Trust boundary
 
-Ollama can help resolve language into candidate governed IDs. The compiler accepts only IDs that have already passed the admissibility and semantic checks. It does not ask Ollama to generate SQL, choose arbitrary tables, change metric formulas, or loosen authorization.
+Ollama can help resolve language into candidate governed IDs. The compiler accepts only IDs that have already passed the admissibility and semantic checks. It revalidates every grouping and detected filter dimension against the user's classification clearance before emitting an IR. It does not ask Ollama to generate SQL, choose arbitrary tables, change metric formulas, or loosen authorization.
 
 Hermes will later orchestrate multi-step investigations over approved tools. It will receive Business Query IR and evidence receipts, not unrestricted database credentials or a free-form SQL tool.

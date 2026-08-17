@@ -187,6 +187,35 @@ class BusinessQueryCompiler:
         )
         dimensions_ids = [entity.id for entity in dimensions]
         filters = self._resolve_filters(request.question, pack, metric)
+        try:
+            self._semantics.resolve_dimensions(
+                access=request.access_context,
+                pack=pack,
+                metric=metric,
+                dimension_ids=[item.dimension_id for item in filters],
+            )
+        except DimensionNotAllowedError as exc:
+            return self._outcome(
+                session_id=session_id,
+                decision=decision,
+                status=QueryCompilationStatus.INVALID,
+                issue=CompilationIssue(
+                    code="FILTER_DIMENSION_NOT_ALLOWED_FOR_METRIC",
+                    message=str(exc),
+                    field="filters",
+                ),
+            )
+        except SemanticAccessDeniedError:
+            return self._outcome(
+                session_id=session_id,
+                decision=decision,
+                status=QueryCompilationStatus.NOT_ELIGIBLE,
+                issue=CompilationIssue(
+                    code="FILTER_DIMENSION_ACCESS_DENIED",
+                    message="A detected filter dimension is not available to this user.",
+                    field="filters",
+                ),
+            )
         plan_hash = self._plan_hash(
             request=request,
             metric=metric,
@@ -200,6 +229,8 @@ class BusinessQueryCompiler:
             requires_external_context=(decision.verdict == QuestionVerdict.ACCEPT_EXTERNAL_AUGMENTED),
         )
         query_ir = BusinessQueryIR(
+            session_id=session_id,
+            decision_id=decision.decision_id,
             tenant_id=request.access_context.tenant_id,
             user_id=request.access_context.user_id,
             question=request.question,
@@ -267,8 +298,19 @@ class BusinessQueryCompiler:
                 ),
             )
         if len(iso_dates) == 2:
-            start_date = date.fromisoformat(iso_dates[0])
-            end_date = date.fromisoformat(iso_dates[1])
+            try:
+                start_date = date.fromisoformat(iso_dates[0])
+                end_date = date.fromisoformat(iso_dates[1])
+            except ValueError:
+                return (
+                    None,
+                    [],
+                    CompilationIssue(
+                        code="INVALID_EXPLICIT_DATE",
+                        message="At least one explicit date is not a valid calendar date.",
+                        field="time_window",
+                    ),
+                )
             if start_date > end_date:
                 return (
                     None,
@@ -306,7 +348,18 @@ class BusinessQueryCompiler:
                         field="time_window",
                     ),
                 )
-            selected_date = date.fromisoformat(iso_dates[0])
+            try:
+                selected_date = date.fromisoformat(iso_dates[0])
+            except ValueError:
+                return (
+                    None,
+                    [],
+                    CompilationIssue(
+                        code="INVALID_EXPLICIT_DATE",
+                        message="The explicit date is not a valid calendar date.",
+                        field="time_window",
+                    ),
+                )
             return (
                 TimeWindow(
                     preset=TimePreset.CUSTOM,

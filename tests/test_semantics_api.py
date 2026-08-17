@@ -16,7 +16,7 @@ def test_resolves_authorized_versioned_metric_definition(
 
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["domain_pack_version"] == "2026.08.2"
+    assert body["domain_pack_version"] == "2026.08.3"
     assert len(body["semantic_snapshot_hash"]) == 64
     assert body["metric"]["id"] == "POSTPAID_CHURN"
     assert body["metric"]["semantic_version"] == "2.0"

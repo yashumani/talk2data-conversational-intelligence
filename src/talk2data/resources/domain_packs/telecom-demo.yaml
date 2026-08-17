@@ -6,7 +6,7 @@ subindustries:
   - Broadband
   - Fiber
   - Enterprise Connectivity
-version: "2026.08.2"
+version: "2026.08.3"
 status: APPROVED
 effective_from: 2026-08-17T00:00:00Z
 default_currency: USD
@@ -192,7 +192,7 @@ entities:
       - id: FIVE_G
         name: 5G
         aliases: [5 g, fifth generation]
-    classification: INTERNAL
+    classification: RESTRICTED
 
 external_adjacencies:
   - id: RESTAURANT_FOOT_TRAFFIC
