@@ -33,8 +33,11 @@ Delivered:
 - deterministic Business Query IR compiler
 - semantic snapshot and canonical plan hashes
 - invalid dimension, unavailable source, time-grain, and multi-metric controls
+- audit lineage from every compiled IR to its originating session and admissibility decision
+- classification revalidation for grouping dimensions and detected filter dimensions
+- controlled rejection of invalid explicit calendar dates
 - persisted query plans in tenant- and user-isolated sessions
-- tests for stable plan compilation and semantic security
+- tests for stable plan compilation, semantic security, audit lineage, and filter authorization
 
 Acceptance outcome: every accepted single-metric internal data question can compile into a deterministic, testable Business Query IR without executing a source.
 
