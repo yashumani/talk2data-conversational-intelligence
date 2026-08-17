@@ -82,9 +82,7 @@ class AccessContext(BaseModel):
     classification_clearance: ClassificationLevel = ClassificationLevel.INTERNAL
     permitted_actions: set[str] = Field(default_factory=set)
 
-    @field_validator(
-        "roles", "departments", "regions", "business_units", "permitted_actions", mode="after"
-    )
+    @field_validator("roles", "departments", "regions", "business_units", "permitted_actions", mode="after")
     @classmethod
     def normalize_set_values(cls, values: set[str]) -> set[str]:
         return {value.strip().upper() for value in values if value.strip()}

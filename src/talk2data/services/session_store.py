@@ -220,9 +220,7 @@ class SQLiteSessionStore:
             )
             for row in message_rows
         ]
-        decisions = [
-            QuestionDecision.model_validate(json.loads(str(row[0]))) for row in decision_rows
-        ]
+        decisions = [QuestionDecision.model_validate(json.loads(str(row[0]))) for row in decision_rows]
         return SessionSnapshot(
             session_id=session_id,
             tenant_id=stored_tenant_id,

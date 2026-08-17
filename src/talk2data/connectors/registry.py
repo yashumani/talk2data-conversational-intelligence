@@ -28,7 +28,4 @@ class ConnectorRegistry:
             raise ConnectorRegistryError(f"connector {connector_id!r} is not registered") from exc
 
     def descriptors(self) -> list[dict[str, object]]:
-        return [
-            connector.descriptor.model_dump(mode="json")
-            for connector in self._connectors.values()
-        ]
+        return [connector.descriptor.model_dump(mode="json") for connector in self._connectors.values()]

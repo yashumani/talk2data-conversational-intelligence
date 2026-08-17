@@ -29,9 +29,7 @@ class HermesGatewayClient:
 
     async def health(self) -> tuple[bool, str]:
         try:
-            async with httpx.AsyncClient(
-                timeout=min(self._configuration.timeout_seconds, 10.0)
-            ) as client:
+            async with httpx.AsyncClient(timeout=min(self._configuration.timeout_seconds, 10.0)) as client:
                 response = await client.get(f"{self._configuration.base_url}/health")
                 response.raise_for_status()
         except httpx.HTTPError as exc:

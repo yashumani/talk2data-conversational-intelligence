@@ -65,9 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title=resolved_settings.app_name,
         version="0.1.0",
-        description=(
-            "Governed question-admissibility and conversational-intelligence control plane."
-        ),
+        description=("Governed question-admissibility and conversational-intelligence control plane."),
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings

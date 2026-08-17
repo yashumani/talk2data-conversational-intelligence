@@ -208,8 +208,7 @@ class OllamaQuestionInterpreter:
                 "subindustries": pack.subindustries,
             },
             "domains": [
-                {"id": domain.id, "name": domain.name, "aliases": domain.aliases}
-                for domain in pack.domains
+                {"id": domain.id, "name": domain.name, "aliases": domain.aliases} for domain in pack.domains
             ],
             "metrics": [
                 {
@@ -221,8 +220,7 @@ class OllamaQuestionInterpreter:
                 for metric in pack.metrics
             ],
             "entities": [
-                {"id": entity.id, "name": entity.name, "aliases": entity.aliases}
-                for entity in pack.entities
+                {"id": entity.id, "name": entity.name, "aliases": entity.aliases} for entity in pack.entities
             ],
             "approved_external_topics": [
                 {"id": adjacency.id, "name": adjacency.name, "phrases": adjacency.phrases}
@@ -294,9 +292,9 @@ class CompositeQuestionInterpreter:
 
         warnings = list(deterministic.warnings)
         rejected_ids = (
-            set(value.upper() for value in proposed.candidate_metric_ids) - valid_metric_ids
-        ) | (set(value.upper() for value in proposed.candidate_entity_ids) - valid_entity_ids) | (
-            set(value.upper() for value in proposed.candidate_domain_ids) - valid_domain_ids
+            (set(value.upper() for value in proposed.candidate_metric_ids) - valid_metric_ids)
+            | (set(value.upper() for value in proposed.candidate_entity_ids) - valid_entity_ids)
+            | (set(value.upper() for value in proposed.candidate_domain_ids) - valid_domain_ids)
         )
         if rejected_ids:
             warnings.append("Rejected ungoverned model identifiers: " + ", ".join(sorted(rejected_ids)))
@@ -322,8 +320,7 @@ class CompositeQuestionInterpreter:
             ),
             external_topics=deterministic_proposal.external_topics,
             ambiguous_terms=unique_preserving_order(proposed.ambiguous_terms),
-            requested_operation=proposed.requested_operation
-            or deterministic_proposal.requested_operation,
+            requested_operation=proposed.requested_operation or deterministic_proposal.requested_operation,
             summary=proposed.summary,
             confidence=max(deterministic_proposal.confidence, proposed.confidence),
         )
