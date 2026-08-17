@@ -25,13 +25,15 @@ jobs:
 
           path = Path("src/talk2data/services/admissibility.py")
           text = path.read_text(encoding="utf-8")
-          start_marker = "        classification_decisions = [\n"
-          end_marker = "        denied_classifications = [\n"
+          start_token = "classification_decisions = ["
+          end_token = "denied_classifications = ["
           try:
-              start = text.index(start_marker)
-              end = text.index(end_marker, start)
+              start_token_index = text.index(start_token)
+              end_token_index = text.index(end_token, start_token_index)
           except ValueError as exc:
               raise SystemExit("expected classification decision block was not found") from exc
+          start = text.rfind("\n", 0, start_token_index) + 1
+          end = text.rfind("\n", 0, end_token_index) + 1
           replacement = (
               "        required_classifications = [\n"
               "            *[metric.classification for metric in metrics],\n"
