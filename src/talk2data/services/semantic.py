@@ -89,9 +89,7 @@ class SemanticRegistry:
                 )
             policy = self._policy.can_access_classification(access, entity.classification)
             if not policy.allowed:
-                raise SemanticAccessDeniedError(
-                    f"dimension {dimension_id!r} is above the user's clearance"
-                )
+                raise SemanticAccessDeniedError(f"dimension {dimension_id!r} is above the user's clearance")
             resolved.append(entity)
         return resolved
 

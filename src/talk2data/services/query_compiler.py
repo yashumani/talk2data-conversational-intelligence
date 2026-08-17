@@ -197,9 +197,7 @@ class BusinessQueryCompiler:
             comparison=comparison,
             access_scope=access_scope,
             semantic_hash=semantic_hash,
-            requires_external_context=(
-                decision.verdict == QuestionVerdict.ACCEPT_EXTERNAL_AUGMENTED
-            ),
+            requires_external_context=(decision.verdict == QuestionVerdict.ACCEPT_EXTERNAL_AUGMENTED),
         )
         query_ir = BusinessQueryIR(
             tenant_id=request.access_context.tenant_id,
@@ -223,9 +221,7 @@ class BusinessQueryCompiler:
             domain_pack_version=pack.version,
             semantic_snapshot_hash=semantic_hash,
             plan_hash=plan_hash,
-            requires_external_context=(
-                decision.verdict == QuestionVerdict.ACCEPT_EXTERNAL_AUGMENTED
-            ),
+            requires_external_context=(decision.verdict == QuestionVerdict.ACCEPT_EXTERNAL_AUGMENTED),
             warnings=warnings,
         )
         return QueryCompilationResult(
@@ -261,19 +257,27 @@ class BusinessQueryCompiler:
         normalized = normalize_text(question)
         iso_dates = re.findall(r"\b20\d{2}-\d{2}-\d{2}\b", normalized)
         if len(iso_dates) > 2:
-            return None, [], CompilationIssue(
-                code="TOO_MANY_EXPLICIT_DATES",
-                message="The question contains more than two explicit dates.",
-                field="time_window",
+            return (
+                None,
+                [],
+                CompilationIssue(
+                    code="TOO_MANY_EXPLICIT_DATES",
+                    message="The question contains more than two explicit dates.",
+                    field="time_window",
+                ),
             )
         if len(iso_dates) == 2:
             start_date = date.fromisoformat(iso_dates[0])
             end_date = date.fromisoformat(iso_dates[1])
             if start_date > end_date:
-                return None, [], CompilationIssue(
-                    code="INVALID_DATE_RANGE",
-                    message="The requested start date occurs after the end date.",
-                    field="time_window",
+                return (
+                    None,
+                    [],
+                    CompilationIssue(
+                        code="INVALID_DATE_RANGE",
+                        message="The requested start date occurs after the end date.",
+                        field="time_window",
+                    ),
                 )
             return (
                 TimeWindow(
@@ -290,13 +294,17 @@ class BusinessQueryCompiler:
             )
         if len(iso_dates) == 1:
             if " on " not in f" {normalized} ":
-                return None, [], CompilationIssue(
-                    code="UNSUPPORTED_OPEN_ENDED_DATE_RANGE",
-                    message=(
-                        "A single explicit date must be used with 'on'. Open-ended ranges require "
-                        "an explicit start and end date."
+                return (
+                    None,
+                    [],
+                    CompilationIssue(
+                        code="UNSUPPORTED_OPEN_ENDED_DATE_RANGE",
+                        message=(
+                            "A single explicit date must be used with 'on'. Open-ended ranges require "
+                            "an explicit start and end date."
+                        ),
+                        field="time_window",
                     ),
-                    field="time_window",
                 )
             selected_date = date.fromisoformat(iso_dates[0])
             return (
@@ -334,12 +342,16 @@ class BusinessQueryCompiler:
         for phrases, preset, grain in patterns:
             if any(phrase in normalized for phrase in phrases):
                 if grain not in metric.supported_time_grains:
-                    return None, [], CompilationIssue(
-                        code="TIME_GRAIN_NOT_SUPPORTED",
-                        message=(
-                            f"Metric {metric.id!r} does not support the requested {grain.value} grain."
+                    return (
+                        None,
+                        [],
+                        CompilationIssue(
+                            code="TIME_GRAIN_NOT_SUPPORTED",
+                            message=(
+                                f"Metric {metric.id!r} does not support the requested {grain.value} grain."
+                            ),
+                            field="time_window.grain",
                         ),
-                        field="time_window.grain",
                     )
                 return (
                     TimeWindow(
