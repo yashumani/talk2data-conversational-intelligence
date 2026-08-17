@@ -1,0 +1,9 @@
+model:
+  default: qwen3:8b
+  provider: custom
+  base_url: http://127.0.0.1:11434/v1
+  api_key: ollama
+  context_length: 32768
+
+# Keep the agent runtime constrained. Talk2Data will expose a small, governed MCP tool surface.
+# Do not provide unrestricted database, shell, filesystem, or credential access in production.
