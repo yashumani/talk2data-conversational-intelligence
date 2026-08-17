@@ -2,9 +2,9 @@
 
 ## Stage 1 — Platform foundation and question admissibility
 
-Status: in development in the first feature branch.
+Status: implemented in draft PR #1; CI and CodeQL passed.
 
-Deliverables:
+Delivered:
 
 - FastAPI application scaffold
 - Tenant Domain Pack
@@ -21,25 +21,37 @@ Acceptance outcome: Talk2Data can classify a question as accepted, clarified, un
 
 ## Stage 2 — Business Query IR and semantic registry
 
-- Canonical metric, entity, dimension, time, comparison, and filter contracts
-- Ambiguity resolution
-- Fiscal-calendar and currency rules
-- Query-plan validator
-- Versioned semantic definitions
-- Dashboard/chat consistency tests
+Status: implemented in stacked draft PR #2; validation in progress.
 
-Acceptance outcome: every accepted internal data question compiles into a deterministic, testable Business Query IR.
+Delivered:
+
+- canonical metric, entity, dimension, time, comparison, and filter contracts
+- versioned metric semantics, aggregation, additivity, units, and valid ranges
+- tenant fiscal-calendar, timezone, and currency references
+- governed dimension values and aliases
+- authorized semantic metric-resolution API
+- deterministic Business Query IR compiler
+- semantic snapshot and canonical plan hashes
+- invalid dimension, unavailable source, time-grain, and multi-metric controls
+- persisted query plans in tenant- and user-isolated sessions
+- tests for stable plan compilation and semantic security
+
+Acceptance outcome: every accepted single-metric internal data question can compile into a deterministic, testable Business Query IR without executing a source.
 
 ## Stage 3 — Universal data connector gateway
 
+Next priority:
+
 - Connector registry implementation
 - PostgreSQL reference adapter
-- BigQuery adapter
-- SQL Server adapter
-- Teradata adapter
-- source catalog and freshness APIs
-- read-only enforcement, row limits, timeouts, and cost controls
+- source-specific semantic mapping
+- parameterized read-only query compilation
+- source catalog, freshness, and quality APIs
+- row limits, timeouts, cancellation, and cost controls
+- policy pushdown and field/row enforcement
+- deterministic query receipts and result hashes
 - secrets-manager integration boundary
+- BigQuery, SQL Server, Teradata, Snowflake, Databricks, REST, and custom adapters
 
 Acceptance outcome: an approved Business Query IR can execute through a governed adapter and return a reproducible receipt.
 

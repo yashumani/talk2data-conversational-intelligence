@@ -2,17 +2,12 @@
 
 Talk2Data is a governed, local-first conversational intelligence platform for asking business questions across enterprise data, organizational knowledge, and approved external evidence.
 
-The first development slice implements the platform control plane for **question admissibility**. Before any data or memory retrieval occurs, Talk2Data determines whether a question:
+The platform currently implements two deterministic control stages before any enterprise source is executed:
 
-- belongs to the tenant's business domain,
-- has an approved internal business anchor,
-- is analytically meaningful,
-- is allowed for the user's role and clearance,
-- requires internal data, organizational knowledge, or approved external context,
-- can be answered from available sources, or
-- must be clarified, denied, or rejected.
+1. **Question admissibility** determines whether a request belongs to the tenant's business domain, is analytically meaningful, is authorized, and has an eligible governed source.
+2. **Business Query IR compilation** converts an accepted data question into a versioned, reproducible semantic plan containing the exact metric contract, dimensions, filters, time logic, comparison, access scope, source, and integrity hashes.
 
-The AI interpretation layer uses **Ollama running locally**. The final decision remains deterministic and policy-driven: model-proposed metric, entity, or domain identifiers are accepted only when they exist in the governed Tenant Domain Pack.
+The natural-language interpretation layer uses **Ollama running locally**. Ollama may propose a structured interpretation, but it cannot create business definitions, authorize access, or execute data. Every proposed metric, entity, dimension, and domain identifier must already exist in the approved Tenant Domain Pack.
 
 ## Current capabilities
 
@@ -20,12 +15,16 @@ The AI interpretation layer uses **Ollama running locally**. The final decision 
 - Local Ollama structured-output interpreter with deterministic fallback.
 - Telecom demonstration Tenant Domain Pack.
 - Domain-anchor, external-adjacency, exclusion, and analytic-validity checks.
-- RBAC/ABAC-ready access context and policy gate.
-- Durable SQLite session and decision-receipt history.
+- RBAC/ABAC-ready access context and deterministic policy gate.
+- Versioned metric definitions with aggregation, additivity, unit, range, time-grain, source, and classification metadata.
+- Authorized semantic metric resolution with a deterministic semantic snapshot hash.
+- Business Query IR compilation with governed dimensions, dimension-value filters, time windows, comparisons, connector identity, and access scope.
+- Canonical plan hashing so equivalent questions produce the same plan under the same semantic and authorization context.
+- Durable SQLite session history containing decisions and compiled query plans.
 - Hermes Agent gateway adapter and health integration.
-- Universal data-connector contracts for later BigQuery, Teradata, SQL Server, PostgreSQL, Snowflake, Databricks, REST, and custom adapters.
+- Universal connector contracts for future BigQuery, Teradata, SQL Server, PostgreSQL, Snowflake, Databricks, REST, and custom adapters.
 - Evidence, memory, and context-coverage contracts for later implementation.
-- CI, type checking, linting, tests, and security scaffolding.
+- CI across Python 3.11, 3.12, and 3.13, plus linting, formatting, strict typing, coverage, and CodeQL.
 
 ## Architecture at a glance
 
@@ -38,25 +37,33 @@ AI access gateway
     ▼
 Question admissibility engine
     ├── Tenant Domain Pack
-    ├── deterministic semantic checks
+    ├── deterministic business-sense checks
     ├── role/classification policy checks
-    └── Ollama structured interpretation
+    └── local Ollama structured interpretation
+    │
+    ├── clarify / deny / reject / no source
     │
     ▼
-Decision receipt
-    ├── ACCEPT_INTERNAL
-    ├── ACCEPT_KNOWLEDGE
-    ├── ACCEPT_EXTERNAL_AUGMENTED
-    ├── CLARIFY
-    ├── VALID_NO_SOURCE
-    ├── OUT_OF_DOMAIN
-    ├── INVALID_ANALYTIC_REQUEST
-    ├── DENY
-    ├── CONFLICTING_DEFINITIONS
-    └── SOURCE_NOT_READY
+Versioned semantic registry
+    ├── metric contract
+    ├── valid dimensions and values
+    ├── calendar, currency, and timezone
+    └── governed connector
+    │
+    ▼
+Business Query IR compiler
+    ├── metric and semantic version
+    ├── dimensions and filters
+    ├── time window and comparison
+    ├── access scope
+    ├── semantic snapshot hash
+    └── canonical plan hash
+    │
+    ▼
+Approved connector execution — next stage
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) for the full target architecture and staged evolution.
+See [`docs/architecture.md`](docs/architecture.md), [`docs/semantic-registry.md`](docs/semantic-registry.md), and [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Local development
 
@@ -87,7 +94,7 @@ uvicorn talk2data.main:app --reload
 
 Open the generated API documentation at `http://127.0.0.1:8000/docs`.
 
-### 4. Evaluate a question
+## Evaluate question admissibility
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/questions/evaluate \
@@ -115,6 +122,51 @@ curl -X POST http://127.0.0.1:8000/v1/questions/evaluate \
 
 Expected verdict: `ACCEPT_EXTERNAL_AUGMENTED`.
 
+## Compile a Business Query IR
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/query-plans/compile \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "question": "What was postpaid churn by plan in the Northeast last month?",
+    "as_of": "2026-08-17T12:00:00Z",
+    "access_context": {
+      "tenant_id": "demo-telecom",
+      "user_id": "local-developer",
+      "roles": ["BI_MANAGER"],
+      "departments": ["SALES"],
+      "regions": ["NORTH_AMERICA"],
+      "business_units": ["CONSUMER"],
+      "classification_clearance": "CONFIDENTIAL",
+      "permitted_actions": [
+        "ASK_BUSINESS_QUESTIONS",
+        "READ_AGGREGATED_DATA",
+        "READ_APPROVED_MEMORY",
+        "USE_EXTERNAL_CONTEXT"
+      ]
+    },
+    "use_llm": true
+  }'
+```
+
+The response includes a `BusinessQueryIR` with `POSTPAID_CHURN` semantic version `2.0`, `PLAN` as a dimension, a governed `REGION=NORTHEAST` filter, the tenant fiscal calendar, the approved source connector, and deterministic semantic and plan hashes.
+
+## Resolve a governed metric definition
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/semantics/metrics/resolve \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "metric_id": "POSTPAID_CHURN",
+    "access_context": {
+      "tenant_id": "demo-telecom",
+      "user_id": "local-developer",
+      "classification_clearance": "CONFIDENTIAL",
+      "permitted_actions": ["READ_AGGREGATED_DATA"]
+    }
+  }'
+```
+
 ## Docker development
 
 ```bash
@@ -132,7 +184,7 @@ docker compose exec ollama ollama pull qwen3:8b
 
 Hermes is the bounded agent runtime for later multi-step investigations. Ollama remains the local model provider. Configure Hermes to use `http://127.0.0.1:11434/v1`, enable its authenticated API server, and set the `T2D_HERMES_*` environment variables.
 
-Talk2Data never delegates authorization or certified data execution to Hermes. Hermes receives only approved tools and typed evidence after the policy and semantic gates have completed.
+Talk2Data never delegates authorization, semantic definitions, or certified data execution to Hermes. Hermes receives only approved tools and typed evidence after the policy and semantic gates have completed.
 
 ## Quality checks
 
