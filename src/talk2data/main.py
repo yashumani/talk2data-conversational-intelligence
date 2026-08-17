@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from talk2data.api.routes import health, questions, sessions
+from talk2data.api.routes import health, query_plans, questions, semantics, sessions
 from talk2data.core.config import Settings, get_settings
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
@@ -17,6 +17,8 @@ from talk2data.services.interpreter import (
     OllamaQuestionInterpreter,
 )
 from talk2data.services.policy import PolicyEngine
+from talk2data.services.query_compiler import BusinessQueryCompiler
+from talk2data.services.semantic import SemanticRegistry
 from talk2data.services.session_store import SQLiteSessionStore
 
 
@@ -42,7 +44,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ollama_client,
         ollama_required=resolved_settings.ollama_required,
     )
-    admissibility_engine = QuestionAdmissibilityEngine(interpreter, PolicyEngine())
+    policy_engine = PolicyEngine()
+    admissibility_engine = QuestionAdmissibilityEngine(interpreter, policy_engine)
+    semantic_registry = SemanticRegistry(domain_registry, policy_engine)
+    query_compiler = BusinessQueryCompiler(semantic_registry)
     session_store = SQLiteSessionStore(resolved_settings.database_path)
 
     hermes_client = None
@@ -64,8 +69,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title=resolved_settings.app_name,
-        version="0.1.0",
-        description=("Governed question-admissibility and conversational-intelligence control plane."),
+        version="0.2.0",
+        description=("Governed question-admissibility and Business Query IR control plane."),
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings
@@ -73,10 +78,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.ollama_client = ollama_client
     app.state.hermes_client = hermes_client
     app.state.admissibility_engine = admissibility_engine
+    app.state.semantic_registry = semantic_registry
+    app.state.query_compiler = query_compiler
     app.state.session_store = session_store
 
     app.include_router(health.router)
     app.include_router(questions.router)
+    app.include_router(query_plans.router)
+    app.include_router(semantics.router)
     app.include_router(sessions.router)
     return app
 
