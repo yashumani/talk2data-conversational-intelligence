@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from talk2data.api.dependencies import get_session_store
 from talk2data.domain.models import SessionSnapshot
 from talk2data.services.session_store import (
-    SQLiteSessionStore,
     SessionAccessDeniedError,
     SessionNotFoundError,
+    SQLiteSessionStore,
 )
 
 router = APIRouter(prefix="/v1/sessions", tags=["sessions"])

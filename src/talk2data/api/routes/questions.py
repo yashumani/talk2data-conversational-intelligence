@@ -14,9 +14,9 @@ from talk2data.domain.models import QuestionDecisionEnvelope, QuestionRequest
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.interpreter import InterpretationError
 from talk2data.services.session_store import (
-    SQLiteSessionStore,
     SessionAccessDeniedError,
     SessionNotFoundError,
+    SQLiteSessionStore,
 )
 
 router = APIRouter(prefix="/v1/questions", tags=["questions"])
