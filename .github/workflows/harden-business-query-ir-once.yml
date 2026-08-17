@@ -26,88 +26,71 @@ jobs:
           def replace_once(path: Path, old: str, new: str) -> None:
               text = path.read_text(encoding="utf-8")
               if old not in text:
-                  raise SystemExit(f"expected block was not found in {path}")
+                  raise SystemExit(f"expected marker was not found in {path}: {old!r}")
               path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
           models = Path("src/talk2data/domain/models.py")
+          model_marker = (
+              "class BusinessQueryIR(BaseModel):\n"
+              "    query_id: UUID = Field(default_factory=uuid4)\n"
+          )
           replace_once(
               models,
-              '''class BusinessQueryIR(BaseModel):
-              query_id: UUID = Field(default_factory=uuid4)
-              created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-              tenant_id: str
-          '''.replace("              ", "    "),
-              '''class BusinessQueryIR(BaseModel):
-              query_id: UUID = Field(default_factory=uuid4)
-              session_id: UUID
-              decision_id: UUID
-              created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-              tenant_id: str
-          '''.replace("              ", "    "),
+              model_marker,
+              model_marker + "    session_id: UUID\n    decision_id: UUID\n",
           )
 
           compiler = Path("src/talk2data/services/query_compiler.py")
-          replace_once(
-              compiler,
-              '''        dimensions_ids = [entity.id for entity in dimensions]
-              filters = self._resolve_filters(request.question, pack, metric)
-              plan_hash = self._plan_hash(
-          '''.replace("              ", "        "),
-              '''        dimensions_ids = [entity.id for entity in dimensions]
-              filters = self._resolve_filters(request.question, pack, metric)
-              try:
-                  self._semantics.resolve_dimensions(
-                      access=request.access_context,
-                      pack=pack,
-                      metric=metric,
-                      dimension_ids=[item.dimension_id for item in filters],
-                  )
-              except DimensionNotAllowedError as exc:
-                  return self._outcome(
-                      session_id=session_id,
-                      decision=decision,
-                      status=QueryCompilationStatus.INVALID,
-                      issue=CompilationIssue(
-                          code="FILTER_DIMENSION_NOT_ALLOWED_FOR_METRIC",
-                          message=str(exc),
-                          field="filters",
+          filter_marker = "        filters = self._resolve_filters(request.question, pack, metric)\n"
+          filter_authorization = '''        try:
+              self._semantics.resolve_dimensions(
+                  access=request.access_context,
+                  pack=pack,
+                  metric=metric,
+                  dimension_ids=[item.dimension_id for item in filters],
+              )
+          except DimensionNotAllowedError as exc:
+              return self._outcome(
+                  session_id=session_id,
+                  decision=decision,
+                  status=QueryCompilationStatus.INVALID,
+                  issue=CompilationIssue(
+                      code="FILTER_DIMENSION_NOT_ALLOWED_FOR_METRIC",
+                      message=str(exc),
+                      field="filters",
+                  ),
+              )
+          except SemanticAccessDeniedError:
+              return self._outcome(
+                  session_id=session_id,
+                  decision=decision,
+                  status=QueryCompilationStatus.NOT_ELIGIBLE,
+                  issue=CompilationIssue(
+                      code="FILTER_DIMENSION_ACCESS_DENIED",
+                      message=(
+                          "At least one detected filter dimension is not available to this user."
                       ),
-                  )
-              except SemanticAccessDeniedError:
-                  return self._outcome(
-                      session_id=session_id,
-                      decision=decision,
-                      status=QueryCompilationStatus.NOT_ELIGIBLE,
-                      issue=CompilationIssue(
-                          code="FILTER_DIMENSION_ACCESS_DENIED",
-                          message=(
-                              "At least one detected filter dimension is not available to this user."
-                          ),
-                          field="filters",
-                      ),
-                  )
-              plan_hash = self._plan_hash(
-          '''.replace("              ", "        "),
-          )
+                      field="filters",
+                  ),
+              )
+          '''
+          replace_once(compiler, filter_marker, filter_marker + filter_authorization)
+
+          ir_marker = "        query_ir = BusinessQueryIR(\n"
           replace_once(
               compiler,
-              '''        query_ir = BusinessQueryIR(
-              tenant_id=request.access_context.tenant_id,
-          '''.replace("              ", "        "),
-              '''        query_ir = BusinessQueryIR(
-              session_id=session_id,
-              decision_id=decision.decision_id,
-              tenant_id=request.access_context.tenant_id,
-          '''.replace("              ", "        "),
+              ir_marker,
+              ir_marker
+              + "            session_id=session_id,\n"
+              + "            decision_id=decision.decision_id,\n",
           )
-          replace_once(
-              compiler,
-              '''        if len(iso_dates) == 2:
-              start_date = date.fromisoformat(iso_dates[0])
-              end_date = date.fromisoformat(iso_dates[1])
-              if start_date > end_date:
-          '''.replace("              ", "        "),
-              '''        if len(iso_dates) == 2:
+
+          pair_marker = (
+              "        if len(iso_dates) == 2:\n"
+              "            start_date = date.fromisoformat(iso_dates[0])\n"
+              "            end_date = date.fromisoformat(iso_dates[1])\n"
+          )
+          pair_replacement = '''        if len(iso_dates) == 2:
               try:
                   start_date = date.fromisoformat(iso_dates[0])
                   end_date = date.fromisoformat(iso_dates[1])
@@ -121,15 +104,11 @@ jobs:
                           field="time_window",
                       ),
                   )
-              if start_date > end_date:
-          '''.replace("              ", "        "),
-          )
-          replace_once(
-              compiler,
-              '''            selected_date = date.fromisoformat(iso_dates[0])
-              return (
-          '''.replace("              ", "            "),
-              '''            try:
+          '''
+          replace_once(compiler, pair_marker, pair_replacement)
+
+          single_marker = "            selected_date = date.fromisoformat(iso_dates[0])\n"
+          single_replacement = '''            try:
                   selected_date = date.fromisoformat(iso_dates[0])
               except ValueError:
                   return (
@@ -141,54 +120,44 @@ jobs:
                           field="time_window",
                       ),
                   )
-              return (
-          '''.replace("              ", "            "),
-          )
+          '''
+          replace_once(compiler, single_marker, single_replacement)
 
           fixture = Path("src/talk2data/resources/domain_packs/telecom-demo.yaml")
-          replace_once(
-              fixture,
-              '''  - id: TECHNOLOGY
-              name: Network Technology
-              aliases: [technology, network technology, radio technology]
-              domain_id: NETWORK_OPERATIONS
-              values:
-                - id: LTE
-                  name: LTE
-                  aliases: [4g]
-                - id: FIVE_G
-                  name: 5G
-                  aliases: [5 g, fifth generation]
-              classification: INTERNAL
-          '''.replace("              ", "    "),
-              '''  - id: TECHNOLOGY
-              name: Network Technology
-              aliases: [technology, network technology, radio technology]
-              domain_id: NETWORK_OPERATIONS
-              values:
-                - id: LTE
-                  name: LTE
-                  aliases: [4g]
-                - id: FIVE_G
-                  name: 5G
-                  aliases: [5 g, fifth generation]
-              classification: RESTRICTED
-          '''.replace("              ", "    "),
+          fixture_text = fixture.read_text(encoding="utf-8")
+          fixture_text = fixture_text.replace('version: "2026.08.2"', 'version: "2026.08.3"', 1)
+          technology_start = fixture_text.index("  - id: TECHNOLOGY\n")
+          technology_end = fixture_text.index("\n\nexternal_adjacencies:", technology_start)
+          technology_block = fixture_text[technology_start:technology_end]
+          classification_marker = "    classification: INTERNAL\n"
+          if classification_marker not in technology_block:
+              raise SystemExit("TECHNOLOGY classification marker was not found")
+          technology_block = technology_block.replace(
+              classification_marker,
+              "    classification: RESTRICTED\n",
+              1,
+          )
+          fixture.write_text(
+              fixture_text[:technology_start]
+              + technology_block
+              + fixture_text[technology_end:],
+              encoding="utf-8",
           )
 
           tests = Path("tests/test_query_compiler_api.py")
+          assertion_marker = (
+              '    assert body["status"] == "COMPILED"\n'
+              '    query_ir = body["query_ir"]\n'
+              '    assert query_ir["metric_id"] == "POSTPAID_CHURN"\n'
+          )
           replace_once(
               tests,
-              '''    assert body["status"] == "COMPILED"
-              query_ir = body["query_ir"]
-              assert query_ir["metric_id"] == "POSTPAID_CHURN"
-          '''.replace("              ", "    "),
-              '''    assert body["status"] == "COMPILED"
-              query_ir = body["query_ir"]
-              assert query_ir["session_id"] == body["session_id"]
-              assert query_ir["decision_id"] == body["decision"]["decision_id"]
-              assert query_ir["metric_id"] == "POSTPAID_CHURN"
-          '''.replace("              ", "    "),
+              assertion_marker,
+              '    assert body["status"] == "COMPILED"\n'
+              '    query_ir = body["query_ir"]\n'
+              '    assert query_ir["session_id"] == body["session_id"]\n'
+              '    assert query_ir["decision_id"] == body["decision"]["decision_id"]\n'
+              '    assert query_ir["metric_id"] == "POSTPAID_CHURN"\n',
           )
           additions = '''
 
@@ -227,19 +196,36 @@ jobs:
               raise SystemExit("hardening tests already exist")
           tests.write_text(test_text.rstrip() + additions + "\n", encoding="utf-8")
 
+          for test_path in (
+              Path("tests/test_admissibility_api.py"),
+              Path("tests/test_semantics_api.py"),
+          ):
+              text = test_path.read_text(encoding="utf-8")
+              if "2026.08.2" not in text:
+                  raise SystemExit(f"expected Domain Pack version was not found in {test_path}")
+              test_path.write_text(text.replace("2026.08.2", "2026.08.3"), encoding="utf-8")
+
           docs = Path("docs/semantic-registry.md")
           doc_text = docs.read_text(encoding="utf-8")
-          audit_marker = "The original wording is intentionally excluded. Semantically equivalent questions therefore produce the same plan hash under the same governed context."
+          audit_marker = (
+              "The original wording is intentionally excluded. Semantically equivalent questions "
+              "therefore produce the same plan hash under the same governed context."
+          )
           audit_replacement = audit_marker + (
-              "\n\nEach IR also records the originating session and admissibility-decision IDs for audit reconstruction. "
-              "Those lineage IDs are intentionally excluded from the canonical plan hash."
+              "\n\nEach IR also records the originating session and admissibility-decision IDs "
+              "for audit reconstruction. Those lineage IDs are intentionally excluded from the "
+              "canonical plan hash."
           )
           if audit_marker not in doc_text:
               raise SystemExit("semantic registry audit marker was not found")
           doc_text = doc_text.replace(audit_marker, audit_replacement, 1)
-          trust_marker = "The compiler accepts only IDs that have already passed the admissibility and semantic checks."
+          trust_marker = (
+              "The compiler accepts only IDs that have already passed the admissibility and semantic "
+              "checks."
+          )
           trust_replacement = trust_marker + (
-              " It revalidates every grouping and detected filter dimension against the user's classification clearance before emitting an IR."
+              " It revalidates every grouping and detected filter dimension against the user's "
+              "classification clearance before emitting an IR."
           )
           if trust_marker not in doc_text:
               raise SystemExit("semantic registry trust marker was not found")
