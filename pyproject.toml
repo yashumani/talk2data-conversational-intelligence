@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talk2data-conversational-intelligence"
+version = "0.1.0"
+description = "Governed conversational intelligence for enterprise data using Ollama and Hermes Agent."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Talk2Data Contributors" }]
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "PyYAML>=6.0.2,<7",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.14,<2",
+  "pytest>=8.3,<10",
+  "pytest-asyncio>=0.25,<2",
+  "pytest-cov>=6,<8",
+  "ruff>=0.9,<1",
+  "types-PyYAML>=6.0.12",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+talk2data = ["resources/domain_packs/*.yaml"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "RUF"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["talk2data"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+packages = ["talk2data"]
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["talk2data"]
+omit = [
+  "src/talk2data/connectors/base.py",
+  "src/talk2data/domain/evidence.py",
+  "src/talk2data/domain/memory.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
