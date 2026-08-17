@@ -22,6 +22,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          from textwrap import dedent, indent
 
           def swap(path: str, old: str, new: str) -> None:
               file = Path(path)
@@ -38,36 +39,42 @@ jobs:
           )
 
           filter_marker = "        filters = self._resolve_filters(request.question, pack, metric)\n"
-          filter_gate = '''        try:
-              self._semantics.resolve_dimensions(
-                  access=request.access_context,
-                  pack=pack,
-                  metric=metric,
-                  dimension_ids=[item.dimension_id for item in filters],
-              )
-          except DimensionNotAllowedError as exc:
-              return self._outcome(
-                  session_id=session_id,
-                  decision=decision,
-                  status=QueryCompilationStatus.INVALID,
-                  issue=CompilationIssue(
-                      code="FILTER_DIMENSION_NOT_ALLOWED_FOR_METRIC",
-                      message=str(exc),
-                      field="filters",
-                  ),
-              )
-          except SemanticAccessDeniedError:
-              return self._outcome(
-                  session_id=session_id,
-                  decision=decision,
-                  status=QueryCompilationStatus.NOT_ELIGIBLE,
-                  issue=CompilationIssue(
-                      code="FILTER_DIMENSION_ACCESS_DENIED",
-                      message="A detected filter dimension is not available to this user.",
-                      field="filters",
-                  ),
-              )
-          '''
+          filter_gate = indent(
+              dedent(
+                  """\
+                  try:
+                      self._semantics.resolve_dimensions(
+                          access=request.access_context,
+                          pack=pack,
+                          metric=metric,
+                          dimension_ids=[item.dimension_id for item in filters],
+                      )
+                  except DimensionNotAllowedError as exc:
+                      return self._outcome(
+                          session_id=session_id,
+                          decision=decision,
+                          status=QueryCompilationStatus.INVALID,
+                          issue=CompilationIssue(
+                              code="FILTER_DIMENSION_NOT_ALLOWED_FOR_METRIC",
+                              message=str(exc),
+                              field="filters",
+                          ),
+                      )
+                  except SemanticAccessDeniedError:
+                      return self._outcome(
+                          session_id=session_id,
+                          decision=decision,
+                          status=QueryCompilationStatus.NOT_ELIGIBLE,
+                          issue=CompilationIssue(
+                              code="FILTER_DIMENSION_ACCESS_DENIED",
+                              message="A detected filter dimension is not available to this user.",
+                              field="filters",
+                          ),
+                      )
+                  """
+              ),
+              "        ",
+          )
           swap(
               "src/talk2data/services/query_compiler.py",
               filter_marker,
@@ -80,44 +87,56 @@ jobs:
               "            session_id=session_id,\n"
               "            decision_id=decision.decision_id,\n",
           )
-          swap(
-              "src/talk2data/services/query_compiler.py",
+
+          pair_marker = (
               "        if len(iso_dates) == 2:\n"
               "            start_date = date.fromisoformat(iso_dates[0])\n"
-              "            end_date = date.fromisoformat(iso_dates[1])\n",
-              '''        if len(iso_dates) == 2:
-              try:
-                  start_date = date.fromisoformat(iso_dates[0])
-                  end_date = date.fromisoformat(iso_dates[1])
-              except ValueError:
-                  return (
-                      None,
-                      [],
-                      CompilationIssue(
-                          code="INVALID_EXPLICIT_DATE",
-                          message="At least one explicit date is not a valid calendar date.",
-                          field="time_window",
-                      ),
-                  )
-          ''',
+              "            end_date = date.fromisoformat(iso_dates[1])\n"
           )
-          swap(
-              "src/talk2data/services/query_compiler.py",
-              "            selected_date = date.fromisoformat(iso_dates[0])\n",
-              '''            try:
-                  selected_date = date.fromisoformat(iso_dates[0])
-              except ValueError:
-                  return (
-                      None,
-                      [],
-                      CompilationIssue(
-                          code="INVALID_EXPLICIT_DATE",
-                          message="The explicit date is not a valid calendar date.",
-                          field="time_window",
-                      ),
-                  )
-          ''',
+          pair_replacement = indent(
+              dedent(
+                  """\
+                  if len(iso_dates) == 2:
+                      try:
+                          start_date = date.fromisoformat(iso_dates[0])
+                          end_date = date.fromisoformat(iso_dates[1])
+                      except ValueError:
+                          return (
+                              None,
+                              [],
+                              CompilationIssue(
+                                  code="INVALID_EXPLICIT_DATE",
+                                  message="At least one explicit date is not a valid calendar date.",
+                                  field="time_window",
+                              ),
+                          )
+                  """
+              ),
+              "        ",
           )
+          swap("src/talk2data/services/query_compiler.py", pair_marker, pair_replacement)
+
+          single_marker = "            selected_date = date.fromisoformat(iso_dates[0])\n"
+          single_replacement = indent(
+              dedent(
+                  """\
+                  try:
+                      selected_date = date.fromisoformat(iso_dates[0])
+                  except ValueError:
+                      return (
+                          None,
+                          [],
+                          CompilationIssue(
+                              code="INVALID_EXPLICIT_DATE",
+                              message="The explicit date is not a valid calendar date.",
+                              field="time_window",
+                          ),
+                      )
+                  """
+              ),
+              "            ",
+          )
+          swap("src/talk2data/services/query_compiler.py", single_marker, single_replacement)
 
           fixture_path = Path("src/talk2data/resources/domain_packs/telecom-demo.yaml")
           fixture = fixture_path.read_text(encoding="utf-8")
@@ -147,38 +166,40 @@ jobs:
           if assertion not in test_text:
               raise SystemExit("query IR assertion marker not found")
           test_text = test_text.replace(assertion, replacement, 1)
-          test_text += '''
+          test_text += dedent(
+              """
 
-          def test_rejects_invalid_explicit_calendar_date(
-              client: TestClient,
-              full_access: dict[str, object],
-          ) -> None:
-              body = compile_query(
-                  client,
-                  "What were mobile activations on 2026-02-30?",
-                  full_access,
-              )
+              def test_rejects_invalid_explicit_calendar_date(
+                  client: TestClient,
+                  full_access: dict[str, object],
+              ) -> None:
+                  body = compile_query(
+                      client,
+                      "What were mobile activations on 2026-02-30?",
+                      full_access,
+                  )
 
-              assert body["status"] == "INVALID"
-              assert body["issues"][0]["code"] == "INVALID_EXPLICIT_DATE"
-              assert body["query_ir"] is None
+                  assert body["status"] == "INVALID"
+                  assert body["issues"][0]["code"] == "INVALID_EXPLICIT_DATE"
+                  assert body["query_ir"] is None
 
 
-          def test_rechecks_classification_for_detected_filter_dimensions(
-              client: TestClient,
-              full_access: dict[str, object],
-          ) -> None:
-              body = compile_query(
-                  client,
-                  "What was network congestion for 5G last month?",
-                  full_access,
-              )
+              def test_rechecks_classification_for_detected_filter_dimensions(
+                  client: TestClient,
+                  full_access: dict[str, object],
+              ) -> None:
+                  body = compile_query(
+                      client,
+                      "What was network congestion for 5G last month?",
+                      full_access,
+                  )
 
-              assert body["decision"]["verdict"] == "ACCEPT_INTERNAL"
-              assert body["status"] == "NOT_ELIGIBLE"
-              assert body["issues"][0]["code"] == "FILTER_DIMENSION_ACCESS_DENIED"
-              assert body["query_ir"] is None
-          '''.replace("          ", "")
+                  assert body["decision"]["verdict"] == "ACCEPT_INTERNAL"
+                  assert body["status"] == "NOT_ELIGIBLE"
+                  assert body["issues"][0]["code"] == "FILTER_DIMENSION_ACCESS_DENIED"
+                  assert body["query_ir"] is None
+              """
+          )
           test_path.write_text(test_text, encoding="utf-8")
 
           for path in ("tests/test_admissibility_api.py", "tests/test_semantics_api.py"):
@@ -194,6 +215,8 @@ jobs:
               "The original wording is intentionally excluded. Semantically equivalent questions "
               "therefore produce the same plan hash under the same governed context."
           )
+          if audit not in docs:
+              raise SystemExit("audit documentation marker missing")
           docs = docs.replace(
               audit,
               audit
@@ -205,6 +228,8 @@ jobs:
               "The compiler accepts only IDs that have already passed the admissibility and semantic "
               "checks."
           )
+          if trust not in docs:
+              raise SystemExit("trust-boundary documentation marker missing")
           docs = docs.replace(
               trust,
               trust
