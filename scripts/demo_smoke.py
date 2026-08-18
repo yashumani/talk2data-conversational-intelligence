@@ -7,7 +7,6 @@ from typing import Any
 
 import httpx
 
-
 QUESTIONS = [
     ("What was postpaid churn by plan last month?", "ANSWERED"),
     (
@@ -80,9 +79,7 @@ def run(base_url: str, require_ollama: bool) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Smoke-test the Talk2Data demonstration runtime."
-    )
+    parser = argparse.ArgumentParser(description="Smoke-test the Talk2Data demonstration runtime.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--allow-rules-fallback", action="store_true")
     arguments = parser.parse_args()

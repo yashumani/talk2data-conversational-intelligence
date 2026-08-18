@@ -357,11 +357,10 @@ class DemoSQLiteConnector:
         dimension_columns = [DIMENSION_COLUMNS[dimension] for dimension in plan.dimensions]
         select_dimensions = ", ".join(
             f"{column} AS {dimension}"
-            for column, dimension in zip(dimension_columns, plan.dimensions)
+            for column, dimension in zip(dimension_columns, plan.dimensions, strict=True)
         )
         value_expression = (
-            "CASE WHEN SUM(denominator) = 0 THEN NULL "
-            "ELSE SUM(numerator) / SUM(denominator) END"
+            "CASE WHEN SUM(denominator) = 0 THEN NULL ELSE SUM(numerator) / SUM(denominator) END"
             if spec.aggregation == MetricAggregation.RATIO
             else "SUM(amount)"
         )
@@ -467,8 +466,7 @@ def merge_comparison_rows(
     dimensions: list[str],
 ) -> list[dict[str, Any]]:
     comparison_by_key = {
-        tuple(row.get(dimension) for dimension in dimensions): row
-        for row in comparison_rows
+        tuple(row.get(dimension) for dimension in dimensions): row for row in comparison_rows
     }
     merged: list[dict[str, Any]] = []
     for row in current_rows:
@@ -530,9 +528,7 @@ def _seed_rows() -> list[tuple[Any, ...]]:
         for plan_index, plan in enumerate(plans):
             for region_index, region in enumerate(regions):
                 for channel_index, channel in enumerate(channels):
-                    denominator = (
-                        5_000 + plan_index * 900 + region_index * 350 + channel_index * 200
-                    )
+                    denominator = 5_000 + plan_index * 900 + region_index * 350 + channel_index * 200
                     rate = max(
                         0.004,
                         plan_rates[plan]
@@ -566,7 +562,7 @@ def _seed_rows() -> list[tuple[Any, ...]]:
             "WEST": 11_800,
         }
         channel_weights = {"RETAIL": 0.50, "DIGITAL": 0.35, "CARE": 0.15}
-        for region_index, region in enumerate(regions):
+        for region in regions:
             monthly_total = round(activation_baseline[region] * (1 + month_index * 0.012))
             allocated = 0
             for channel_index, channel in enumerate(channels):
@@ -609,11 +605,7 @@ def _seed_rows() -> list[tuple[Any, ...]]:
         for market_index, (market, region) in enumerate(markets):
             for technology, hour in technology_hour_rates:
                 denominator = 2_000
-                rate = (
-                    technology_hour_rates[(technology, hour)]
-                    + market_index * 0.004
-                    - month_index * 0.0005
-                )
+                rate = technology_hour_rates[(technology, hour)] + market_index * 0.004 - month_index * 0.0005
                 numerator = round(denominator * max(rate, 0.005))
                 rows.append(
                     (
