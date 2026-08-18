@@ -1,0 +1,98 @@
+name: Publish final demo validation in PR
+
+on:
+  push:
+    branches: [feat/demo-ready-ai-chat]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[finalize-pr-body]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/demo-ready-ai-chat
+          fetch-depth: 0
+      - name: Require passed certification
+        run: |
+          test -s docs/FINAL_DEMO_CERTIFICATION.md
+          grep -q '^Status: PASSED$' docs/FINAL_DEMO_CERTIFICATION.md
+      - name: Build final pull-request body
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          body = """## Product slice
+
+This stacked draft pull request turns the Talk2Data control plane into a demonstrable end-to-end chatbot without depending on the Unified AI Brain context service. It builds on `feat/business-query-ir`.
+
+### Demonstrable functionality
+
+- Responsive browser chatbot at `/demo`.
+- End-to-end `POST /v1/chat/demo` API.
+- Real local Ollama structured interpretation with governed identifier validation.
+- Deterministic Business Query IR execution through a parameterized, read-only SQLite reference connector.
+- Synthetic telecom facts with explicit source snapshots and coverage limits.
+- Policy and source-coverage enforcement before execution.
+- Result hashing, query lineage, result-sense validation, and certified numeric claims.
+- Explicit abstention for incomplete freshness, unavailable sources, out-of-domain questions, failed verification, and context-dependent questions.
+- Session continuity and expandable query-plan and receipt evidence.
+- Docker Compose model bootstrap and scripted demonstration smoke test.
+
+## Accuracy boundary
+
+- Ollama interprets language only; it does not calculate metrics, generate SQL, authorize access, or create numeric claims.
+- The connector compiles only allowlisted identifiers and binds all values as SQL parameters.
+- A number is released only after coverage, result-hash, query-lineage, row-count, uniqueness, finiteness, value-type, and metric-bound checks pass.
+- Demonstration data is synthetic and visibly labeled.
+- Unified AI Brain context, external research, Graphiti/Obsidian, anomaly data, and Hermes multi-agent investigation are intentionally not connected in this slice.
+
+## Final validation
+
+- [x] Python 3.11 quality and deterministic tests
+- [x] Python 3.12 quality and deterministic tests
+- [x] Python 3.13 quality and deterministic tests
+- [x] Ruff lint and format verification
+- [x] Strict Mypy validation
+- [x] Python compilation
+- [x] 85% minimum coverage gate
+- [x] Docker Compose configuration validation
+- [x] CodeQL Python security analysis
+- [x] Real Ollama installation and model pull
+- [x] Live `qwen3:0.6b` structured-output contract
+- [x] End-to-end receipt-backed chatbot API smoke
+- [x] Browser demonstration page retrieval
+
+The repository record is available at `docs/FINAL_DEMO_CERTIFICATION.md`.
+
+## Run the demonstration
+
+```bash
+docker compose up --build
+python scripts/demo_smoke.py
+```
+
+Open `http://localhost:8000/demo`.
+
+## Integration boundary
+
+The Unified AI Brain context API is the remaining parallel dependency. Its absence does not affect the certified internal-data demonstration path delivered here.
+"""
+          Path("/tmp/pr-body.md").write_text(body, encoding="utf-8")
+          PY
+      - name: Update draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit 3 --body-file /tmp/pr-body.md
+      - name: Remove temporary publisher
+        run: |
+          rm -f .github/workflows/finalize-demo-pr-body.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "docs: finalize demo validation record"
+          git push origin HEAD:feat/demo-ready-ai-chat
