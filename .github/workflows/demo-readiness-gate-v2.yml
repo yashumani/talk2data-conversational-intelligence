@@ -1,0 +1,195 @@
+name: Demo readiness gate v2
+
+on:
+  push:
+    branches: [feat/demo-ready-ai-chat]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[demo-gate-v2]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      T2D_RUN_LIVE_OLLAMA: "1"
+      T2D_OLLAMA_MODEL: qwen3:0.6b
+      T2D_OLLAMA_BASE_URL: http://127.0.0.1:11434
+      T2D_OLLAMA_ENABLED: "true"
+      T2D_OLLAMA_REQUIRED: "true"
+      T2D_OLLAMA_TIMEOUT_SECONDS: "180"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install application and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Apply deterministic formatting fixes
+        run: |
+          ruff format .
+          ruff check . --fix
+          ruff format .
+
+      - name: Static quality gates
+        run: |
+          ruff check .
+          ruff format --check .
+          mypy src
+          python -m compileall -q src tests scripts
+
+      - name: Deterministic test suite and coverage
+        run: |
+          set -o pipefail
+          pytest --cov=talk2data --cov-report=term-missing --cov-fail-under=85 | tee /tmp/pytest-deterministic.txt
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config >/tmp/talk2data-compose.yml
+
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          nohup ollama serve >/tmp/ollama.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl -fsS "$T2D_OLLAMA_BASE_URL/api/tags" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/ollama.log
+          exit 1
+
+      - name: Pull compact real model
+        run: ollama pull "$T2D_OLLAMA_MODEL"
+
+      - name: Verify configured model catalog and real-model contract
+        run: |
+          set -o pipefail
+          curl -fsS "$T2D_OLLAMA_BASE_URL/api/tags" | tee /tmp/ollama-models.json
+          pytest -m live_ollama -q | tee /tmp/pytest-live-ollama.txt
+
+      - name: Run end-to-end browser/API demonstration smoke
+        run: |
+          nohup uvicorn talk2data.main:app --host 127.0.0.1 --port 8000 >/tmp/talk2data-api.log 2>&1 &
+          api_pid=$!
+          cleanup() { kill "$api_pid" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8000/health/ready >/tmp/readiness.json; then
+              break
+            fi
+            sleep 2
+          done
+          python scripts/demo_smoke.py --base-url http://127.0.0.1:8000 | tee /tmp/demo-smoke.txt
+          curl -fsS http://127.0.0.1:8000/demo >/tmp/demo.html
+          test -s /tmp/demo.html
+
+      - name: Write validation evidence
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          def read(path: str) -> str:
+              file = Path(path)
+              return file.read_text(encoding="utf-8", errors="replace") if file.exists() else "not recorded"
+
+          readiness = read("/tmp/readiness.json")
+          try:
+              readiness_json = json.dumps(json.loads(readiness), indent=2, sort_keys=True)
+          except json.JSONDecodeError:
+              readiness_json = readiness
+
+          content = f"""# Talk2Data Demonstration Validation
+
+Validated at: {datetime.now(UTC).isoformat()}
+
+Branch: `feat/demo-ready-ai-chat`
+Commit tested before evidence commit: `{Path('/tmp/tested-sha').read_text().strip() if Path('/tmp/tested-sha').exists() else 'see parent commit'}`
+
+## Gates
+
+- Ruff lint: passed
+- Ruff format: passed
+- Strict Mypy: passed
+- Python compilation: passed
+- Deterministic test suite with 85% coverage floor: passed
+- Docker Compose configuration: passed
+- Real Ollama installation and model pull: passed
+- Live Ollama structured-output contract: passed
+- End-to-end API demonstration smoke: passed
+- Browser demo document retrieval: passed
+
+## Runtime readiness
+
+```json
+{readiness_json}
+```
+
+## Deterministic tests
+
+```text
+{read('/tmp/pytest-deterministic.txt')[-12000:]}
+```
+
+## Live Ollama tests
+
+```text
+{read('/tmp/pytest-live-ollama.txt')[-12000:]}
+```
+
+## End-to-end demo smoke
+
+```text
+{read('/tmp/demo-smoke.txt')[-12000:]}
+```
+
+## Scope boundary
+
+The demonstration uses synthetic telecom data. Ollama performs natural-language interpretation only. Numeric results are produced by governed deterministic execution and released only after receipt and result-sense verification. Unified AI Brain context is intentionally not connected in this slice.
+"""
+          Path("docs/DEMO_VALIDATION.md").write_text(content, encoding="utf-8")
+          PY
+
+      - name: Record tested commit
+        run: git rev-parse HEAD >/tmp/tested-sha
+
+      - name: Commit validated final state
+        run: |
+          rm -f .github/workflows/finalize-demo-slice.yml
+          rm -f .github/workflows/demo-readiness-gate-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+          else
+            git commit -m "test: certify demo-ready AI chat with live Ollama"
+            git push origin HEAD:feat/demo-ready-ai-chat
+          fi
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          echo '--- Ollama ---'
+          ollama list || true
+          tail -250 /tmp/ollama.log || true
+          echo '--- API ---'
+          tail -250 /tmp/talk2data-api.log || true
