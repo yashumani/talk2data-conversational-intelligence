@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b10">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  >
+  <title>Talk2Data — Governed Conversational Intelligence</title>
+  <meta
+    name="description"
+    content="Talk2Data is a governed conversational intelligence interface for receipt-backed enterprise data answers."
+  >
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #090b10;
+      --panel: #0d1118;
+      --panel-2: #111720;
+      --line: #273040;
+      --text: #f5f7fb;
+      --muted: #aeb8ca;
+      --lime: #d8ff62;
+      --blue: #4e73ff;
+      --good: #8cf0c1;
+      --warn: #ffd68b;
+      --bad: #ff9b9b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(78, 115, 255, .15), transparent 32rem),
+        radial-gradient(circle at 90% 20%, rgba(216, 255, 98, .08), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+    }
+    button, input, textarea { font: inherit; }
+    a { color: inherit; }
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 390px;
+      min-height: 100vh;
+    }
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 28px;
+      min-width: 0;
+    }
+    aside {
+      border-left: 1px solid var(--line);
+      background: rgba(13, 17, 24, .92);
+      backdrop-filter: blur(18px);
+      padding: 24px;
+      overflow: auto;
+    }
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--lime);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 72px);
+      line-height: .94;
+      letter-spacing: -.055em;
+    }
+    .subtitle {
+      color: var(--muted);
+      max-width: 790px;
+      line-height: 1.55;
+      margin: 14px 0 0;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      border: 1px solid #384356;
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      background: #10151e;
+      font-size: 12px;
+    }
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 14px currentColor;
+    }
+    .status.ready { color: var(--good); border-color: #2f765c; }
+    .status.degraded { color: var(--warn); border-color: #80653c; }
+    .status.failed { color: var(--bad); border-color: #7d3d45; }
+    .notice {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      border: 1px solid #3a465c;
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: rgba(17, 23, 32, .86);
+      color: #d4dced;
+      line-height: 1.45;
+    }
+    .notice strong { color: var(--lime); }
+    .connector {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(12, 16, 23, .9);
+    }
+    .connector label {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    input, textarea {
+      width: 100%;
+      border: 1px solid #333e50;
+      border-radius: 12px;
+      background: #10151e;
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(78, 115, 255, .15); }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 0 20px;
+      min-height: 46px;
+      cursor: pointer;
+      font-weight: 800;
+      background: var(--lime);
+      color: #10130a;
+    }
+    button.secondary {
+      background: transparent;
+      color: #dbe4f5;
+      border: 1px solid #374256;
+      font-weight: 650;
+      min-height: 38px;
+      padding: 8px 11px;
+    }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chat {
+      flex: 1;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      overflow: auto;
+      background: rgba(12, 16, 23, .92);
+      box-shadow: 0 18px 70px rgba(0, 0, 0, .28);
+    }
+    .message {
+      max-width: 880px;
+      padding: 14px 16px;
+      margin: 10px 0;
+      border-radius: 15px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .message.user { margin-left: auto; background: #3158d8; }
+    .message.assistant { background: #171d28; border: 1px solid #2b3547; }
+    .meta { margin-top: 8px; color: #9eabc0; font-size: 12px; }
+    .ask-form { display: flex; gap: 10px; }
+    textarea { min-height: 78px; resize: vertical; }
+    h2 { margin: 0 0 14px; font-size: 18px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: var(--panel-2);
+    }
+    .label {
+      color: #8e9bb0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      margin-bottom: 7px;
+    }
+    .value { color: #e9eef8; line-height: 1.45; }
+    .claim {
+      border-left: 3px solid var(--lime);
+      padding-left: 10px;
+      margin: 9px 0;
+      color: #dce5f5;
+      line-height: 1.45;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #bfcae0;
+      font-size: 11px;
+      line-height: 1.5;
+      max-height: 260px;
+      overflow: auto;
+    }
+    details summary { cursor: pointer; color: #dce5f5; }
+    .footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: center;
+      color: #8794aa;
+      font-size: 12px;
+    }
+    .footer a:hover { color: var(--lime); }
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 680px) {
+      main, aside { padding: 18px; }
+      .brand { flex-direction: column; }
+      .connector { grid-template-columns: 1fr; }
+      .ask-form { flex-direction: column; }
+      button { min-height: 48px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <main>
+    <header class="brand">
+      <div>
+        <p class="eyebrow">Governed conversational intelligence</p>
+        <h1>Talk2Data</h1>
+        <p class="subtitle">
+          Local Ollama interpretation, governed semantics, parameterized data execution, and
+          receipt-backed answers. The Unified AI Brain context layer is intentionally separate.
+        </p>
+      </div>
+      <span id="runtime" class="status degraded">Static UI</span>
+    </header>
+
+    <section class="notice" aria-label="Hosting boundary">
+      <strong>Pages hosts the interface.</strong>
+      <span>
+        Live AI and certified data execution remain in the private FastAPI/Ollama runtime. Enter an
+        approved HTTPS API endpoint below to run the real demonstration from this site.
+      </span>
+    </section>
+
+    <section class="connector" aria-label="API connection">
+      <label>
+        Talk2Data API base URL
+        <input id="api-base" type="url" inputmode="url" placeholder="https://your-talk2data-api.example.com">
+      </label>
+      <button id="connect" type="button">Connect</button>
+    </section>
+
+    <div class="examples" id="examples" aria-label="Example questions"></div>
+
+    <section id="chat" class="chat" aria-live="polite" aria-label="Conversation">
+      <div class="message assistant">
+        Connect an approved Talk2Data API, then ask a telecom business question. I will return a
+        verified answer, request clarification, or abstain.
+      </div>
+    </section>
+
+    <form id="form" class="ask-form">
+      <textarea
+        id="question"
+        maxlength="8000"
+        placeholder="Example: What was postpaid churn by plan last month?"
+        required
+        disabled
+      ></textarea>
+      <button id="send" type="submit" disabled>Ask</button>
+    </form>
+
+    <footer class="footer">
+      <span>Synthetic telecom demonstration data</span>
+      <a href="https://github.com/yashumani/talk2data-conversational-intelligence">Source repository</a>
+      <span>Numbers are released only with verification receipts.</span>
+    </footer>
+  </main>
+
+  <aside>
+    <h2>Verification panel</h2>
+    <div class="card">
+      <div class="label">Runtime</div>
+      <div id="runtime-detail" class="value">No backend connected.</div>
+    </div>
+    <div class="card">
+      <div class="label">AI interpretation</div>
+      <div id="ai" class="value">No request yet.</div>
+    </div>
+    <div class="card">
+      <div class="label">Decision</div>
+      <div id="decision" class="value">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Certified claims</div>
+      <div id="claims" class="value">—</div>
+    </div>
+    <div class="card">
+      <details open>
+        <summary>Receipt</summary>
+        <pre id="receipt">—</pre>
+      </details>
+    </div>
+    <div class="card">
+      <details>
+        <summary>Query plan</summary>
+        <pre id="plan">—</pre>
+      </details>
+    </div>
+  </aside>
+</div>
+<script src="./config.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
