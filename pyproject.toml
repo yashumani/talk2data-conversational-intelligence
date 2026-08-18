@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "talk2data-conversational-intelligence"
-version = "0.2.0"
+version = "0.3.0"
 description = "Governed conversational intelligence for enterprise data using Ollama and Hermes Agent."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -38,6 +38,9 @@ talk2data = ["resources/domain_packs/*.yaml"]
 addopts = "-ra --strict-markers --strict-config"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+  "live_ollama: integration test that requires a running local Ollama model",
+]
 
 [tool.ruff]
 target-version = "py311"

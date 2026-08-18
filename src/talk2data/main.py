@@ -5,10 +5,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from talk2data.api.routes import health, query_plans, questions, semantics, sessions
+from talk2data.api.routes import chat, health, query_plans, questions, semantics, sessions
+from talk2data.connectors.demo_sqlite import DemoSQLiteConnector
+from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.config import Settings, get_settings
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
+from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.hermes import HermesConfiguration, HermesGatewayClient
 from talk2data.services.interpreter import (
     CompositeQuestionInterpreter,
@@ -50,6 +53,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     query_compiler = BusinessQueryCompiler(semantic_registry)
     session_store = SQLiteSessionStore(resolved_settings.database_path)
 
+    demo_database_path = resolved_settings.database_path.with_name("demo-telecom.db")
+    demo_connectors = [
+        DemoSQLiteConnector(
+            connector_id="telecom_semantic_warehouse",
+            database_path=demo_database_path,
+            allowed_metric_ids={"POSTPAID_CHURN", "MOBILE_ACTIVATIONS"},
+        ),
+        DemoSQLiteConnector(
+            connector_id="network_performance_platform",
+            database_path=demo_database_path,
+            allowed_metric_ids={"NETWORK_CONGESTION"},
+        ),
+    ]
+    connector_registry = ConnectorRegistry()
+    for connector in demo_connectors:
+        connector_registry.register(connector)
+
+    demo_chat_service = DemoChatService(
+        domain_registry=domain_registry,
+        admissibility_engine=admissibility_engine,
+        query_compiler=query_compiler,
+        session_store=session_store,
+        connector_registry=connector_registry,
+        ai_model=resolved_settings.ollama_model if resolved_settings.ollama_enabled else None,
+    )
+
     hermes_client = None
     if resolved_settings.hermes_enabled:
         if not resolved_settings.hermes_api_key:
@@ -65,12 +94,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         await session_store.initialize()
+        for connector in demo_connectors:
+            await connector.initialize()
         yield
 
     app = FastAPI(
         title=resolved_settings.app_name,
-        version="0.2.0",
-        description=("Governed question-admissibility and Business Query IR control plane."),
+        version="0.3.0",
+        description=(
+            "Governed question interpretation, deterministic query planning, and receipt-backed "
+            "synthetic demonstration answers."
+        ),
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings
@@ -81,7 +115,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.semantic_registry = semantic_registry
     app.state.query_compiler = query_compiler
     app.state.session_store = session_store
+    app.state.connector_registry = connector_registry
+    app.state.demo_chat_service = demo_chat_service
 
+    app.include_router(chat.router)
     app.include_router(health.router)
     app.include_router(questions.router)
     app.include_router(query_plans.router)
