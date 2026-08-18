@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from talk2data.api.routes import chat, health, query_plans, questions, semantics, sessions
 from talk2data.connectors.demo_sqlite import DemoSQLiteConnector
@@ -107,6 +108,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         lifespan=lifespan,
     )
+    if resolved_settings.cors_allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=resolved_settings.cors_allowed_origins,
+            allow_credentials=False,
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Accept", "Content-Type"],
+        )
+
     app.state.settings = resolved_settings
     app.state.domain_registry = domain_registry
     app.state.ollama_client = ollama_client
