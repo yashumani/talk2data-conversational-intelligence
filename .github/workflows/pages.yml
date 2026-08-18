@@ -7,6 +7,12 @@ on:
       - "site/**"
       - "scripts/validate_pages_site.py"
       - ".github/workflows/pages.yml"
+  pull_request:
+    branches: [feat/demo-ready-ai-chat]
+    paths:
+      - "site/**"
+      - "scripts/validate_pages_site.py"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
