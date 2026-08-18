@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     database_path: Path = Path(".talk2data/talk2data.db")
     default_tenant_id: str = "demo-telecom"
     domain_pack_directory: Path | None = None
+    cors_allowed_origins: list[str] = Field(
+        default_factory=lambda: [
+            "https://yashumani.github.io",
+            "http://127.0.0.1:8000",
+            "http://localhost:8000",
+        ]
+    )
 
     ollama_enabled: bool = True
     ollama_required: bool = False
@@ -39,6 +46,16 @@ class Settings(BaseSettings):
     @classmethod
     def strip_trailing_slash(cls, value: str) -> str:
         return value.rstrip("/")
+
+    @field_validator("cors_allowed_origins", mode="after")
+    @classmethod
+    def normalize_cors_origins(cls, values: list[str]) -> list[str]:
+        normalized: list[str] = []
+        for value in values:
+            origin = value.strip().rstrip("/")
+            if origin and origin not in normalized:
+                normalized.append(origin)
+        return normalized
 
     @field_validator("database_path", mode="after")
     @classmethod
