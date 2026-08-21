@@ -46,9 +46,9 @@ def build_space_bundle(
         raise ValueError("Invalid Hugging Face Space bundle: " + "; ".join(errors))
 
     file_hashes = {
-        path.relative_to(destination).as_posix(): _sha256(path)
-        for path in sorted(destination.rglob("*"))
-        if path.is_file() and path.name != "DEPLOYMENT_MANIFEST.json"
+        candidate.relative_to(destination).as_posix(): _sha256(candidate)
+        for candidate in sorted(destination.rglob("*"))
+        if candidate.is_file() and candidate.name != "DEPLOYMENT_MANIFEST.json"
     }
     manifest = SpaceBundleManifest(source_revision=source_revision, files=file_hashes)
     (destination / "DEPLOYMENT_MANIFEST.json").write_text(
@@ -67,9 +67,13 @@ def validate_space_bundle(bundle: Path) -> list[str]:
         "talk2data/__init__.py",
         "talk2data/resources/domain_packs/telecom-demo.yaml",
     }
-    present = {path.relative_to(bundle).as_posix() for path in bundle.rglob("*") if path.is_file()}
-    for path in sorted(required - present):
-        errors.append(f"missing required file {path}")
+    present = {
+        candidate.relative_to(bundle).as_posix()
+        for candidate in bundle.rglob("*")
+        if candidate.is_file()
+    }
+    for required_path in sorted(required - present):
+        errors.append(f"missing required file {required_path}")
 
     readme = bundle / "README.md"
     if readme.is_file():
@@ -80,15 +84,15 @@ def validate_space_bundle(bundle: Path) -> list[str]:
 
     forbidden_suffixes = {".db", ".sqlite", ".sqlite3", ".pyc"}
     forbidden_names = {".env", "id_rsa", "id_ed25519"}
-    for path in bundle.rglob("*"):
-        if not path.is_file():
+    for candidate in bundle.rglob("*"):
+        if not candidate.is_file():
             continue
-        relative = path.relative_to(bundle).as_posix()
-        if path.name in forbidden_names or path.suffix.lower() in forbidden_suffixes:
+        relative = candidate.relative_to(bundle).as_posix()
+        if candidate.name in forbidden_names or candidate.suffix.lower() in forbidden_suffixes:
             errors.append(f"forbidden runtime or secret file {relative}")
-        if path.suffix == ".py":
+        if candidate.suffix == ".py":
             try:
-                ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+                ast.parse(candidate.read_text(encoding="utf-8"), filename=relative)
             except SyntaxError as exc:
                 errors.append(f"invalid Python in {relative}: {exc}")
     return errors
