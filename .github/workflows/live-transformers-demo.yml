@@ -1,0 +1,58 @@
+name: Live Hugging Face model smoke
+
+on:
+  push:
+    branches: [feat/huggingface-space-demo]
+    paths:
+      - "scripts/live_transformers_smoke.py"
+      - "src/talk2data/services/transformers_interpreter.py"
+      - "src/talk2data/services/interpreter.py"
+      - "src/talk2data/resources/domain_packs/**"
+      - ".github/workflows/live-transformers-demo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-model:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[live-transformers]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      T2D_HF_MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+      HF_HOME: /tmp/talk2data-hf-cache
+      TOKENIZERS_PARALLELISM: "false"
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - name: Install CPU inference runtime
+        run: |
+          python -m pip install -e .
+          python -m pip install \
+            --index-url https://download.pytorch.org/whl/cpu \
+            --extra-index-url https://pypi.org/simple \
+            'torch>=2.8,<3'
+          python -m pip install \
+            'transformers>=4.51,<5' \
+            'accelerate>=1.2,<2' \
+            'safetensors>=0.4,<1'
+      - name: Run real local-model interpretation
+        run: |
+          set -o pipefail
+          python scripts/live_transformers_smoke.py | tee /tmp/live-transformers-smoke.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-transformers-smoke
+          path: /tmp/live-transformers-smoke.txt
+          if-no-files-found: warn
+          retention-days: 7
