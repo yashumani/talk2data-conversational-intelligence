@@ -68,9 +68,7 @@ def validate_space_bundle(bundle: Path) -> list[str]:
         "talk2data/resources/domain_packs/telecom-demo.yaml",
     }
     present = {
-        candidate.relative_to(bundle).as_posix()
-        for candidate in bundle.rglob("*")
-        if candidate.is_file()
+        candidate.relative_to(bundle).as_posix() for candidate in bundle.rglob("*") if candidate.is_file()
     }
     for required_path in sorted(required - present):
         errors.append(f"missing required file {required_path}")
