@@ -180,6 +180,7 @@ class _FakeModel:
 async def test_real_provider_path_can_load_and_generate_with_framework_contract(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    pack = _pack()
     tokenizer = _FakeTokenizer()
     model = _FakeModel()
     transformers = SimpleNamespace(
@@ -213,7 +214,7 @@ async def test_real_provider_path_can_load_and_generate_with_framework_contract(
     await interpreter.preload()
     proposal = await interpreter.interpret(
         "What was postpaid churn by plan last month?",
-        _pack(),
+        pack,
     )
 
     assert proposal.candidate_metric_ids == ["POSTPAID_CHURN"]
