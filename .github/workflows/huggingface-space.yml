@@ -1,0 +1,36 @@
+name: Build Talk2Data Hugging Face Space
+
+on:
+  push:
+    branches: [feat/huggingface-space-demo]
+    paths:
+      - "hf_space/**"
+      - "src/talk2data/**"
+      - "scripts/build_hf_space.py"
+      - "scripts/validate_hf_space.py"
+      - "tests/test_huggingface_bundle.py"
+      - ".github/workflows/huggingface-space.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: python scripts/build_hf_space.py
+      - run: python scripts/validate_hf_space.py --bundle dist/hf-space
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talk2data-huggingface-space
+          path: dist/hf-space
+          if-no-files-found: error
+          retention-days: 7
