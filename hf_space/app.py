@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import gradio as gr
 
@@ -30,6 +31,7 @@ from talk2data.services.transformers_interpreter import (
     TransformersQuestionInterpreter,
 )
 
+LOGGER = logging.getLogger("talk2data.huggingface")
 MODEL_ID = os.getenv("T2D_HF_MODEL_ID", "Qwen/Qwen2.5-0.5B-Instruct")
 MODEL_DEVICE = os.getenv("T2D_HF_DEVICE", "auto")
 MODEL_REQUIRED = os.getenv("T2D_HF_MODEL_REQUIRED", "false").casefold() == "true"
@@ -50,20 +52,24 @@ EXAMPLE_QUESTIONS = [
     "Did food-delivery application traffic contribute to network congestion?",
 ]
 
-DEMO_ACCESS = AccessContext(
-    tenant_id="demo-telecom",
-    user_id="huggingface-demo-user",
-    roles={"TALK2DATA_ADMIN"},
-    departments={"BUSINESS_INTELLIGENCE"},
-    regions={"NORTH_AMERICA"},
-    business_units={"CONSUMER"},
-    classification_clearance="RESTRICTED",
-    permitted_actions={
-        "ASK_BUSINESS_QUESTIONS",
-        "READ_AGGREGATED_DATA",
-        "USE_EXTERNAL_CONTEXT",
-    },
-)
+
+def demo_access(user_id: str) -> AccessContext:
+    """Return an isolated synthetic principal for one browser session."""
+
+    return AccessContext(
+        tenant_id="demo-telecom",
+        user_id=user_id,
+        roles={"TALK2DATA_ADMIN"},
+        departments={"BUSINESS_INTELLIGENCE"},
+        regions={"NORTH_AMERICA"},
+        business_units={"CONSUMER"},
+        classification_clearance="RESTRICTED",
+        permitted_actions={
+            "ASK_BUSINESS_QUESTIONS",
+            "READ_AGGREGATED_DATA",
+            "USE_EXTERNAL_CONTEXT",
+        },
+    )
 
 
 class HostedDemoRuntime:
@@ -172,6 +178,7 @@ async def ask_question(
     question: str,
     history: list[dict[str, str]] | None,
     session_id: str | None,
+    browser_user_id: str,
 ) -> tuple[
     list[dict[str, str]],
     str,
@@ -202,14 +209,15 @@ async def ask_question(
     try:
         request = DemoChatRequest(
             question=normalized,
-            access_context=DEMO_ACCESS,
+            access_context=demo_access(browser_user_id),
             session_id=None if not session_id else UUID(session_id),
             use_llm=True,
             include_debug=True,
             as_of=DEMO_AS_OF,
         )
         response = await runtime.service.answer(request)
-    except Exception as exc:  # Gradio boundary: present a safe diagnostic, not a traceback
+    except Exception:  # Gradio boundary: log privately and return no internal details
+        LOGGER.exception("Hosted Talk2Data request failed before certification")
         updated_history = _history_with_message(
             updated_history,
             "assistant",
@@ -225,7 +233,7 @@ async def ask_question(
             "No numeric claim was released.",
             {},
             {},
-            f"Runtime diagnostic: {type(exc).__name__}: {exc}",
+            "Request failed before certification. No answer or receipt was released.",
         )
 
     updated_history = _history_with_message(updated_history, "assistant", response.message)
@@ -246,6 +254,7 @@ async def ask_question(
 
 with gr.Blocks(title="Talk2Data Conversational Intelligence") as demo:
     session_state = gr.State("")
+    browser_user_state = gr.State(lambda: str(uuid4()))
     gr.Markdown(
         """
         # Talk2Data
@@ -314,15 +323,16 @@ with gr.Blocks(title="Talk2Data Conversational Intelligence") as demo:
         query_output,
         runtime_output,
     ]
+    request_inputs = [question_box, chatbot, session_state, browser_user_state]
     ask_button.click(
         ask_question,
-        inputs=[question_box, chatbot, session_state],
+        inputs=request_inputs,
         outputs=outputs,
         concurrency_limit=1,
     )
     question_box.submit(
         ask_question,
-        inputs=[question_box, chatbot, session_state],
+        inputs=request_inputs,
         outputs=outputs,
         concurrency_limit=1,
     )
