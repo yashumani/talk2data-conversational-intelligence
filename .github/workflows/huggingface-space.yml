@@ -9,6 +9,17 @@ on:
       - "scripts/build_hf_space.py"
       - "scripts/validate_hf_space.py"
       - "tests/test_huggingface_bundle.py"
+      - "tests/test_transformers_interpreter.py"
+      - ".github/workflows/huggingface-space.yml"
+  pull_request:
+    branches: [feat/github-pages-demo]
+    paths:
+      - "hf_space/**"
+      - "src/talk2data/**"
+      - "scripts/build_hf_space.py"
+      - "scripts/validate_hf_space.py"
+      - "tests/test_huggingface_bundle.py"
+      - "tests/test_transformers_interpreter.py"
       - ".github/workflows/huggingface-space.yml"
   workflow_dispatch:
 
@@ -25,9 +36,29 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install -e '.[dev]' 'gradio>=5,<7'
       - run: python scripts/build_hf_space.py
       - run: python scripts/validate_hf_space.py --bundle dist/hf-space
+      - name: Import hosted Gradio application
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import importlib.util
+          import sys
+          from pathlib import Path
+
+          bundle = Path("dist/hf-space").resolve()
+          sys.path.insert(0, str(bundle))
+          spec = importlib.util.spec_from_file_location("talk2data_hf_app", bundle / "app.py")
+          if spec is None or spec.loader is None:
+              raise SystemExit("Unable to load the generated Space application")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          if not hasattr(module, "demo"):
+              raise SystemExit("Generated Space application does not expose a Gradio demo")
+          print("Generated Hugging Face Space imported successfully.")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: talk2data-huggingface-space
