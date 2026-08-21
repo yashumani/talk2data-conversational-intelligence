@@ -35,6 +35,11 @@ MODEL_DEVICE = os.getenv("T2D_HF_DEVICE", "auto")
 MODEL_REQUIRED = os.getenv("T2D_HF_MODEL_REQUIRED", "false").casefold() == "true"
 STATE_DIRECTORY = Path(os.getenv("T2D_STATE_DIRECTORY", "/tmp/talk2data"))
 DEMO_AS_OF = datetime(2026, 8, 17, 12, 0, tzinfo=UTC)
+DEMO_THEME = gr.themes.Soft(primary_hue="indigo", secondary_hue="lime")
+DEMO_CSS = """
+.t2d-title h1 { font-size: clamp(2.2rem, 6vw, 4.8rem); letter-spacing: -.05em; }
+.t2d-boundary { border: 1px solid var(--border-color-primary); border-radius: 14px; padding: 12px; }
+"""
 
 EXAMPLE_QUESTIONS = [
     "What was postpaid churn by plan last month?",
@@ -239,14 +244,7 @@ async def ask_question(
     )
 
 
-with gr.Blocks(
-    title="Talk2Data Conversational Intelligence",
-    theme=gr.themes.Soft(primary_hue="indigo", secondary_hue="lime"),
-    css="""
-    .t2d-title h1 { font-size: clamp(2.2rem, 6vw, 4.8rem); letter-spacing: -.05em; }
-    .t2d-boundary { border: 1px solid var(--border-color-primary); border-radius: 14px; padding: 12px; }
-    """,
-) as demo:
+with gr.Blocks(title="Talk2Data Conversational Intelligence") as demo:
     session_state = gr.State("")
     gr.Markdown(
         """
@@ -276,7 +274,6 @@ with gr.Blocks(
                         ),
                     }
                 ],
-                type="messages",
                 height=500,
                 label="Conversation",
             )
@@ -287,7 +284,7 @@ with gr.Blocks(
             )
             with gr.Row():
                 ask_button = gr.Button("Ask", variant="primary")
-                clear_button = gr.ClearButton(
+                gr.ClearButton(
                     [question_box, chatbot, session_state],
                     value="New session",
                 )
@@ -331,4 +328,7 @@ with gr.Blocks(
     )
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=1, max_size=20).launch()
+    demo.queue(default_concurrency_limit=1, max_size=20).launch(
+        theme=DEMO_THEME,
+        css=DEMO_CSS,
+    )
