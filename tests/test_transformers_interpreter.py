@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+import talk2data.services.transformers_interpreter as transformers_module
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import QuestionIntent
 from talk2data.services.interpreter import InterpretationError
@@ -97,7 +98,8 @@ async def test_health_reports_missing_host_packages(monkeypatch: pytest.MonkeyPa
     interpreter = TransformersQuestionInterpreter(TransformersConfiguration())
 
     monkeypatch.setattr(
-        "talk2data.services.transformers_interpreter.importlib.util.find_spec",
+        transformers_module.importlib.util,
+        "find_spec",
         lambda name: None if name == "transformers" else object(),
     )
     ready, detail = await interpreter.health()
@@ -105,7 +107,8 @@ async def test_health_reports_missing_host_packages(monkeypatch: pytest.MonkeyPa
     assert "transformers" in detail
 
     monkeypatch.setattr(
-        "talk2data.services.transformers_interpreter.importlib.util.find_spec",
+        transformers_module.importlib.util,
+        "find_spec",
         lambda name: None if name == "torch" else object(),
     )
     ready, detail = await interpreter.health()
@@ -197,14 +200,8 @@ async def test_real_provider_path_can_load_and_generate_with_framework_contract(
             return torch
         raise ImportError(name)
 
-    monkeypatch.setattr(
-        "talk2data.services.transformers_interpreter.importlib.import_module",
-        import_module,
-    )
-    monkeypatch.setattr(
-        "talk2data.services.transformers_interpreter.importlib.util.find_spec",
-        lambda _: object(),
-    )
+    monkeypatch.setattr(transformers_module.importlib.util, "find_spec", lambda _: object())
+    monkeypatch.setattr(transformers_module.importlib, "import_module", import_module)
 
     interpreter = TransformersQuestionInterpreter(
         TransformersConfiguration(cache_dir=None, local_files_only=True)
@@ -255,7 +252,8 @@ def test_resolve_device_enforces_requested_hardware() -> None:
 @pytest.mark.asyncio
 async def test_preload_normalizes_missing_framework_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "talk2data.services.transformers_interpreter.importlib.import_module",
+        transformers_module.importlib,
+        "import_module",
         lambda name: (_ for _ in ()).throw(ImportError(name)),
     )
     interpreter = TransformersQuestionInterpreter(TransformersConfiguration())
