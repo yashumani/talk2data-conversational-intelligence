@@ -1,3 +1,5 @@
+"""Run one real open-model interpretation through the governed Talk2Data contract."""
+
 from __future__ import annotations
 
 import asyncio
