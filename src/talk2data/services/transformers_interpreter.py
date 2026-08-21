@@ -199,9 +199,7 @@ class TransformersQuestionInterpreter:
                     local_files_only=self._configuration.local_files_only,
                     trust_remote_code=self._configuration.trust_remote_code,
                     cache_dir=(
-                        None
-                        if self._configuration.cache_dir is None
-                        else str(self._configuration.cache_dir)
+                        None if self._configuration.cache_dir is None else str(self._configuration.cache_dir)
                     ),
                 )
                 model = transformers.AutoModelForCausalLM.from_pretrained(
