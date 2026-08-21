@@ -9,6 +9,14 @@ on:
       - "src/talk2data/services/interpreter.py"
       - "src/talk2data/resources/domain_packs/**"
       - ".github/workflows/live-transformers-demo.yml"
+  pull_request:
+    branches: [feat/github-pages-demo]
+    paths:
+      - "scripts/live_transformers_smoke.py"
+      - "src/talk2data/services/transformers_interpreter.py"
+      - "src/talk2data/services/interpreter.py"
+      - "src/talk2data/resources/domain_packs/**"
+      - ".github/workflows/live-transformers-demo.yml"
   workflow_dispatch:
 
 permissions:
@@ -17,6 +25,7 @@ permissions:
 jobs:
   live-model:
     if: >-
+      github.event_name == 'pull_request' ||
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[live-transformers]')
     runs-on: ubuntu-latest
