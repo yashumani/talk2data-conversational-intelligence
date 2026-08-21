@@ -36,7 +36,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev]' 'gradio>=5,<7'
+      - run: python -m pip install -e '.[dev]' 'gradio>=6,<7'
       - run: python scripts/build_hf_space.py
       - run: python scripts/validate_hf_space.py --bundle dist/hf-space
       - name: Import hosted Gradio application
