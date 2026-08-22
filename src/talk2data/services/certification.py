@@ -119,11 +119,7 @@ class ResultSenseValidator:
 
     @staticmethod
     def _is_finite_number(value: Any) -> bool:
-        return (
-            isinstance(value, (int, float))
-            and not isinstance(value, bool)
-            and math.isfinite(float(value))
-        )
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
 
 
 class CertifiedAnswerComposer:
@@ -141,9 +137,7 @@ class CertifiedAnswerComposer:
         dimension_names = {
             entity.id: entity.name for entity in pack.entities if entity.id in query_ir.dimensions
         }
-        value_labels = {
-            value.id: value.name for entity in pack.entities for value in entity.values
-        }
+        value_labels = {value.id: value.name for entity in pack.entities for value in entity.values}
 
         claims: list[CertifiedClaim] = []
         lines: list[str] = []
@@ -153,16 +147,12 @@ class CertifiedAnswerComposer:
                 for dimension in query_ir.dimensions
                 if row.get(dimension) is not None
             }
-            formatted_value = format_metric_value(
-                float(row["value"]), metric, pack.default_currency
-            )
+            formatted_value = format_metric_value(float(row["value"]), metric, pack.default_currency)
             comparison_value = row.get("comparison_value")
             formatted_comparison = (
                 None
                 if comparison_value is None
-                else format_metric_value(
-                    float(comparison_value), metric, pack.default_currency
-                )
+                else format_metric_value(float(comparison_value), metric, pack.default_currency)
             )
             absolute_change = row.get("absolute_change")
             percent_change = row.get("percent_change")
@@ -171,12 +161,8 @@ class CertifiedAnswerComposer:
             if formatted_comparison is not None:
                 change_phrase = format_change(
                     metric=metric,
-                    absolute_change=(
-                        None if absolute_change is None else float(absolute_change)
-                    ),
-                    percent_change=(
-                        None if percent_change is None else float(percent_change)
-                    ),
+                    absolute_change=(None if absolute_change is None else float(absolute_change)),
+                    percent_change=(None if percent_change is None else float(percent_change)),
                 )
                 statement = (
                     f"{metric.name}{subject} was {formatted_value} for {period}, compared with "
@@ -190,24 +176,16 @@ class CertifiedAnswerComposer:
                     dimensions=dimensions,
                     value=float(row["value"]),
                     formatted_value=formatted_value,
-                    comparison_value=(
-                        None if comparison_value is None else float(comparison_value)
-                    ),
+                    comparison_value=(None if comparison_value is None else float(comparison_value)),
                     formatted_comparison_value=formatted_comparison,
-                    absolute_change=(
-                        None if absolute_change is None else float(absolute_change)
-                    ),
-                    percent_change=(
-                        None if percent_change is None else float(percent_change)
-                    ),
+                    absolute_change=(None if absolute_change is None else float(absolute_change)),
+                    percent_change=(None if percent_change is None else float(percent_change)),
                     receipt_id=receipt.receipt_id,
                 )
             )
 
         if query_ir.dimensions:
-            grouping = ", ".join(
-                dimension_names.get(item, humanize(item)) for item in query_ir.dimensions
-            )
+            grouping = ", ".join(dimension_names.get(item, humanize(item)) for item in query_ir.dimensions)
             headline = f"{metric.name} by {grouping}"
             text = " ".join(lines)
         else:
@@ -259,9 +237,7 @@ def format_change(
         magnitude = f"{abs(round(absolute_change)):,}"
     else:
         magnitude = f"{abs(absolute_change):,.2f}"
-    relative = (
-        "" if percent_change is None else f" ({abs(percent_change) * 100:.1f}% relative)"
-    )
+    relative = "" if percent_change is None else f" ({abs(percent_change) * 100:.1f}% relative)"
     return f", {direction} of {magnitude}{relative}"
 
 
@@ -287,8 +263,7 @@ def format_dimension_subject(
     if not dimensions:
         return ""
     parts = [
-        f" for {dimension_names.get(key, humanize(key))} "
-        f"{value_labels.get(value, humanize(value))}"
+        f" for {dimension_names.get(key, humanize(key))} {value_labels.get(value, humanize(value))}"
         for key, value in dimensions.items()
     ]
     return "".join(parts)

@@ -1,0 +1,61 @@
+name: Publish Talk2Data Hugging Face Space
+
+on:
+  workflow_dispatch:
+    inputs:
+      space_id:
+        description: "Hugging Face Space ID in owner/name form"
+        required: true
+        default: "yashumani8130/talk2data-conversational-intelligence"
+      confirmation:
+        description: "Type PUBLISH_SYNTHETIC_DEMO to confirm public deployment"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: huggingface-demo
+    steps:
+      - name: Require explicit public-deployment confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: test "$CONFIRMATION" = "PUBLISH_SYNTHETIC_DEMO"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/huggingface-space-demo
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e . 'huggingface_hub>=1.0,<2'
+
+      - name: Build and validate self-contained Space bundle
+        run: |
+          python scripts/build_hf_space.py
+          python scripts/validate_hf_space.py --bundle dist/hf-space
+
+      - name: Require Hugging Face write token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          test -n "$HF_TOKEN"
+          test "${#HF_TOKEN}" -ge 20
+
+      - name: Create or update public Gradio Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: >-
+          python scripts/publish_hf_space.py
+          --space-id "${{ inputs.space_id }}"
+          --bundle dist/hf-space
+
+      - name: Record published address
+        run: echo "Published https://huggingface.co/spaces/${{ inputs.space_id }}"

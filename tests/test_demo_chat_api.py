@@ -4,7 +4,6 @@ from typing import Any
 
 from fastapi.testclient import TestClient
 
-
 AS_OF = "2026-08-17T12:00:00Z"
 
 
