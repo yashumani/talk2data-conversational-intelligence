@@ -2,13 +2,13 @@ name: Deploy Talk2Data GitHub runtime launcher
 
 on:
   push:
-    branches: [feat/github-native-runtime]
+    branches: [main, feat/github-native-runtime]
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
       - ".github/workflows/pages.yml"
   pull_request:
-    branches: [feat/github-pages-demo]
+    branches: [main, feat/github-pages-demo]
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
