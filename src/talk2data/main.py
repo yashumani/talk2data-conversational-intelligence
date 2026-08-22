@@ -6,10 +6,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from talk2data.api.routes import chat, health, query_plans, questions, semantics, sessions
+from talk2data.api.routes import chat, connectors, health, query_plans, questions, semantics, sessions
+from talk2data.connectors.base import DataConnector
 from talk2data.connectors.demo_sqlite import DemoSQLiteConnector
+from talk2data.connectors.postgres import PostgreSQLConnector
 from talk2data.connectors.registry import ConnectorRegistry
-from talk2data.core.config import Settings, get_settings
+from talk2data.core.config import DataBackend, Settings, get_settings
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.demo_chat import DemoChatService
@@ -54,21 +56,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     query_compiler = BusinessQueryCompiler(semantic_registry)
     session_store = SQLiteSessionStore(resolved_settings.database_path)
 
-    demo_database_path = resolved_settings.database_path.with_name("demo-telecom.db")
-    demo_connectors = [
-        DemoSQLiteConnector(
-            connector_id="telecom_semantic_warehouse",
-            database_path=demo_database_path,
-            allowed_metric_ids={"POSTPAID_CHURN", "MOBILE_ACTIVATIONS"},
-        ),
-        DemoSQLiteConnector(
-            connector_id="network_performance_platform",
-            database_path=demo_database_path,
-            allowed_metric_ids={"NETWORK_CONGESTION"},
-        ),
-    ]
+    runtime_connectors = _build_connectors(resolved_settings)
     connector_registry = ConnectorRegistry()
-    for connector in demo_connectors:
+    for connector in runtime_connectors:
         connector_registry.register(connector)
 
     demo_chat_service = DemoChatService(
@@ -78,6 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_store=session_store,
         connector_registry=connector_registry,
         ai_model=resolved_settings.ollama_model if resolved_settings.ollama_enabled else None,
+        synthetic_data=resolved_settings.data_backend == DataBackend.DEMO_SQLITE,
     )
 
     hermes_client = None
@@ -95,16 +86,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         await session_store.initialize()
-        for connector in demo_connectors:
+        for connector in runtime_connectors:
             await connector.initialize()
         yield
 
     app = FastAPI(
         title=resolved_settings.app_name,
-        version="0.3.0",
+        version="0.4.0",
         description=(
             "Governed question interpretation, deterministic query planning, and receipt-backed "
-            "synthetic demonstration answers."
+            "answers through read-only SQLite or PostgreSQL connector contracts."
         ),
         lifespan=lifespan,
     )
@@ -129,12 +120,47 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.demo_chat_service = demo_chat_service
 
     app.include_router(chat.router)
+    app.include_router(connectors.router)
     app.include_router(health.router)
     app.include_router(questions.router)
     app.include_router(query_plans.router)
     app.include_router(semantics.router)
     app.include_router(sessions.router)
     return app
+
+
+def _build_connectors(settings: Settings) -> list[DataConnector]:
+    metric_groups = [
+        ("telecom_semantic_warehouse", {"POSTPAID_CHURN", "MOBILE_ACTIVATIONS"}),
+        ("network_performance_platform", {"NETWORK_CONGESTION"}),
+    ]
+    if settings.data_backend == DataBackend.POSTGRESQL:
+        if settings.postgres_dsn is None:
+            raise ValueError("PostgreSQL DSN is required for the PostgreSQL data backend")
+        dsn = settings.postgres_dsn.get_secret_value()
+        return [
+            PostgreSQLConnector(
+                connector_id=connector_id,
+                dsn=dsn,
+                schema_name=settings.postgres_schema,
+                table_name=settings.postgres_table,
+                allowed_metric_ids=metric_ids,
+                maximum_rows=settings.postgres_maximum_rows,
+                query_timeout_seconds=settings.postgres_query_timeout_seconds,
+                connect_timeout_seconds=settings.postgres_connect_timeout_seconds,
+            )
+            for connector_id, metric_ids in metric_groups
+        ]
+
+    demo_database_path = settings.database_path.with_name("demo-telecom.db")
+    return [
+        DemoSQLiteConnector(
+            connector_id=connector_id,
+            database_path=demo_database_path,
+            allowed_metric_ids=metric_ids,
+        )
+        for connector_id, metric_ids in metric_groups
+    ]
 
 
 app = create_app()
