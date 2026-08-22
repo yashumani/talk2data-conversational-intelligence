@@ -27,5 +27,8 @@ class ConnectorRegistry:
         except KeyError as exc:
             raise ConnectorRegistryError(f"connector {connector_id!r} is not registered") from exc
 
+    def connectors(self) -> tuple[DataConnector, ...]:
+        return tuple(self._connectors.values())
+
     def descriptors(self) -> list[dict[str, object]]:
         return [connector.descriptor.model_dump(mode="json") for connector in self._connectors.values()]
