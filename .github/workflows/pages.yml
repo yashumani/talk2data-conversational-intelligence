@@ -70,5 +70,21 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Verify published control center
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for attempt in $(seq 1 60); do
+            body="$(curl -fsSL "$PAGE_URL" || true)"
+            if grep -Fq "Run Talk2Data now" <<<"$body" \
+              && grep -Fq "GitHub-native governed execution" <<<"$body"; then
+              echo "Verified $PAGE_URL"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "The deployed page did not expose the expected runtime launcher."
+          exit 1
+
       - name: Record deployment
         run: echo "Published ${{ steps.deployment.outputs.page_url }}"
