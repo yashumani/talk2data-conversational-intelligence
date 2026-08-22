@@ -9,9 +9,23 @@ const examples = [
   "Did food-delivery application traffic contribute to network congestion?",
 ];
 
+function browserPrincipal() {
+  const key = "talk2data.browserPrincipal";
+  let value = window.localStorage.getItem(key);
+  if (!value) {
+    const suffix =
+      typeof window.crypto?.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    value = `pages-${suffix}`;
+    window.localStorage.setItem(key, value);
+  }
+  return value;
+}
+
 const access = {
   tenant_id: "demo-telecom",
-  user_id: "pages-demo-user",
+  user_id: browserPrincipal(),
   roles: ["TALK2DATA_ADMIN"],
   departments: ["BUSINESS_INTELLIGENCE"],
   regions: ["NORTH_AMERICA"],
@@ -114,7 +128,11 @@ async function connect() {
   apiBase = normalizeBaseUrl(elements.apiBase.value);
   sessionId = null;
   if (!apiBase) {
-    setConnectionState("degraded", "Static UI", "Enter an approved Talk2Data API URL.");
+    setConnectionState(
+      "degraded",
+      "GitHub launcher",
+      "Launch Codespaces above or enter an existing Talk2Data API URL.",
+    );
     return;
   }
 
@@ -138,12 +156,15 @@ async function connect() {
       "Ollama ready",
       `${apiBase} · ${ollama.detail || "Local model is ready."}`,
     );
-    addMessage("assistant", "The governed Talk2Data runtime is connected. You can now ask a question.");
+    addMessage(
+      "assistant",
+      "The governed Talk2Data runtime is connected. You can now ask a question.",
+    );
   } catch (error) {
     setConnectionState(
       "failed",
       "Runtime unavailable",
-      `${error.message}. Confirm HTTPS, CORS, and API readiness.`,
+      `${error.message}. Confirm the runtime URL, HTTPS, CORS, and readiness.`,
     );
   } finally {
     elements.connect.disabled = false;
@@ -152,7 +173,10 @@ async function connect() {
 
 async function ask(text) {
   if (!connected) {
-    addMessage("assistant", "Connect an approved Talk2Data API before asking a question.");
+    addMessage(
+      "assistant",
+      "Launch the GitHub Codespaces runtime or connect an existing Talk2Data API first.",
+    );
     return;
   }
 
@@ -215,5 +239,9 @@ elements.apiBase.value = apiBase;
 if (apiBase) {
   void connect();
 } else {
-  setConnectionState("degraded", "Static UI", "No backend configured. The page itself is deployed successfully.");
+  setConnectionState(
+    "degraded",
+    "GitHub launcher",
+    "Launch the full runtime in Codespaces or connect an existing API.",
+  );
 }

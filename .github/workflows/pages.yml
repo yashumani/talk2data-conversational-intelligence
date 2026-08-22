@@ -1,14 +1,14 @@
-name: Deploy Talk2Data UI to GitHub Pages
+name: Deploy Talk2Data GitHub runtime launcher
 
 on:
   push:
-    branches: [feat/github-pages-demo]
+    branches: [feat/github-native-runtime]
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
       - ".github/workflows/pages.yml"
   pull_request:
-    branches: [feat/demo-ready-ai-chat]
+    branches: [feat/github-pages-demo]
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
@@ -31,12 +31,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # First-time creation requires either one Settings → Pages selection or PAGES_ADMIN_TOKEN.
-      - name: Configure or enable GitHub Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
-          token: ${{ secrets.PAGES_ADMIN_TOKEN || github.token }}
 
       - name: Write public runtime configuration
         env:
@@ -54,7 +50,7 @@ jobs:
           )
           PY
 
-      - name: Validate static site
+      - name: Validate static control center
         run: python scripts/validate_pages_site.py
 
       - name: Upload Pages artifact
@@ -64,6 +60,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -72,3 +69,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Record deployment
+        run: echo "Published ${{ steps.deployment.outputs.page_url }}"

@@ -13,6 +13,8 @@ REQUIRED = [
     SITE / "demo" / "index.html",
 ]
 
+CODESPACES_URL = "https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=feat%2Fgithub-native-runtime&quickstart=1"
+
 
 def main() -> int:
     missing = [str(path) for path in REQUIRED if not path.exists()]
@@ -26,7 +28,9 @@ def main() -> int:
     for marker in (
         "Talk2Data",
         "Verification panel",
-        "Pages hosts the interface",
+        "Complete runtime",
+        "Run Talk2Data now",
+        CODESPACES_URL,
         "./config.js",
         "./app.js",
     ):
@@ -39,6 +43,8 @@ def main() -> int:
         raise SystemExit("Static client is missing the governed chat endpoint.")
     if "`${apiBase}/health/ready`" not in script:
         raise SystemExit("Static client is missing the runtime readiness check.")
+    if "browserPrincipal()" not in script:
+        raise SystemExit("The public client must isolate its synthetic browser principal.")
 
     match = re.fullmatch(
         r"window\.T2D_PUBLIC_API_BASE_URL = (.+);\n?",
@@ -50,7 +56,7 @@ def main() -> int:
     if not isinstance(value, str):
         raise SystemExit("The public API base URL must be a string.")
 
-    print("GitHub Pages static site validation passed.")
+    print("GitHub Pages runtime launcher validation passed.")
     print(f"Configured public API: {value or 'not set'}")
     return 0
 
