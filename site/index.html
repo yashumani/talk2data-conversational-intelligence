@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#090b10">
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    content="default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; img-src 'self' data: https://github.com; script-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
   >
-  <title>Talk2Data — Governed Conversational Intelligence</title>
+  <title>Talk2Data — GitHub-native Conversational Intelligence</title>
   <meta
     name="description"
-    content="Talk2Data is a governed conversational intelligence interface for receipt-backed enterprise data answers."
+    content="Launch and operate the complete governed Talk2Data pipeline from GitHub Codespaces."
   >
   <style>
     :root {
@@ -80,9 +80,10 @@
       line-height: .94;
       letter-spacing: -.055em;
     }
+    h2 { margin: 0 0 12px; font-size: 20px; }
     .subtitle {
       color: var(--muted);
-      max-width: 790px;
+      max-width: 820px;
       line-height: 1.55;
       margin: 14px 0 0;
     }
@@ -109,6 +110,65 @@
     .status.ready { color: var(--good); border-color: #2f765c; }
     .status.degraded { color: var(--warn); border-color: #80653c; }
     .status.failed { color: var(--bad); border-color: #7d3d45; }
+
+    .execution {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: center;
+      border: 1px solid rgba(216, 255, 98, .42);
+      border-radius: 20px;
+      padding: 22px;
+      background:
+        linear-gradient(135deg, rgba(216, 255, 98, .09), rgba(78, 115, 255, .11)),
+        rgba(13, 17, 24, .95);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .26);
+    }
+    .execution p { margin: 0; color: #c3ccdc; line-height: 1.55; max-width: 760px; }
+    .actions { display: flex; flex-direction: column; gap: 10px; min-width: 240px; }
+    .action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 11px 18px;
+      border: 1px solid #3a465c;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 800;
+      text-align: center;
+      background: #111720;
+    }
+    .action.primary { background: var(--lime); color: #10130a; border-color: var(--lime); }
+    .action:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+    .runtime-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .runtime-step {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 14px;
+      background: rgba(17, 23, 32, .8);
+      min-height: 118px;
+    }
+    .runtime-step strong { display: block; margin-bottom: 7px; color: #edf2fb; }
+    .runtime-step span { color: #9facbf; line-height: 1.42; font-size: 13px; }
+    .step-number {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      margin-bottom: 9px;
+      border-radius: 999px;
+      background: rgba(78, 115, 255, .18);
+      color: #aebcff;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
     .notice {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
@@ -137,6 +197,7 @@
       color: var(--muted);
       font-size: 12px;
     }
+    .hint { grid-column: 1 / -1; margin: 0; color: #8592a8; font-size: 12px; line-height: 1.45; }
     input, textarea {
       width: 100%;
       border: 1px solid #333e50;
@@ -190,7 +251,6 @@
     .meta { margin-top: 8px; color: #9eabc0; font-size: 12px; }
     .ask-form { display: flex; gap: 10px; }
     textarea { min-height: 78px; resize: vertical; }
-    h2 { margin: 0 0 14px; font-size: 18px; }
     .card {
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -233,13 +293,21 @@
       font-size: 12px;
     }
     .footer a:hover { color: var(--lime); }
+
+    @media (max-width: 1180px) {
+      .runtime-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 980px) {
       .shell { grid-template-columns: 1fr; }
       aside { border-left: 0; border-top: 1px solid var(--line); }
+      .execution { grid-template-columns: 1fr; }
+      .actions { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+      .action { flex: 1 1 220px; }
     }
     @media (max-width: 680px) {
       main, aside { padding: 18px; }
       .brand { flex-direction: column; }
+      .runtime-grid { grid-template-columns: 1fr; }
       .connector { grid-template-columns: 1fr; }
       .ask-form { flex-direction: column; }
       button { min-height: 48px; }
@@ -251,38 +319,87 @@
   <main>
     <header class="brand">
       <div>
-        <p class="eyebrow">Governed conversational intelligence</p>
+        <p class="eyebrow">GitHub-native governed execution</p>
         <h1>Talk2Data</h1>
         <p class="subtitle">
-          Local Ollama interpretation, governed semantics, parameterized data execution, and
-          receipt-backed answers. The Unified AI Brain context layer is intentionally separate.
+          GitHub Pages provides the control center. GitHub Codespaces starts the complete
+          FastAPI, Ollama, governed-query, verification, receipt, and session pipeline in an
+          isolated environment owned by the user.
         </p>
       </div>
-      <span id="runtime" class="status degraded">Static UI</span>
+      <span id="runtime" class="status degraded">GitHub launcher</span>
     </header>
 
+    <section class="execution" aria-label="Full execution launcher">
+      <div>
+        <p class="eyebrow">Complete runtime</p>
+        <h2>Launch the full Talk2Data pipeline in GitHub Codespaces</h2>
+        <p>
+          The first launch builds the API, starts Ollama, downloads the compact
+          <code>qwen3:0.6b</code> model, creates the synthetic telecom data store, forwards port
+          8000 privately, and opens the working chat application. No Hugging Face account is needed.
+        </p>
+      </div>
+      <div class="actions">
+        <a class="action primary" href="https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=feat%2Fgithub-native-runtime&amp;quickstart=1" target="_blank" rel="noreferrer">
+          Run Talk2Data now
+        </a>
+        <a class="action" href="https://github.com/yashumani/talk2data-conversational-intelligence/tree/feat/github-native-runtime" target="_blank" rel="noreferrer">
+          View runtime branch
+        </a>
+      </div>
+    </section>
+
+    <section class="runtime-grid" aria-label="GitHub execution path">
+      <div class="runtime-step">
+        <div class="step-number">1</div>
+        <strong>Create or resume</strong>
+        <span>GitHub creates an isolated Codespace from the governed runtime branch.</span>
+      </div>
+      <div class="runtime-step">
+        <div class="step-number">2</div>
+        <strong>Start local AI</strong>
+        <span>Docker Compose starts Ollama and pulls the compact local interpretation model.</span>
+      </div>
+      <div class="runtime-step">
+        <div class="step-number">3</div>
+        <strong>Execute the pipeline</strong>
+        <span>Questions pass admissibility, semantic planning, query execution, and verification.</span>
+      </div>
+      <div class="runtime-step">
+        <div class="step-number">4</div>
+        <strong>Inspect the evidence</strong>
+        <span>The interface exposes certified claims, query receipts, hashes, and the query plan.</span>
+      </div>
+    </section>
+
     <section class="notice" aria-label="Hosting boundary">
-      <strong>Pages hosts the interface.</strong>
+      <strong>Execution boundary</strong>
       <span>
-        Live AI and certified data execution remain in the private FastAPI/Ollama runtime. Enter an
-        approved HTTPS API endpoint below to run the real demonstration from this site.
+        Codespaces is a complete evaluation and development runtime, not an always-on production
+        server. The same Docker deployment can later run continuously on a user-owned workstation,
+        VM, or enterprise server.
       </span>
     </section>
 
     <section class="connector" aria-label="API connection">
       <label>
-        Talk2Data API base URL
+        Existing Talk2Data API base URL
         <input id="api-base" type="url" inputmode="url" placeholder="https://your-talk2data-api.example.com">
       </label>
       <button id="connect" type="button">Connect</button>
+      <p class="hint">
+        This connection box is optional. Use it when a Talk2Data runtime is already running.
+        The one-click Codespaces launch opens its own complete interface automatically.
+      </p>
     </section>
 
     <div class="examples" id="examples" aria-label="Example questions"></div>
 
     <section id="chat" class="chat" aria-live="polite" aria-label="Conversation">
       <div class="message assistant">
-        Connect an approved Talk2Data API, then ask a telecom business question. I will return a
-        verified answer, request clarification, or abstain.
+        Launch the complete GitHub Codespaces runtime above, or connect an existing Talk2Data API.
+        The runtime will answer with verified evidence, request clarification, or abstain.
       </div>
     </section>
 
@@ -298,7 +415,8 @@
     </form>
 
     <footer class="footer">
-      <span>Synthetic telecom demonstration data</span>
+      <span>Synthetic telecom data in the public evaluation runtime</span>
+      <a href="https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=feat%2Fgithub-native-runtime&amp;quickstart=1" target="_blank" rel="noreferrer">Open in Codespaces</a>
       <a href="https://github.com/yashumani/talk2data-conversational-intelligence">Source repository</a>
       <span>Numbers are released only with verification receipts.</span>
     </footer>
@@ -308,7 +426,7 @@
     <h2>Verification panel</h2>
     <div class="card">
       <div class="label">Runtime</div>
-      <div id="runtime-detail" class="value">No backend connected.</div>
+      <div id="runtime-detail" class="value">Launch Codespaces or connect an existing API.</div>
     </div>
     <div class="card">
       <div class="label">AI interpretation</div>
