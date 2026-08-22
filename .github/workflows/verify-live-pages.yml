@@ -2,11 +2,11 @@ name: Verify live Talk2Data GitHub control center
 
 on:
   push:
-    branches: [feat/github-native-runtime]
+    branches: [main, feat/github-native-runtime]
     paths:
       - ".github/workflows/verify-live-pages.yml"
   pull_request:
-    branches: [feat/github-pages-demo]
+    branches: [main, feat/github-pages-demo]
     paths:
       - ".github/workflows/verify-live-pages.yml"
   workflow_dispatch:
