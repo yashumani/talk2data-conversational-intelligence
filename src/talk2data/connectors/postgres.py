@@ -6,7 +6,6 @@ import json
 import math
 import re
 import threading
-from calendar import monthrange
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
@@ -44,6 +43,7 @@ _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _REQUIRED_COLUMNS = frozenset(
     {
         "fact_date",
+        "period_end",
         "metric_id",
         "amount",
         "numerator",
@@ -317,12 +317,13 @@ class PostgreSQLConnector:
             SELECT
                 CURRENT_TIMESTAMP AS source_snapshot,
                 MIN({fact_date})::date AS coverage_start,
-                MAX({fact_date})::date AS coverage_end
+                MAX({period_end})::date AS coverage_end
             FROM {table}
             WHERE {metric_id} = ANY(%s)
             """
         ).format(
             fact_date=sql.Identifier("fact_date"),
+            period_end=sql.Identifier("period_end"),
             table=table,
             metric_id=sql.Identifier("metric_id"),
         )
@@ -335,16 +336,10 @@ class PostgreSQLConnector:
         snapshot = cast(datetime, item["source_snapshot"])
         if snapshot.tzinfo is None:
             snapshot = snapshot.replace(tzinfo=UTC)
-        coverage_start = cast(date, item["coverage_start"])
-        coverage_end = cast(date, item["coverage_end"])
-        normalized_start = coverage_start.replace(day=1)
-        normalized_end = coverage_end.replace(
-            day=monthrange(coverage_end.year, coverage_end.month)[1]
-        )
         return (
             snapshot.astimezone(UTC),
-            normalized_start,
-            normalized_end,
+            cast(date, item["coverage_start"]),
+            cast(date, item["coverage_end"]),
         )
 
     def _execute_sync(
@@ -501,7 +496,7 @@ class PostgreSQLConnector:
         where: list[sql.Composable] = [
             sql.SQL("{} = %s").format(sql.Identifier("metric_id")),
             sql.SQL("{} >= %s").format(sql.Identifier("fact_date")),
-            sql.SQL("{} <= %s").format(sql.Identifier("fact_date")),
+            sql.SQL("{} <= %s").format(sql.Identifier("period_end")),
         ]
         parameters: list[Any] = [
             plan.metric_id,
