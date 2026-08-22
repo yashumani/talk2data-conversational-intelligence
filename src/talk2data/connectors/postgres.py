@@ -6,6 +6,7 @@ import json
 import math
 import re
 import threading
+from calendar import monthrange
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
@@ -334,10 +335,16 @@ class PostgreSQLConnector:
         snapshot = cast(datetime, item["source_snapshot"])
         if snapshot.tzinfo is None:
             snapshot = snapshot.replace(tzinfo=UTC)
+        coverage_start = cast(date, item["coverage_start"])
+        coverage_end = cast(date, item["coverage_end"])
+        normalized_start = coverage_start.replace(day=1)
+        normalized_end = coverage_end.replace(
+            day=monthrange(coverage_end.year, coverage_end.month)[1]
+        )
         return (
             snapshot.astimezone(UTC),
-            cast(date, item["coverage_start"]),
-            cast(date, item["coverage_end"]),
+            normalized_start,
+            normalized_end,
         )
 
     def _execute_sync(
