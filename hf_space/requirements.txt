@@ -1,4 +1,4 @@
-accelerate>=1.2,<2
+accelerate>=1.14.0,<2
 gradio>=6.0,<7
 httpx>=0.28,<1
 huggingface_hub>=1.0,<2
