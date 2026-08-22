@@ -13,6 +13,10 @@ class ConnectorAccessRequest(BaseModel):
     access_context: AccessContext
 
 
+class ConnectorListRequest(BaseModel):
+    access_context: AccessContext
+
+
 class ConnectorListResponse(BaseModel):
     connectors: list[ConnectorDescriptor]
 
