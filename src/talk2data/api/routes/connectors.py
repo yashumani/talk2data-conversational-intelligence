@@ -31,9 +31,7 @@ async def list_connectors(
     registry: Annotated[ConnectorRegistry, Depends(get_connector_registry)],
 ) -> ConnectorListResponse:
     _require_data_access(request.access_context)
-    return ConnectorListResponse(
-        connectors=[connector.descriptor for connector in registry.connectors()]
-    )
+    return ConnectorListResponse(connectors=[connector.descriptor for connector in registry.connectors()])
 
 
 @router.post(
