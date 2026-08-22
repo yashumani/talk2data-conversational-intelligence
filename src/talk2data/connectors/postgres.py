@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import math
 import re
 import threading
@@ -39,6 +40,7 @@ from talk2data.domain.models import (
 )
 from talk2data.services.policy import READ_DATA_ACTION
 
+logger = logging.getLogger(__name__)
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _REQUIRED_COLUMNS = frozenset(
     {
@@ -122,15 +124,24 @@ class PostgreSQLConnector:
         try:
             await asyncio.to_thread(self._validate_reference_schema_sync)
         except (Error, OSError, ValueError) as exc:
+            logger.exception(
+                "PostgreSQL connector initialization failed for %s",
+                self.descriptor.connector_id,
+            )
             raise PostgreSQLConnectorUnavailableError(
-                f"PostgreSQL connector {self.descriptor.connector_id!r} is unavailable: {exc}"
+                f"PostgreSQL connector {self.descriptor.connector_id!r} failed validation."
             ) from exc
 
     async def test_connection(self) -> tuple[bool, str]:
         try:
             value = await asyncio.to_thread(self._select_one_sync)
-        except (Error, OSError) as exc:
-            return False, f"PostgreSQL connector is unavailable: {exc}"
+        except (Error, OSError):
+            logger.warning(
+                "PostgreSQL connector health check failed for %s",
+                self.descriptor.connector_id,
+                exc_info=True,
+            )
+            return False, "PostgreSQL connector is unavailable."
         if value != 1:
             return False, "PostgreSQL health query returned an unexpected value."
         return True, f"PostgreSQL connector {self.descriptor.connector_id} is ready."
@@ -212,18 +223,27 @@ class PostgreSQLConnector:
         except PostgreSQLConnectorError:
             raise
         except (Error, OSError, ValueError) as exc:
+            logger.exception(
+                "PostgreSQL execution failed for connector %s",
+                self.descriptor.connector_id,
+            )
             raise PostgreSQLConnectorUnavailableError(
-                f"PostgreSQL execution failed without releasing a result: {exc}"
+                "PostgreSQL execution failed before a result could be certified."
             ) from exc
 
     async def get_freshness(self) -> SourceFreshness:
         try:
             state = await asyncio.to_thread(self._source_state_sync, self._allowed_metric_ids)
-        except (Error, OSError, ValueError) as exc:
+        except (Error, OSError, ValueError):
+            logger.warning(
+                "PostgreSQL freshness check failed for %s",
+                self.descriptor.connector_id,
+                exc_info=True,
+            )
             return SourceFreshness(
                 status=SourceStatus.UNAVAILABLE,
                 expected_refresh="Source-managed",
-                known_delay=str(exc),
+                known_delay="Source freshness check failed.",
             )
         if state is None:
             return SourceFreshness(
