@@ -1,0 +1,115 @@
+name: Deploy Talk2Data GitHub runtime launcher
+
+on:
+  push:
+    branches: [main, feat/github-native-runtime]
+    paths:
+      - "site/**"
+      - "scripts/validate_pages_site.py"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    branches: [main, feat/github-pages-demo]
+    paths:
+      - "site/**"
+      - "scripts/validate_pages_site.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Write public runtime configuration
+        env:
+          T2D_PUBLIC_API_BASE_URL: ${{ vars.T2D_PUBLIC_API_BASE_URL }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          value = os.environ.get("T2D_PUBLIC_API_BASE_URL", "").strip().rstrip("/")
+          Path("site/config.js").write_text(
+              f"window.T2D_PUBLIC_API_BASE_URL = {json.dumps(value)};\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Validate static control center
+        run: python scripts/validate_pages_site.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify published control center
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for attempt in $(seq 1 60); do
+            body="$(curl -fsSL "$PAGE_URL" || true)"
+            if grep -Fq "Run Talk2Data now" <<<"$body" \
+              && grep -Fq "GitHub-native governed execution" <<<"$body"; then
+              echo "Verified $PAGE_URL"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "The deployed page did not expose the expected runtime launcher."
+          exit 1
+
+      - name: Post deployment receipt to the open branch pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          pr_number="$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/pulls?head=${GITHUB_REPOSITORY_OWNER}:${GITHUB_REF_NAME}&state=open" \
+              --jq '.[0].number // empty'
+          )"
+          if [[ -n "$pr_number" ]]; then
+            gh issue comment "$pr_number" --body "$(cat <<EOF
+          ### GitHub Pages deployment verified
+
+          - Control center: ${PAGE_URL}
+          - Full runtime: https://codespaces.new/${GITHUB_REPOSITORY}?ref=${GITHUB_REF_NAME}&quickstart=1
+          - Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          - Commit: ${GITHUB_SHA}
+
+          The published page was fetched after deployment and contained the expected GitHub-native Talk2Data runtime launcher.
+          EOF
+          )"
+          fi
+
+      - name: Record deployment
+        run: echo "Published ${{ steps.deployment.outputs.page_url }}"

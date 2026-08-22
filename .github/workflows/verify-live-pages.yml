@@ -1,0 +1,37 @@
+name: Verify live Talk2Data GitHub control center
+
+on:
+  push:
+    branches: [main, feat/github-native-runtime]
+    paths:
+      - ".github/workflows/verify-live-pages.yml"
+  pull_request:
+    branches: [main, feat/github-pages-demo]
+    paths:
+      - ".github/workflows/verify-live-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-url:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PAGE_URL: https://yashumani.github.io/talk2data-conversational-intelligence/
+    steps:
+      - name: Wait for and verify the public control center
+        run: |
+          for attempt in $(seq 1 120); do
+            body="$(curl -fsSL "$PAGE_URL" || true)"
+            if grep -Fq "Run Talk2Data now" <<<"$body" \
+              && grep -Fq "GitHub-native governed execution" <<<"$body"; then
+              echo "Verified $PAGE_URL"
+              exit 0
+            fi
+            echo "Waiting for the GitHub Pages deployment (${attempt}/120)."
+            sleep 5
+          done
+          echo "The expected Talk2Data control center was not available at $PAGE_URL."
+          exit 1

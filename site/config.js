@@ -1,0 +1,1 @@
+window.T2D_PUBLIC_API_BASE_URL = "";

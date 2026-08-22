@@ -1,0 +1,17 @@
+services:
+  ollama:
+    environment:
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+
+  ollama-model:
+    environment:
+      T2D_OLLAMA_MODEL: ${T2D_OLLAMA_MODEL:-qwen3:0.6b}
+    command: ["ollama pull $${T2D_OLLAMA_MODEL:-qwen3:0.6b}"]
+
+  api:
+    environment:
+      T2D_ENVIRONMENT: codespaces
+      T2D_OLLAMA_REQUIRED: "true"
+      T2D_OLLAMA_MODEL: ${T2D_OLLAMA_MODEL:-qwen3:0.6b}
+      T2D_OLLAMA_TIMEOUT_SECONDS: "240"
