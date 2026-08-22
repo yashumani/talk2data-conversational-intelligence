@@ -1,10 +1,20 @@
 from __future__ import annotations
 
+import re
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from typing import Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+class DataBackend(StrEnum):
+    DEMO_SQLITE = "demo_sqlite"
+    POSTGRESQL = "postgresql"
 
 
 class Settings(BaseSettings):
@@ -31,6 +41,14 @@ class Settings(BaseSettings):
         ]
     )
 
+    data_backend: DataBackend = DataBackend.DEMO_SQLITE
+    postgres_dsn: SecretStr | None = None
+    postgres_schema: str = "talk2data"
+    postgres_table: str = "metric_facts"
+    postgres_maximum_rows: int = Field(default=1_000, ge=1, le=10_000)
+    postgres_query_timeout_seconds: int = Field(default=60, ge=1, le=1_800)
+    postgres_connect_timeout_seconds: int = Field(default=10, ge=1, le=120)
+
     ollama_enabled: bool = True
     ollama_required: bool = False
     ollama_base_url: str = "http://127.0.0.1:11434"
@@ -41,6 +59,21 @@ class Settings(BaseSettings):
     hermes_base_url: str = "http://127.0.0.1:8642"
     hermes_api_key: str | None = None
     hermes_timeout_seconds: float = Field(default=180.0, gt=0, le=3600)
+
+    @field_validator("data_backend", mode="before")
+    @classmethod
+    def normalize_data_backend(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
+
+    @field_validator("postgres_schema", "postgres_table")
+    @classmethod
+    def validate_postgres_identifier(cls, value: str) -> str:
+        normalized = value.strip()
+        if _IDENTIFIER.fullmatch(normalized) is None:
+            raise ValueError("PostgreSQL schema and table must be simple identifiers")
+        return normalized
 
     @field_validator("ollama_base_url", "hermes_base_url")
     @classmethod
@@ -61,6 +94,12 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_database_path(cls, value: Path) -> Path:
         return value.expanduser()
+
+    @model_validator(mode="after")
+    def validate_data_backend(self) -> Self:
+        if self.data_backend == DataBackend.POSTGRESQL and self.postgres_dsn is None:
+            raise ValueError("T2D_POSTGRES_DSN is required when T2D_DATA_BACKEND=postgresql")
+        return self
 
 
 @lru_cache(maxsize=1)
