@@ -62,23 +62,24 @@ def seeded_postgres(dsn: str) -> Iterator[None]:
             )
             """
         )
-        connection.executemany(
-            f"""
-            INSERT INTO "{SCHEMA}"."{TABLE}" (
-                fact_date, period_end, metric_id, amount, numerator, denominator,
-                plan_id, market_id, region_id, channel_id, store_id,
-                cell_site_id, hour_id, technology_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            [
-                churn_row("2026-06-01", "2026-06-30", 120, "STARTER"),
-                churn_row("2026-06-01", "2026-06-30", 92, "UNLIMITED"),
-                churn_row("2026-06-01", "2026-06-30", 67, "PREMIUM"),
-                churn_row("2026-07-01", "2026-07-31", 117, "STARTER"),
-                churn_row("2026-07-01", "2026-07-31", 89, "UNLIMITED"),
-                churn_row("2026-07-01", "2026-07-31", 64, "PREMIUM"),
-            ],
-        )
+        with connection.cursor() as cursor:
+            cursor.executemany(
+                f"""
+                INSERT INTO "{SCHEMA}"."{TABLE}" (
+                    fact_date, period_end, metric_id, amount, numerator, denominator,
+                    plan_id, market_id, region_id, channel_id, store_id,
+                    cell_site_id, hour_id, technology_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                [
+                    churn_row("2026-06-01", "2026-06-30", 120, "STARTER"),
+                    churn_row("2026-06-01", "2026-06-30", 92, "UNLIMITED"),
+                    churn_row("2026-06-01", "2026-06-30", 67, "PREMIUM"),
+                    churn_row("2026-07-01", "2026-07-31", 117, "STARTER"),
+                    churn_row("2026-07-01", "2026-07-31", 89, "UNLIMITED"),
+                    churn_row("2026-07-01", "2026-07-31", 64, "PREMIUM"),
+                ],
+            )
     try:
         yield
     finally:
