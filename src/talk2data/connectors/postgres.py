@@ -92,9 +92,7 @@ class PostgreSQLConnector:
             raise ValueError("at least one governed metric must be configured")
         unknown_metrics = set(allowed_metric_ids) - set(METRIC_SPECS)
         if unknown_metrics:
-            raise ValueError(
-                "unsupported reference-schema metrics: " + ", ".join(sorted(unknown_metrics))
-            )
+            raise ValueError("unsupported reference-schema metrics: " + ", ".join(sorted(unknown_metrics)))
 
         self.descriptor = ConnectorDescriptor(
             connector_id=connector_id,
@@ -295,9 +293,7 @@ class PostgreSQLConnector:
         columns = {str(cast(dict[str, Any], row)["column_name"]) for row in rows}
         missing = _REQUIRED_COLUMNS - columns
         if missing:
-            raise ValueError(
-                "reference metric-fact table is missing columns: " + ", ".join(sorted(missing))
-            )
+            raise ValueError("reference metric-fact table is missing columns: " + ", ".join(sorted(missing)))
 
     def _source_state_sync(
         self,
@@ -363,10 +359,7 @@ class PostgreSQLConnector:
             requested_ranges = [current_range]
             if comparison_range is not None:
                 requested_ranges.append(comparison_range)
-            if any(
-                item.start < coverage_start or item.end > coverage_end
-                for item in requested_ranges
-            ):
+            if any(item.start < coverage_start or item.end > coverage_end for item in requested_ranges):
                 raise PostgreSQLSourceNotReadyError(
                     "The requested period is outside the source coverage "
                     f"{coverage_start.isoformat()} through {coverage_end.isoformat()}."
@@ -486,12 +479,8 @@ class PostgreSQLConnector:
                 denominator=sql.Identifier("denominator"),
             )
         else:
-            value_expression = sql.SQL("SUM({})::double precision").format(
-                sql.Identifier("amount")
-            )
-        select_parts.append(
-            sql.SQL("{} AS {}").format(value_expression, sql.Identifier("value"))
-        )
+            value_expression = sql.SQL("SUM({})::double precision").format(sql.Identifier("amount"))
+        select_parts.append(sql.SQL("{} AS {}").format(value_expression, sql.Identifier("value")))
 
         where: list[sql.Composable] = [
             sql.SQL("{} = %s").format(sql.Identifier("metric_id")),
@@ -510,9 +499,7 @@ class PostgreSQLConnector:
 
         scoped_regions = sorted(access.regions & KNOWN_REGIONS)
         if scoped_regions and "REGION" in spec.allowed_dimensions:
-            where.append(
-                sql.SQL("{} = ANY(%s)").format(sql.Identifier(DIMENSION_COLUMNS["REGION"]))
-            )
+            where.append(sql.SQL("{} = ANY(%s)").format(sql.Identifier(DIMENSION_COLUMNS["REGION"])))
             parameters.append(scoped_regions)
 
         query: sql.Composable = sql.SQL("SELECT {select} FROM {table} WHERE {where}").format(
@@ -521,20 +508,14 @@ class PostgreSQLConnector:
             where=sql.SQL(" AND ").join(where),
         )
         if dimension_columns:
-            group_by = sql.SQL(", ").join(
-                sql.Identifier(column) for column in dimension_columns
-            )
-            query = query + sql.SQL(" GROUP BY {group_by} ORDER BY {group_by}").format(
-                group_by=group_by
-            )
+            group_by = sql.SQL(", ").join(sql.Identifier(column) for column in dimension_columns)
+            query = query + sql.SQL(" GROUP BY {group_by} ORDER BY {group_by}").format(group_by=group_by)
         query = query + sql.SQL(" LIMIT %s")
         parameters.append(plan.row_limit)
         return query, parameters
 
     def _qualified_table(self) -> sql.Composed:
-        return sql.SQL(".").join(
-            [sql.Identifier(self._schema_name), sql.Identifier(self._table_name)]
-        )
+        return sql.SQL(".").join([sql.Identifier(self._schema_name), sql.Identifier(self._table_name)])
 
 
 def _require_identifier(value: str, field_name: str) -> str:
