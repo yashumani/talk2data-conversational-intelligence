@@ -1,82 +1,114 @@
 # Talk2Data Conversational Intelligence
 
-Talk2Data is a governed, local-first conversational intelligence platform for asking business questions across enterprise data, organizational knowledge, and approved external evidence.
+Talk2Data is a governed, local-first conversational intelligence platform for asking business
+questions across enterprise data, organizational knowledge, and approved external evidence.
 
-The platform currently implements two deterministic control stages before any enterprise source is executed:
+A language model interprets the wording of a question. Deterministic services define the metrics,
+authorize access, compile the Business Query IR, execute read-only source queries, validate the
+result, and release only receipt-backed claims.
 
-1. **Question admissibility** determines whether a request belongs to the tenant's business domain, is analytically meaningful, is authorized, and has an eligible governed source.
-2. **Business Query IR compilation** converts an accepted data question into a versioned, reproducible semantic plan containing the exact metric contract, dimensions, filters, time logic, comparison, access scope, source, and integrity hashes.
+## Use the application
 
-The natural-language interpretation layer uses **Ollama running locally**. Ollama may propose a structured interpretation, but it cannot create business definitions, authorize access, or execute data. Every proposed metric, entity, dimension, and domain identifier must already exist in the approved Tenant Domain Pack.
+Public GitHub control center:
+
+```text
+https://yashumani.github.io/talk2data-conversational-intelligence/
+```
+
+Complete GitHub Codespaces runtime:
+
+```text
+https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&quickstart=1
+```
+
+The Codespace starts Docker, Ollama, the compact `qwen3:0.6b` model, FastAPI, synthetic telecom
+data, session persistence, query execution, verification, and the browser chat. Port `8000` opens
+privately after the runtime becomes ready.
+
+```text
+/demo         working browser chat
+/docs         interactive OpenAPI explorer
+/health/ready component readiness
+```
+
+Codespaces is a complete evaluation and development environment, not a permanent production host.
+The same Docker application can run continuously on a workstation, server, VM, or container
+platform controlled by the tenant.
 
 ## Current capabilities
 
 - FastAPI service with versioned HTTP contracts.
 - Local Ollama structured-output interpreter with deterministic fallback.
-- Telecom demonstration Tenant Domain Pack.
-- Domain-anchor, external-adjacency, exclusion, and analytic-validity checks.
-- RBAC/ABAC-ready access context and deterministic policy gate.
-- Versioned metric definitions with aggregation, additivity, unit, range, time-grain, source, and classification metadata.
-- Authorized semantic metric resolution with a deterministic semantic snapshot hash.
-- Business Query IR compilation with governed dimensions, dimension-value filters, time windows, comparisons, connector identity, and access scope.
-- Canonical plan hashing so equivalent questions produce the same plan under the same semantic and authorization context.
-- Durable SQLite session history containing decisions and compiled query plans.
-- Hermes Agent gateway adapter and health integration.
-- Universal connector contracts for future BigQuery, Teradata, SQL Server, PostgreSQL, Snowflake, Databricks, REST, and custom adapters.
-- Evidence, memory, and context-coverage contracts for later implementation.
-- CI across Python 3.11, 3.12, and 3.13, plus linting, formatting, strict typing, coverage, and CodeQL.
+- Telecom Tenant Domain Pack with governed vocabulary, metrics, dimensions, aliases, exclusions,
+  and approved external adjacencies.
+- Question admissibility for domain fit, ambiguity, analytical validity, authorization, source
+  readiness, and external-context eligibility.
+- RBAC/ABAC-ready access context and classification checks.
+- Versioned metric definitions with aggregation, additivity, units, ranges, time grain, source, and
+  classification metadata.
+- Deterministic Business Query IR with filters, reporting periods, comparisons, access scope,
+  semantic snapshot hash, and canonical plan hash.
+- Runtime connector registry.
+- Parameterized, read-only synthetic SQLite connector.
+- Parameterized, read-only PostgreSQL reference connector.
+- Connector descriptor, catalog, freshness, health, and readiness APIs.
+- Source coverage, row limit, timeout, access-scope, result-sense, and claim-verification controls.
+- Deterministic SQL hashes, result hashes, query receipts, and certified numerical claims.
+- Durable SQLite session history with tenant and user isolation.
+- Hermes Agent gateway boundary for later bounded multi-agent investigations.
+- GitHub Pages, Codespaces, Actions, CodeQL, and Docker deployment contracts.
 
-## Architecture at a glance
+## Architecture
 
 ```text
-Chat client
+User question
     │
     ▼
-AI access gateway
+Identity and access context
     │
     ▼
-Question admissibility engine
-    ├── Tenant Domain Pack
-    ├── deterministic business-sense checks
-    ├── role/classification policy checks
-    └── local Ollama structured interpretation
+Question admissibility
+    ├── tenant Domain Pack
+    ├── business-sense checks
+    ├── role and classification policy
+    └── Ollama language interpretation
     │
     ├── clarify / deny / reject / no source
     │
     ▼
-Versioned semantic registry
-    ├── metric contract
-    ├── valid dimensions and values
-    ├── calendar, currency, and timezone
-    └── governed connector
+Semantic registry
     │
     ▼
-Business Query IR compiler
-    ├── metric and semantic version
-    ├── dimensions and filters
-    ├── time window and comparison
-    ├── access scope
-    ├── semantic snapshot hash
-    └── canonical plan hash
+Business Query IR
     │
     ▼
-Approved connector execution — next stage
+Governed connector registry
+    ├── synthetic SQLite
+    └── PostgreSQL reference adapter
+    │
+    ▼
+Read-only parameterized execution
+    │
+    ▼
+Source and result-sense verification
+    │
+    ▼
+Certified claims and query receipt
 ```
 
-See [`docs/architecture.md`](docs/architecture.md), [`docs/semantic-registry.md`](docs/semantic-registry.md), and [`docs/roadmap.md`](docs/roadmap.md).
+The model cannot create a metric definition, authorize access, receive source credentials, generate
+unrestricted SQL, calculate the certified result, or introduce unsupported numeric claims.
 
-## Local development
+## Local development with synthetic SQLite
 
-### 1. Install and start Ollama
+### 1. Start Ollama
 
 ```bash
 ollama pull qwen3:8b
 ollama serve
 ```
 
-The model is configurable through `T2D_OLLAMA_MODEL`.
-
-### 2. Create the Python environment
+### 2. Install the application
 
 ```bash
 python -m venv .venv
@@ -86,105 +118,110 @@ python -m pip install -e '.[dev]'
 cp .env.example .env
 ```
 
-### 3. Run the API
+### 3. Start FastAPI
 
 ```bash
 uvicorn talk2data.main:app --reload
 ```
 
-Open the generated API documentation at `http://127.0.0.1:8000/docs`.
+Open `http://127.0.0.1:8000/demo`.
 
-## Evaluate question admissibility
+## Docker with synthetic SQLite
 
 ```bash
-curl -X POST http://127.0.0.1:8000/v1/questions/evaluate \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "question": "Did restaurant foot traffic near our stores affect mobile activations?",
-    "access_context": {
-      "tenant_id": "demo-telecom",
-      "user_id": "local-developer",
-      "roles": ["BI_MANAGER"],
-      "departments": ["SALES"],
-      "regions": ["NORTH_AMERICA"],
-      "business_units": ["CONSUMER"],
-      "classification_clearance": "CONFIDENTIAL",
-      "permitted_actions": [
-        "ASK_BUSINESS_QUESTIONS",
-        "READ_AGGREGATED_DATA",
-        "READ_APPROVED_MEMORY",
-        "USE_EXTERNAL_CONTEXT"
-      ]
-    },
-    "use_llm": true
-  }'
+T2D_OLLAMA_MODEL=qwen3:0.6b docker compose up --build
 ```
 
-Expected verdict: `ACCEPT_EXTERNAL_AUGMENTED`.
+The Docker Compose stack starts Ollama, pulls the configured model, and starts Talk2Data.
 
-## Compile a Business Query IR
+## Docker with PostgreSQL
 
 ```bash
-curl -X POST http://127.0.0.1:8000/v1/query-plans/compile \
+T2D_OLLAMA_MODEL=qwen3:0.6b \
+  docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build
+```
+
+The override starts PostgreSQL 16, creates the governed reference metric-fact schema, seeds
+employer-neutral telecom facts, and switches the source runtime to PostgreSQL.
+
+See [`docs/POSTGRESQL_CONNECTOR.md`](docs/POSTGRESQL_CONNECTOR.md) for the table contract, security
+properties, APIs, and production configuration.
+
+## PostgreSQL production configuration
+
+```text
+T2D_DATA_BACKEND=postgresql
+T2D_POSTGRES_DSN=postgresql://user:password@host:5432/database
+T2D_POSTGRES_SCHEMA=talk2data
+T2D_POSTGRES_TABLE=metric_facts
+T2D_POSTGRES_MAXIMUM_ROWS=1000
+T2D_POSTGRES_QUERY_TIMEOUT_SECONDS=60
+T2D_POSTGRES_CONNECT_TIMEOUT_SECONDS=10
+```
+
+Store the DSN in a deployment secret or secret manager. Never commit credentials. The configured
+table can be a governed database view over certified warehouse objects.
+
+## Connector APIs
+
+```text
+POST /v1/connectors/list
+POST /v1/connectors/catalog
+POST /v1/connectors/freshness
+POST /v1/connectors/test
+```
+
+Listing, catalog, and freshness requests require data-read permission. Connection testing requires
+the `TALK2DATA_ADMIN` role. No endpoint returns a DSN or credential.
+
+## Example governed chat request
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/chat/demo \
   -H 'Content-Type: application/json' \
   -d '{
-    "question": "What was postpaid churn by plan in the Northeast last month?",
+    "question": "What was postpaid churn by plan last month?",
     "as_of": "2026-08-17T12:00:00Z",
+    "use_llm": true,
+    "include_debug": true,
     "access_context": {
       "tenant_id": "demo-telecom",
       "user_id": "local-developer",
       "roles": ["BI_MANAGER"],
-      "departments": ["SALES"],
+      "departments": ["BUSINESS_INTELLIGENCE"],
       "regions": ["NORTH_AMERICA"],
       "business_units": ["CONSUMER"],
       "classification_clearance": "CONFIDENTIAL",
       "permitted_actions": [
         "ASK_BUSINESS_QUESTIONS",
-        "READ_AGGREGATED_DATA",
-        "READ_APPROVED_MEMORY",
-        "USE_EXTERNAL_CONTEXT"
+        "READ_AGGREGATED_DATA"
       ]
-    },
-    "use_llm": true
-  }'
-```
-
-The response includes a `BusinessQueryIR` with `POSTPAID_CHURN` semantic version `2.0`, `PLAN` as a dimension, a governed `REGION=NORTHEAST` filter, the tenant fiscal calendar, the approved source connector, and deterministic semantic and plan hashes.
-
-## Resolve a governed metric definition
-
-```bash
-curl -X POST http://127.0.0.1:8000/v1/semantics/metrics/resolve \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "metric_id": "POSTPAID_CHURN",
-    "access_context": {
-      "tenant_id": "demo-telecom",
-      "user_id": "local-developer",
-      "classification_clearance": "CONFIDENTIAL",
-      "permitted_actions": ["READ_AGGREGATED_DATA"]
     }
   }'
 ```
 
-## Docker development
+A successful response includes the interpretation mode, admissibility decision, Business Query IR,
+verified claims, source coverage, result hash, SQL hash, and query receipt.
 
-```bash
-cp .env.example .env
-docker compose up --build
-```
+## Accuracy behavior
 
-Pull the configured model into the Ollama container once:
+Talk2Data abstains rather than guessing when:
 
-```bash
-docker compose exec ollama ollama pull qwen3:8b
-```
+- the question does not belong to the tenant domain;
+- the metric or dimension is ambiguous;
+- the user lacks permission;
+- the source is unavailable or does not cover the requested period;
+- the requested analytical operation violates the metric contract;
+- the result contains invalid, duplicate, non-finite, or out-of-range values;
+- the question asks for causal or organizational context that has not been supplied by the Unified
+  AI Brain integration.
 
 ## Hermes Agent integration
 
-Hermes is the bounded agent runtime for later multi-step investigations. Ollama remains the local model provider. Configure Hermes to use `http://127.0.0.1:11434/v1`, enable its authenticated API server, and set the `T2D_HERMES_*` environment variables.
-
-Talk2Data never delegates authorization, semantic definitions, or certified data execution to Hermes. Hermes receives only approved tools and typed evidence after the policy and semantic gates have completed.
+Hermes is the bounded agent runtime for later multi-step investigations. Ollama remains the local
+model provider. Talk2Data never delegates authorization, semantic definitions, or certified data
+execution to Hermes. Hermes will receive only approved tools and typed evidence after policy and
+semantic gates complete.
 
 ## Quality checks
 
@@ -195,6 +232,19 @@ mypy src
 pytest --cov=talk2data --cov-report=term-missing
 ```
 
+A separate GitHub Actions workflow starts a real PostgreSQL service and runs the full PostgreSQL
+chat and receipt path. The full Docker/Ollama pipeline is also smoke-tested on GitHub-hosted runners.
+
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md)
+- [`docs/semantic-registry.md`](docs/semantic-registry.md)
+- [`docs/POSTGRESQL_CONNECTOR.md`](docs/POSTGRESQL_CONNECTOR.md)
+- [`docs/GITHUB_RUNTIME.md`](docs/GITHUB_RUNTIME.md)
+- [`docs/roadmap.md`](docs/roadmap.md)
+
 ## Repository safety
 
-This repository is public. Commit only synthetic examples and configuration templates. Never commit credentials, internal database names, private schemas, production Domain Packs, proprietary Obsidian vault content, or customer data.
+This repository is public. Commit only synthetic examples and configuration templates. Never commit
+credentials, internal database names, proprietary schemas, production Domain Packs, private Obsidian
+content, customer data, employee data, or organizational memory.
