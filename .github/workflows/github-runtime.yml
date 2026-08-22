@@ -2,7 +2,7 @@ name: Validate GitHub-native Talk2Data runtime
 
 on:
   push:
-    branches: [feat/github-native-runtime]
+    branches: [main, feat/github-native-runtime]
     paths:
       - ".devcontainer/**"
       - "docker-compose.yml"
@@ -12,7 +12,7 @@ on:
       - "scripts/validate_codespaces_config.py"
       - ".github/workflows/github-runtime.yml"
   pull_request:
-    branches: [feat/github-pages-demo]
+    branches: [main, feat/github-pages-demo]
     paths:
       - ".devcontainer/**"
       - "docker-compose.yml"
