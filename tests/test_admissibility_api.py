@@ -36,7 +36,7 @@ def test_accepts_governed_internal_metric_question(
     assert "PLAN" in decision["candidate_entity_ids"]
     assert "PLAN" in decision["candidate_dimension_ids"]
     assert decision["data_status"] == "AVAILABLE"
-    assert decision["domain_pack_version"] == "2026.08.1"
+    assert decision["domain_pack_version"] == "2026.08.3"
 
 
 def test_rejects_unrelated_food_business_question(

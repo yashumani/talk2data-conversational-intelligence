@@ -7,7 +7,16 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from talk2data.domain.models import AccessContext, SourceStatus
+from talk2data.domain.chat import QueryReceipt
+from talk2data.domain.models import (
+    AccessContext,
+    ComparisonSpec,
+    MetricAggregation,
+    MetricValueType,
+    QueryFilter,
+    SourceStatus,
+    TimeWindow,
+)
 
 
 class ConnectorCapability(StrEnum):
@@ -41,31 +50,28 @@ class SourceFreshness(BaseModel):
 
 class StructuredQueryPlan(BaseModel):
     plan_id: UUID = Field(default_factory=uuid4)
+    query_id: UUID
+    decision_id: UUID
+    plan_hash: str
     tenant_id: str
     connector_id: str
     metric_id: str
     semantic_version: str
+    value_type: MetricValueType
+    aggregation: MetricAggregation
+    unit: str
+    currency: str | None = None
     dimensions: list[str] = Field(default_factory=list)
-    filters: list[dict[str, Any]] = Field(default_factory=list)
-    time_range: dict[str, Any]
-    comparison: dict[str, Any] | None = None
-    row_limit: int = Field(default=10_000, ge=1)
-
-
-class QueryReceipt(BaseModel):
-    receipt_id: UUID = Field(default_factory=uuid4)
-    plan_id: UUID
-    connector_id: str
-    source_snapshot: datetime
-    coverage_end: datetime | None = None
-    result_rows: list[dict[str, Any]]
-    result_hash: str
-    data_quality_status: str
-    policy_decision_id: str
+    filters: list[QueryFilter] = Field(default_factory=list)
+    time_window: TimeWindow
+    comparison: ComparisonSpec
+    row_limit: int = Field(default=100, ge=1, le=10_000)
 
 
 class DataConnector(Protocol):
     descriptor: ConnectorDescriptor
+
+    async def initialize(self) -> None: ...
 
     async def test_connection(self) -> tuple[bool, str]: ...
 

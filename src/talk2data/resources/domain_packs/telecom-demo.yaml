@@ -6,11 +6,12 @@ subindustries:
   - Broadband
   - Fiber
   - Enterprise Connectivity
-version: "2026.08.1"
+version: "2026.08.3"
 status: APPROVED
-effective_from: 2026-08-01T00:00:00Z
+effective_from: 2026-08-17T00:00:00Z
 default_currency: USD
 default_calendar: CORPORATE_FISCAL
+default_timezone: America/New_York
 
 domains:
   - id: WIRELESS_SUBSCRIBER
@@ -40,7 +41,18 @@ metrics:
     aliases: [postpaid churn, churn, disconnect rate, subscriber churn]
     domain_id: WIRELESS_SUBSCRIBER
     definition: Postpaid account or line disconnects divided by the approved average active base for the period.
+    semantic_version: "2.0"
+    value_type: PERCENTAGE
+    aggregation: RATIO
+    additivity: NON_ADDITIVE
+    unit: PERCENT
     allowed_dimensions: [PLAN, MARKET, REGION, CHANNEL]
+    supported_time_grains: [DAY, WEEK, MONTH, QUARTER, YEAR]
+    default_time_grain: MONTH
+    default_time_window: PREVIOUS_COMPLETE_MONTH
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
+    valid_max: 1
     classification: CONFIDENTIAL
     source:
       connector_id: telecom_semantic_warehouse
@@ -51,7 +63,17 @@ metrics:
     aliases: [mobile activations, wireless activations, new activations, activations]
     domain_id: RETAIL_SALES
     definition: Successfully completed new wireless service activations in the selected period.
+    semantic_version: "2.0"
+    value_type: INTEGER
+    aggregation: SUM
+    additivity: ADDITIVE
+    unit: COUNT
     allowed_dimensions: [STORE, MARKET, REGION, CHANNEL, PLAN]
+    supported_time_grains: [DAY, WEEK, MONTH, QUARTER, YEAR]
+    default_time_grain: MONTH
+    default_time_window: PREVIOUS_COMPLETE_MONTH
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
     classification: INTERNAL
     source:
       connector_id: telecom_semantic_warehouse
@@ -62,7 +84,18 @@ metrics:
     aliases: [network congestion, congestion rate, congested cells, evening congestion]
     domain_id: NETWORK_OPERATIONS
     definition: Share of monitored network intervals exceeding the governed congestion threshold.
+    semantic_version: "2.0"
+    value_type: PERCENTAGE
+    aggregation: RATIO
+    additivity: NON_ADDITIVE
+    unit: PERCENT
     allowed_dimensions: [MARKET, CELL_SITE, HOUR, TECHNOLOGY]
+    supported_time_grains: [HOUR, DAY, WEEK, MONTH]
+    default_time_grain: DAY
+    default_time_window: PREVIOUS_COMPLETE_DAY
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
+    valid_max: 1
     classification: CONFIDENTIAL
     source:
       connector_id: network_performance_platform
@@ -73,7 +106,17 @@ metrics:
     aliases: [arpa, average revenue per account, account revenue]
     domain_id: WIRELESS_SUBSCRIBER
     definition: Governed service revenue divided by the approved average account base.
+    semantic_version: "2.0"
+    value_type: CURRENCY
+    aggregation: RATIO
+    additivity: NON_ADDITIVE
+    unit: CURRENCY_PER_ACCOUNT
     allowed_dimensions: [PLAN, MARKET, REGION]
+    supported_time_grains: [MONTH, QUARTER, YEAR]
+    default_time_grain: MONTH
+    default_time_window: PREVIOUS_COMPLETE_MONTH
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
     classification: CONFIDENTIAL
     source:
       connector_id: finance_semantic_warehouse
@@ -98,8 +141,35 @@ entities:
     classification: INTERNAL
   - id: REGION
     name: Operating Region
-    aliases: [region, regions, northeast, southeast, west, central]
+    aliases: [region, regions]
     domain_id: WIRELESS_SUBSCRIBER
+    values:
+      - id: NORTHEAST
+        name: Northeast
+        aliases: [north east]
+      - id: SOUTHEAST
+        name: Southeast
+        aliases: [south east]
+      - id: CENTRAL
+        name: Central
+      - id: WEST
+        name: West
+        aliases: [western region]
+    classification: INTERNAL
+  - id: CHANNEL
+    name: Sales Channel
+    aliases: [channel, channels]
+    domain_id: RETAIL_SALES
+    values:
+      - id: RETAIL
+        name: Retail
+        aliases: [store channel]
+      - id: DIGITAL
+        name: Digital
+        aliases: [online, web]
+      - id: CARE
+        name: Customer Care
+        aliases: [call center]
     classification: INTERNAL
   - id: CELL_SITE
     name: Cell Site
@@ -111,6 +181,18 @@ entities:
     aliases: [hour, hourly, evening, morning]
     domain_id: NETWORK_OPERATIONS
     classification: INTERNAL
+  - id: TECHNOLOGY
+    name: Network Technology
+    aliases: [technology, network technology, radio technology]
+    domain_id: NETWORK_OPERATIONS
+    values:
+      - id: LTE
+        name: LTE
+        aliases: [4g]
+      - id: FIVE_G
+        name: 5G
+        aliases: [5 g, fifth generation]
+    classification: RESTRICTED
 
 external_adjacencies:
   - id: RESTAURANT_FOOT_TRAFFIC

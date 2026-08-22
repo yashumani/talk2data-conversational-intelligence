@@ -9,7 +9,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from talk2data.domain.models import AccessContext, QuestionDecision, SessionMessage, SessionSnapshot
+from talk2data.domain.models import (
+    AccessContext,
+    BusinessQueryIR,
+    QuestionDecision,
+    SessionMessage,
+    SessionSnapshot,
+)
 
 
 class SessionStoreError(RuntimeError):
@@ -71,6 +77,14 @@ class SQLiteSessionStore:
     ) -> None:
         await asyncio.to_thread(self._record_evaluation_sync, session_id, question, decision)
 
+    async def record_query_plan(
+        self,
+        *,
+        session_id: UUID,
+        query_ir: BusinessQueryIR,
+    ) -> None:
+        await asyncio.to_thread(self._record_query_plan_sync, session_id, query_ir)
+
     async def get_session(
         self,
         session_id: UUID,
@@ -119,6 +133,15 @@ class SQLiteSessionStore:
                 );
                 CREATE INDEX IF NOT EXISTS idx_decisions_session_created
                     ON decisions(session_id, created_at);
+                CREATE TABLE IF NOT EXISTS query_plans (
+                    id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_query_plans_session_created
+                    ON query_plans(session_id, created_at);
                 """
             )
             connection.commit()
@@ -175,14 +198,44 @@ class SQLiteSessionStore:
                     decision.created_at.isoformat(),
                 ),
             )
-            updated = connection.execute(
-                "UPDATE sessions SET updated_at = ? WHERE id = ?",
-                (now, str(session_id)),
-            )
-            if updated.rowcount != 1:
-                connection.rollback()
-                raise SessionNotFoundError(f"session {session_id} was not found")
+            self._touch_session(connection, session_id, now)
             connection.commit()
+
+    def _record_query_plan_sync(self, session_id: UUID, query_ir: BusinessQueryIR) -> None:
+        now = datetime.now(UTC).isoformat()
+        with self._connection() as connection:
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO query_plans(id, session_id, payload_json, created_at)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        str(query_ir.query_id),
+                        str(session_id),
+                        query_ir.model_dump_json(),
+                        query_ir.created_at.isoformat(),
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                connection.rollback()
+                raise SessionNotFoundError(f"session {session_id} was not found") from exc
+            self._touch_session(connection, session_id, now)
+            connection.commit()
+
+    @staticmethod
+    def _touch_session(
+        connection: sqlite3.Connection,
+        session_id: UUID,
+        updated_at: str,
+    ) -> None:
+        updated = connection.execute(
+            "UPDATE sessions SET updated_at = ? WHERE id = ?",
+            (updated_at, str(session_id)),
+        )
+        if updated.rowcount != 1:
+            connection.rollback()
+            raise SessionNotFoundError(f"session {session_id} was not found")
 
     def _get_session_sync(
         self,
@@ -210,6 +263,10 @@ class SQLiteSessionStore:
                 "SELECT payload_json FROM decisions WHERE session_id = ? ORDER BY created_at, id",
                 (str(session_id),),
             ).fetchall()
+            query_plan_rows = connection.execute(
+                "SELECT payload_json FROM query_plans WHERE session_id = ? ORDER BY created_at, id",
+                (str(session_id),),
+            ).fetchall()
 
         messages = [
             SessionMessage(
@@ -221,6 +278,7 @@ class SQLiteSessionStore:
             for row in message_rows
         ]
         decisions = [QuestionDecision.model_validate(json.loads(str(row[0]))) for row in decision_rows]
+        query_plans = [BusinessQueryIR.model_validate(json.loads(str(row[0]))) for row in query_plan_rows]
         return SessionSnapshot(
             session_id=session_id,
             tenant_id=stored_tenant_id,
@@ -229,4 +287,5 @@ class SQLiteSessionStore:
             updated_at=datetime.fromisoformat(str(session_row[3])),
             messages=messages,
             decisions=decisions,
+            query_plans=query_plans,
         )

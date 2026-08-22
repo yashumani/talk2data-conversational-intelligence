@@ -1,0 +1,208 @@
+name: Final Talk2Data demo certification v4
+
+on:
+  push:
+    branches: [feat/demo-ready-ai-chat]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  security-events: write
+  actions: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  quality:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[final-certify-v4]')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      T2D_RUN_LIVE_OLLAMA: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy src
+      - run: python -m compileall -q src tests scripts
+      - run: pytest --cov=talk2data --cov-report=term-missing --cov-fail-under=85
+      - run: docker compose config >/tmp/talk2data-compose.yml
+
+  security:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[final-certify-v4]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - uses: github/codeql-action/analyze@v3
+
+  live-ai:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[final-certify-v4]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      T2D_RUN_LIVE_OLLAMA: "1"
+      T2D_OLLAMA_MODEL: qwen3:0.6b
+      T2D_OLLAMA_BASE_URL: http://127.0.0.1:11434
+      T2D_OLLAMA_ENABLED: "true"
+      T2D_OLLAMA_REQUIRED: "true"
+      T2D_OLLAMA_TIMEOUT_SECONDS: "180"
+      T2D_DATABASE_PATH: /tmp/talk2data-demo.db
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          nohup ollama serve >/tmp/ollama.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl -fsS "$T2D_OLLAMA_BASE_URL/api/tags" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/ollama.log
+          exit 1
+      - run: ollama pull "$T2D_OLLAMA_MODEL"
+      - name: Run live Ollama structured-output contract
+        run: pytest -m live_ollama -q
+      - name: Run end-to-end receipt-backed chatbot smoke
+        run: |
+          nohup uvicorn talk2data.main:app --host 127.0.0.1 --port 8000 >/tmp/talk2data-api.log 2>&1 &
+          api_pid=$!
+          cleanup() { kill "$api_pid" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8000/health/ready >/tmp/readiness.json; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/talk2data-api.log
+            exit 1
+          fi
+          python scripts/demo_smoke.py --base-url http://127.0.0.1:8000
+          curl -fsS http://127.0.0.1:8000/demo >/tmp/demo.html
+          test -s /tmp/demo.html
+      - name: Diagnostics
+        if: always()
+        run: |
+          ollama list || true
+          tail -200 /tmp/ollama.log || true
+          tail -200 /tmp/talk2data-api.log || true
+
+  certify:
+    needs: [quality, security, live-ai]
+    if: >-
+      always() &&
+      needs.quality.result == 'success' &&
+      needs.security.result == 'success' &&
+      needs.live-ai.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      TESTED_SHA: ${{ github.sha }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/demo-ready-ai-chat
+          fetch-depth: 0
+      - name: Write certification and PR comment safely
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          tested_sha = os.environ["TESTED_SHA"]
+          run_url = os.environ["RUN_URL"]
+          certification = f"""# Final Talk2Data Demonstration Certification
+
+Status: PASSED
+
+Validated at: {datetime.now(UTC).isoformat()}
+
+Certification workflow: {run_url}
+
+Tested source commit: {tested_sha}
+
+The following gates completed successfully:
+
+- Python 3.11 quality and deterministic test suite
+- Python 3.12 quality and deterministic test suite
+- Python 3.13 quality and deterministic test suite
+- Ruff lint and format verification
+- Strict Mypy type validation
+- Python bytecode compilation
+- 85% minimum coverage gate
+- Docker Compose configuration validation
+- CodeQL Python security analysis
+- Real Ollama installation and model pull
+- Live qwen3:0.6b structured interpretation contract
+- End-to-end receipt-backed chatbot API smoke
+- Browser demonstration page retrieval
+
+The demonstration uses synthetic telecom data. Unified AI Brain context is intentionally excluded and remains a separate integration dependency.
+"""
+          Path("docs/FINAL_DEMO_CERTIFICATION.md").write_text(certification, encoding="utf-8")
+
+          comment = f"""## Demo certification passed
+
+The corrected final cross-version certification completed successfully for {tested_sha}.
+
+Validated: Python 3.11, 3.12, and 3.13; Ruff; strict Mypy; compilation; the 85% coverage floor; Docker Compose; CodeQL; a real local Ollama qwen3:0.6b structured-output test; the receipt-backed chatbot API; and the browser demo page.
+
+Certification run: {run_url}
+
+Unified AI Brain context remains intentionally disconnected and is the parallel integration dependency.
+"""
+          Path("/tmp/talk2data-pr-comment.md").write_text(comment, encoding="utf-8")
+          PY
+      - name: Remove temporary certification workflows
+        run: |
+          rm -f .github/workflows/finalize-demo-slice.yml
+          rm -f .github/workflows/demo-readiness-gate-v2.yml
+          rm -f .github/workflows/demo-readiness-gate-v3.yml
+          rm -f .github/workflows/demo-final-certification.yml
+          rm -f .github/workflows/report-demo-certification.yml
+          rm -f .github/workflows/demo-final-certification-v4.yml
+      - name: Commit certification
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "test: certify final Talk2Data AI demonstration"
+          git push origin HEAD:feat/demo-ready-ai-chat
+      - name: Publish pull-request certification comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment 3 --body-file /tmp/talk2data-pr-comment.md
