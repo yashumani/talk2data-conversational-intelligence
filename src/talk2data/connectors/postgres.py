@@ -51,6 +51,7 @@ _REQUIRED_COLUMNS = frozenset(
         *DIMENSION_COLUMNS.values(),
     }
 )
+SQLStatement = sql.SQL | sql.Composed
 
 
 class PostgreSQLConnectorError(RuntimeError):
@@ -376,7 +377,7 @@ class PostgreSQLConnector:
                 current_rows = self._query(connection, current_query, current_parameters)
 
                 comparison_rows: list[dict[str, Any]] = []
-                comparison_query: sql.Composable | None = None
+                comparison_query: SQLStatement | None = None
                 if comparison_range is not None:
                     comparison_query, comparison_parameters = self._build_query(
                         plan,
@@ -439,7 +440,7 @@ class PostgreSQLConnector:
     def _query(
         self,
         connection: Connection[Any],
-        query: sql.Composable,
+        query: SQLStatement,
         parameters: list[Any],
     ) -> list[dict[str, Any]]:
         rows = connection.execute(query, parameters).fetchall()
@@ -460,7 +461,7 @@ class PostgreSQLConnector:
         plan: StructuredQueryPlan,
         access: AccessContext,
         resolved_range: ResolvedRange,
-    ) -> tuple[sql.Composable, list[Any]]:
+    ) -> tuple[SQLStatement, list[Any]]:
         spec = METRIC_SPECS[plan.metric_id]
         dimension_columns = [DIMENSION_COLUMNS[dimension] for dimension in plan.dimensions]
         select_parts: list[sql.Composable] = [
@@ -502,7 +503,7 @@ class PostgreSQLConnector:
             where.append(sql.SQL("{} = ANY(%s)").format(sql.Identifier(DIMENSION_COLUMNS["REGION"])))
             parameters.append(scoped_regions)
 
-        query: sql.Composable = sql.SQL("SELECT {select} FROM {table} WHERE {where}").format(
+        query: SQLStatement = sql.SQL("SELECT {select} FROM {table} WHERE {where}").format(
             select=sql.SQL(", ").join(select_parts),
             table=self._qualified_table(),
             where=sql.SQL(" AND ").join(where),
