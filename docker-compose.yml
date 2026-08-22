@@ -1,0 +1,46 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+
+  ollama-model:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      T2D_OLLAMA_MODEL: ${T2D_OLLAMA_MODEL:-qwen3:8b}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull $${T2D_OLLAMA_MODEL:-qwen3:8b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      T2D_ENVIRONMENT: development
+      T2D_DATABASE_PATH: /app/.talk2data/talk2data.db
+      T2D_OLLAMA_ENABLED: "true"
+      T2D_OLLAMA_REQUIRED: "true"
+      T2D_OLLAMA_BASE_URL: http://ollama:11434
+      T2D_OLLAMA_MODEL: ${T2D_OLLAMA_MODEL:-qwen3:8b}
+      T2D_OLLAMA_TIMEOUT_SECONDS: "180"
+      T2D_HERMES_ENABLED: "false"
+    volumes:
+      - talk2data-state:/app/.talk2data
+    depends_on:
+      ollama-model:
+        condition: service_completed_successfully
+
+volumes:
+  ollama-data:
+  talk2data-state:

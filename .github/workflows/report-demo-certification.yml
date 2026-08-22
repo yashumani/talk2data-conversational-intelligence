@@ -1,0 +1,115 @@
+name: Publish Talk2Data demo certification status
+
+on:
+  push:
+    branches: [feat/demo-ready-ai-chat]
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  report:
+    if: contains(github.event.head_commit.message, '[report-demo-certification]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/demo-ready-ai-chat
+          fetch-depth: 0
+
+      - name: Wait for final certification workflow
+        id: certification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_json=""
+          for attempt in $(seq 1 90); do
+            run_json=$(gh api -X GET \
+              "repos/${GITHUB_REPOSITORY}/actions/runs?branch=feat%2Fdemo-ready-ai-chat&per_page=100" \
+              --jq '[.workflow_runs[] | select(.name == "Final Talk2Data demo certification")][0] | {id, status, conclusion, html_url, head_sha}')
+            if [ -n "$run_json" ] && [ "$run_json" != "null" ]; then
+              status=$(printf '%s' "$run_json" | python -c 'import json,sys; print(json.load(sys.stdin)["status"])')
+              if [ "$status" = "completed" ]; then
+                break
+              fi
+            fi
+            sleep 20
+          done
+          if [ -z "$run_json" ] || [ "$run_json" = "null" ]; then
+            echo "No final certification workflow run was found." >&2
+            exit 1
+          fi
+          conclusion=$(printf '%s' "$run_json" | python -c 'import json,sys; print(json.load(sys.stdin)["conclusion"])')
+          url=$(printf '%s' "$run_json" | python -c 'import json,sys; print(json.load(sys.stdin)["html_url"])')
+          sha=$(printf '%s' "$run_json" | python -c 'import json,sys; print(json.load(sys.stdin)["head_sha"])')
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          if [ "$conclusion" != "success" ]; then
+            echo "Final certification concluded: $conclusion" >&2
+            exit 1
+          fi
+
+      - name: Verify certification artifact exists
+        run: test -s docs/FINAL_DEMO_CERTIFICATION.md
+
+      - name: Publish success record
+        env:
+          CERT_URL: ${{ steps.certification.outputs.url }}
+          TESTED_SHA: ${{ steps.certification.outputs.sha }}
+        run: |
+          cat > docs/DEMO_CERTIFICATION_STATUS.md <<EOF
+          # Talk2Data Demo Certification Status
+
+          Status: **PASSED**
+
+          Final certification run: ${CERT_URL}
+
+          Tested source commit: `${TESTED_SHA}`
+
+          Verified gates:
+
+          - Python 3.11, 3.12, and 3.13 quality suites
+          - deterministic test suite and 85% coverage minimum
+          - Ruff lint and format
+          - strict Mypy
+          - Python compilation
+          - Docker Compose configuration
+          - CodeQL Python security analysis
+          - live local Ollama model pull
+          - live `qwen3:0.6b` structured-output interpretation
+          - end-to-end receipt-backed chatbot API smoke
+          - browser demo document retrieval
+
+          The Unified AI Brain context dependency is intentionally excluded from this certification.
+          EOF
+
+      - name: Comment on the draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CERT_URL: ${{ steps.certification.outputs.url }}
+          TESTED_SHA: ${{ steps.certification.outputs.sha }}
+        run: |
+          gh pr comment 3 --body "## Demo certification passed
+
+          The final cross-version certification completed successfully for \`${TESTED_SHA}\`.
+
+          Validated: Python 3.11/3.12/3.13, Ruff, Mypy, compilation, 85% coverage floor, Docker Compose, CodeQL, a real local Ollama \`qwen3:0.6b\` structured-output test, the receipt-backed API path, and the browser demo document.
+
+          Certification run: ${CERT_URL}
+
+          Unified AI Brain context remains intentionally disconnected and is the only major parallel integration dependency."
+
+      - name: Commit report and remove reporter
+        run: |
+          rm -f .github/workflows/report-demo-certification.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "docs: publish passed demo certification status"
+          git push origin HEAD:feat/demo-ready-ai-chat
