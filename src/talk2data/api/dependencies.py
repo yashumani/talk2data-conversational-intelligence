@@ -4,6 +4,7 @@ from typing import cast
 
 from fastapi import Request
 
+from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.hermes import HermesGatewayClient
@@ -31,6 +32,10 @@ def get_semantic_registry(request: Request) -> SemanticRegistry:
 
 def get_query_compiler(request: Request) -> BusinessQueryCompiler:
     return cast(BusinessQueryCompiler, request.app.state.query_compiler)
+
+
+def get_connector_registry(request: Request) -> ConnectorRegistry:
+    return cast(ConnectorRegistry, request.app.state.connector_registry)
 
 
 def get_ollama_client(request: Request) -> OllamaQuestionInterpreter | None:
