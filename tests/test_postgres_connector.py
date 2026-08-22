@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from uuid import uuid4
 
+import psycopg
 import pytest
 
 from talk2data.connectors.base import StructuredQueryPlan
@@ -14,6 +15,7 @@ from talk2data.domain.models import (
     MetricAggregation,
     MetricValueType,
     QueryFilter,
+    SourceStatus,
     TimeGrain,
     TimePreset,
     TimeWindow,
@@ -112,3 +114,39 @@ async def test_rejects_metric_not_bound_to_connector() -> None:
     errors = await connector.validate_plan(plan, build_access())
 
     assert errors == ["METRIC_NOT_AVAILABLE_ON_CONNECTOR"]
+
+
+@pytest.mark.asyncio
+async def test_connection_health_does_not_expose_source_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connector = build_connector()
+
+    def fail_health_query() -> int:
+        raise psycopg.OperationalError("connection to secret-db.internal failed")
+
+    monkeypatch.setattr(connector, "_select_one_sync", fail_health_query)
+
+    ready, detail = await connector.test_connection()
+
+    assert ready is False
+    assert detail == "PostgreSQL connector is unavailable."
+    assert "secret-db.internal" not in detail
+
+
+@pytest.mark.asyncio
+async def test_freshness_failure_does_not_expose_source_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connector = build_connector()
+
+    def fail_freshness_query(_: frozenset[str]) -> None:
+        raise psycopg.OperationalError("connection to secret-db.internal failed")
+
+    monkeypatch.setattr(connector, "_source_state_sync", fail_freshness_query)
+
+    freshness = await connector.get_freshness()
+
+    assert freshness.status == SourceStatus.UNAVAILABLE
+    assert freshness.known_delay == "Source freshness check failed."
+    assert "secret-db.internal" not in freshness.known_delay
