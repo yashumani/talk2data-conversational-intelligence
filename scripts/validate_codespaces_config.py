@@ -25,11 +25,7 @@ def require(condition: bool, message: str) -> None:
 
 
 def main() -> int:
-    missing = [
-        path.relative_to(ROOT).as_posix()
-        for path in EXPECTED_FILES
-        if not path.is_file()
-    ]
+    missing = [path.relative_to(ROOT).as_posix() for path in EXPECTED_FILES if not path.is_file()]
     require(not missing, "Missing Codespaces files: " + ", ".join(missing))
 
     payload = json.loads(DEVCONTAINER.read_text(encoding="utf-8"))
