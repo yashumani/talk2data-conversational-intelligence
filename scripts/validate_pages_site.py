@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from html import unescape
 from pathlib import Path
 
 SITE = Path("site")
@@ -22,6 +23,7 @@ def main() -> int:
         raise SystemExit("Missing GitHub Pages assets: " + ", ".join(missing))
 
     html = (SITE / "index.html").read_text(encoding="utf-8")
+    normalized_html = unescape(html)
     script = (SITE / "app.js").read_text(encoding="utf-8")
     config = (SITE / "config.js").read_text(encoding="utf-8")
 
@@ -34,7 +36,7 @@ def main() -> int:
         "./config.js",
         "./app.js",
     ):
-        if marker not in html:
+        if marker not in normalized_html:
             raise SystemExit(f"Required page marker is missing: {marker!r}")
 
     if 'fetch("/v1/' in script or "fetch('/v1/" in script:
