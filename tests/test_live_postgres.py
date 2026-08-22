@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 import psycopg
 import pytest
@@ -17,9 +18,10 @@ SCHEMA = "talk2data_integration"
 TABLE = "metric_facts"
 
 
-def churn_row(fact_date: str, numerator: int, plan: str) -> tuple[object, ...]:
+def churn_row(fact_date: str, period_end: str, numerator: int, plan: str) -> tuple[object, ...]:
     return (
         fact_date,
+        period_end,
         "POSTPAID_CHURN",
         None,
         numerator,
@@ -44,6 +46,7 @@ def seeded_postgres(dsn: str) -> Iterator[None]:
             f"""
             CREATE TABLE "{SCHEMA}"."{TABLE}" (
                 fact_date date NOT NULL,
+                period_end date NOT NULL,
                 metric_id text NOT NULL,
                 amount double precision,
                 numerator double precision,
@@ -62,18 +65,18 @@ def seeded_postgres(dsn: str) -> Iterator[None]:
         connection.executemany(
             f"""
             INSERT INTO "{SCHEMA}"."{TABLE}" (
-                fact_date, metric_id, amount, numerator, denominator,
+                fact_date, period_end, metric_id, amount, numerator, denominator,
                 plan_id, market_id, region_id, channel_id, store_id,
                 cell_site_id, hour_id, technology_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             [
-                churn_row("2026-06-01", 120, "STARTER"),
-                churn_row("2026-06-01", 92, "UNLIMITED"),
-                churn_row("2026-06-01", 67, "PREMIUM"),
-                churn_row("2026-07-01", 117, "STARTER"),
-                churn_row("2026-07-01", 89, "UNLIMITED"),
-                churn_row("2026-07-01", 64, "PREMIUM"),
+                churn_row("2026-06-01", "2026-06-30", 120, "STARTER"),
+                churn_row("2026-06-01", "2026-06-30", 92, "UNLIMITED"),
+                churn_row("2026-06-01", "2026-06-30", 67, "PREMIUM"),
+                churn_row("2026-07-01", "2026-07-31", 117, "STARTER"),
+                churn_row("2026-07-01", "2026-07-31", 89, "UNLIMITED"),
+                churn_row("2026-07-01", "2026-07-31", 64, "PREMIUM"),
             ],
         )
     try:
@@ -83,7 +86,7 @@ def seeded_postgres(dsn: str) -> Iterator[None]:
             connection.execute(f'DROP SCHEMA IF EXISTS "{SCHEMA}" CASCADE')
 
 
-def test_live_postgres_end_to_end_receipt_backed_answer(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_live_postgres_end_to_end_receipt_backed_answer(tmp_path: Path) -> None:
     if os.environ.get("T2D_RUN_LIVE_POSTGRES") != "1":
         pytest.skip("Set T2D_RUN_LIVE_POSTGRES=1 to run the live PostgreSQL integration test.")
     dsn = os.environ.get("T2D_TEST_POSTGRES_DSN")
