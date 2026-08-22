@@ -4,10 +4,14 @@ on:
   push:
     branches: [main, feat/github-native-runtime]
     paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
       - ".github/workflows/verify-live-pages.yml"
   pull_request:
     branches: [main, feat/github-pages-demo]
     paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
       - ".github/workflows/verify-live-pages.yml"
   workflow_dispatch:
 
@@ -26,12 +30,13 @@ jobs:
           for attempt in $(seq 1 120); do
             body="$(curl -fsSL "$PAGE_URL" || true)"
             if grep -Fq "Run Talk2Data now" <<<"$body" \
-              && grep -Fq "GitHub-native governed execution" <<<"$body"; then
+              && grep -Fq "GitHub-native governed execution" <<<"$body" \
+              && grep -Fq "ref=main" <<<"$body"; then
               echo "Verified $PAGE_URL"
               exit 0
             fi
             echo "Waiting for the GitHub Pages deployment (${attempt}/120)."
             sleep 5
           done
-          echo "The expected Talk2Data control center was not available at $PAGE_URL."
+          echo "The expected Talk2Data main runtime launcher was not available at $PAGE_URL."
           exit 1
