@@ -5,11 +5,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from talk2data.api.dependencies import (
+    get_connector_registry,
     get_domain_registry,
     get_hermes_client,
     get_ollama_client,
     get_session_store,
 )
+from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import ComponentHealth, ReadinessResponse
 from talk2data.services.hermes import HermesGatewayClient
@@ -28,6 +30,7 @@ async def liveness() -> dict[str, str]:
 async def readiness(
     registry: Annotated[DomainPackRegistry, Depends(get_domain_registry)],
     sessions: Annotated[SQLiteSessionStore, Depends(get_session_store)],
+    connectors: Annotated[ConnectorRegistry, Depends(get_connector_registry)],
     ollama: Annotated[OllamaQuestionInterpreter | None, Depends(get_ollama_client)],
     hermes: Annotated[HermesGatewayClient | None, Depends(get_hermes_client)],
 ) -> ReadinessResponse:
@@ -43,6 +46,17 @@ async def readiness(
         status="ready" if session_ok else "failed",
         detail=session_detail,
     )
+
+    for connector in connectors.connectors():
+        connector_ok, connector_detail = await connector.test_connection()
+        components[f"connector:{connector.descriptor.connector_id}"] = ComponentHealth(
+            status="ready" if connector_ok else "failed",
+            detail=connector_detail,
+            metadata={
+                "connector_type": connector.descriptor.connector_type,
+                "read_only": connector.descriptor.read_only,
+            },
+        )
 
     if ollama is None:
         components["ollama"] = ComponentHealth(status="disabled")
@@ -65,7 +79,7 @@ async def readiness(
     hard_failure = any(
         component.status == "failed"
         for name, component in components.items()
-        if name in {"domain_packs", "session_store"}
+        if name in {"domain_packs", "session_store"} or name.startswith("connector:")
     )
     overall = "failed" if hard_failure else "ready"
     return ReadinessResponse(status=overall, components=components)
