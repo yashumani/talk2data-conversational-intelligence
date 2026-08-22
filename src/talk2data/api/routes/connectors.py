@@ -12,6 +12,7 @@ from talk2data.domain.connectors import (
     ConnectorCatalogResponse,
     ConnectorFreshnessResponse,
     ConnectorHealthResponse,
+    ConnectorListRequest,
     ConnectorListResponse,
 )
 from talk2data.domain.models import AccessContext
@@ -20,14 +21,16 @@ from talk2data.services.policy import READ_DATA_ACTION
 router = APIRouter(prefix="/v1/connectors", tags=["connectors"])
 
 
-@router.get(
-    "",
+@router.post(
+    "/list",
     response_model=ConnectorListResponse,
-    summary="List configured governed connector contracts",
+    summary="List authorized governed connector contracts",
 )
 async def list_connectors(
+    request: ConnectorListRequest,
     registry: Annotated[ConnectorRegistry, Depends(get_connector_registry)],
 ) -> ConnectorListResponse:
+    _require_data_access(request.access_context)
     return ConnectorListResponse(
         connectors=[connector.descriptor for connector in registry.connectors()]
     )
