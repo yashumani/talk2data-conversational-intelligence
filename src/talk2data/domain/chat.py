@@ -56,6 +56,8 @@ class QueryReceipt(BaseModel):
     result_rows: list[dict[str, Any]]
     result_hash: str
     sql_hash: str
+    physical_mapping_version: str | None = None
+    physical_mapping_hash: str | None = None
     data_quality_status: str
     data_quality_checks: list[str] = Field(default_factory=list)
     policy_decision_id: str

@@ -4,9 +4,8 @@ import re
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
-from typing import Self
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -33,6 +32,7 @@ class Settings(BaseSettings):
     database_path: Path = Path(".talk2data/talk2data.db")
     default_tenant_id: str = "demo-telecom"
     domain_pack_directory: Path | None = None
+    physical_mapping_directory: Path | None = None
     cors_allowed_origins: list[str] = Field(
         default_factory=lambda: [
             "https://yashumani.github.io",
@@ -43,8 +43,8 @@ class Settings(BaseSettings):
 
     data_backend: DataBackend = DataBackend.DEMO_SQLITE
     postgres_dsn: SecretStr | None = None
-    postgres_schema: str = "talk2data"
-    postgres_table: str = "metric_facts"
+    postgres_schema: str | None = None
+    postgres_table: str | None = None
     postgres_maximum_rows: int = Field(default=1_000, ge=1, le=10_000)
     postgres_query_timeout_seconds: int = Field(default=60, ge=1, le=1_800)
     postgres_connect_timeout_seconds: int = Field(default=10, ge=1, le=120)
@@ -69,7 +69,9 @@ class Settings(BaseSettings):
 
     @field_validator("postgres_schema", "postgres_table")
     @classmethod
-    def validate_postgres_identifier(cls, value: str) -> str:
+    def validate_postgres_identifier(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         normalized = value.strip()
         if _IDENTIFIER.fullmatch(normalized) is None:
             raise ValueError("PostgreSQL schema and table must be simple identifiers")
@@ -90,16 +92,15 @@ class Settings(BaseSettings):
                 normalized.append(origin)
         return normalized
 
-    @field_validator("database_path", mode="after")
+    @field_validator(
+        "database_path",
+        "domain_pack_directory",
+        "physical_mapping_directory",
+        mode="after",
+    )
     @classmethod
-    def normalize_database_path(cls, value: Path) -> Path:
-        return value.expanduser()
-
-    @model_validator(mode="after")
-    def validate_data_backend(self) -> Self:
-        if self.data_backend == DataBackend.POSTGRESQL and self.postgres_dsn is None:
-            raise ValueError("T2D_POSTGRES_DSN is required when T2D_DATA_BACKEND=postgresql")
-        return self
+    def normalize_paths(cls, value: Path | None) -> Path | None:
+        return None if value is None else value.expanduser()
 
 
 @lru_cache(maxsize=1)

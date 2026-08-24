@@ -1,0 +1,69 @@
+tenant_id: demo-telecom
+version: "2026.08.2"
+status: APPROVED
+effective_from: 2026-08-23T00:00:00Z
+connectors:
+  - connector_id: telecom_semantic_warehouse
+    connector_type: POSTGRESQL
+    schema_name: talk2data
+    table_name: metric_facts
+    secret_ref: env://T2D_POSTGRES_DSN
+    fact_date_column: fact_date
+    period_end_column: period_end
+    metric_id_column: metric_id
+    dimensions:
+      PLAN: plan_id
+      MARKET: market_id
+      REGION: region_id
+      CHANNEL: channel_id
+      STORE: store_id
+    scope_value_allowlists:
+      REGION: [NORTHEAST, SOUTHEAST, CENTRAL, WEST]
+    scope_value_mappings:
+      REGION:
+        NORTH_AMERICA: [NORTHEAST, SOUTHEAST, CENTRAL, WEST]
+        NORTHEAST: [NORTHEAST]
+        SOUTHEAST: [SOUTHEAST]
+        CENTRAL: [CENTRAL]
+        WEST: [WEST]
+    maximum_rows: 1000
+    query_timeout_seconds: 60
+    expected_refresh: Source-managed certified reporting periods
+    metrics:
+      - metric_id: POSTPAID_CHURN
+        source_value: POSTPAID_CHURN
+        aggregation: RATIO
+        numerator_column: numerator
+        denominator_column: denominator
+        allowed_dimensions: [PLAN, MARKET, REGION, CHANNEL]
+      - metric_id: MOBILE_ACTIVATIONS
+        source_value: MOBILE_ACTIVATIONS
+        aggregation: SUM
+        amount_column: amount
+        allowed_dimensions: [STORE, MARKET, REGION, CHANNEL, PLAN]
+
+  - connector_id: network_performance_platform
+    connector_type: POSTGRESQL
+    schema_name: talk2data
+    table_name: metric_facts
+    secret_ref: env://T2D_POSTGRES_DSN
+    fact_date_column: fact_date
+    period_end_column: period_end
+    metric_id_column: metric_id
+    dimensions:
+      MARKET: market_id
+      CELL_SITE: cell_site_id
+      HOUR: hour_id
+      TECHNOLOGY: technology_id
+    scope_value_allowlists: {}
+    scope_value_mappings: {}
+    maximum_rows: 1000
+    query_timeout_seconds: 60
+    expected_refresh: Source-managed certified reporting periods
+    metrics:
+      - metric_id: NETWORK_CONGESTION
+        source_value: NETWORK_CONGESTION
+        aggregation: RATIO
+        numerator_column: numerator
+        denominator_column: denominator
+        allowed_dimensions: [MARKET, CELL_SITE, HOUR, TECHNOLOGY]

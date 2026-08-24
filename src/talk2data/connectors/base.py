@@ -37,6 +37,8 @@ class ConnectorDescriptor(BaseModel):
     read_only: bool = True
     maximum_rows: int = Field(default=10_000, ge=1)
     query_timeout_seconds: int = Field(default=60, ge=1)
+    mapping_version: str | None = None
+    mapping_hash: str | None = None
 
 
 class SourceFreshness(BaseModel):

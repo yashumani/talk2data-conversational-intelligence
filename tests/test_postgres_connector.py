@@ -20,24 +20,28 @@ from talk2data.domain.models import (
     TimePreset,
     TimeWindow,
 )
+from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 
 
 def build_connector() -> PostgreSQLConnector:
+    registry = PhysicalMappingRegistry()
+    registry.load()
+    pack = registry.get("demo-telecom")
+    mapping = pack.connector("telecom_semantic_warehouse")
     return PostgreSQLConnector(
-        connector_id="telecom_semantic_warehouse",
+        mapping=mapping,
+        mapping_version=pack.version,
+        mapping_hash=pack.connector_hash(mapping.connector_id),
         dsn="postgresql://example.invalid/talk2data",
-        schema_name="talk2data",
-        table_name="metric_facts",
-        allowed_metric_ids={"POSTPAID_CHURN", "MOBILE_ACTIVATIONS"},
     )
 
 
-def build_access() -> AccessContext:
+def build_access(*, regions: set[str] | None = None) -> AccessContext:
     return AccessContext(
         tenant_id="demo-telecom",
         user_id="postgres-test",
         roles={"BI_MANAGER"},
-        regions={"NORTHEAST"},
+        regions={"NORTHEAST"} if regions is None else regions,
         classification_clearance=ClassificationLevel.CONFIDENTIAL,
         permitted_actions={"READ_AGGREGATED_DATA"},
     )
@@ -69,15 +73,12 @@ def build_plan() -> StructuredQueryPlan:
     )
 
 
-def test_rejects_untrusted_postgres_identifiers() -> None:
-    with pytest.raises(ValueError, match="simple PostgreSQL identifier"):
-        PostgreSQLConnector(
-            connector_id="telecom_semantic_warehouse",
-            dsn="postgresql://example.invalid/talk2data",
-            schema_name="talk2data; DROP SCHEMA public",
-            table_name="metric_facts",
-            allowed_metric_ids={"POSTPAID_CHURN"},
-        )
+def test_connector_pins_physical_mapping_identity() -> None:
+    connector = build_connector()
+
+    assert connector.descriptor.mapping_version == "2026.08.2"
+    assert connector.descriptor.mapping_hash is not None
+    assert len(connector.descriptor.mapping_hash) == 64
 
 
 @pytest.mark.asyncio
@@ -85,6 +86,13 @@ async def test_validates_plan_without_connecting_to_source() -> None:
     connector = build_connector()
 
     assert await connector.validate_plan(build_plan(), build_access()) == []
+    assert (
+        await connector.validate_plan(
+            build_plan(),
+            build_access(regions={"NORTH_AMERICA"}),
+        )
+        == []
+    )
 
 
 @pytest.mark.asyncio
@@ -104,6 +112,18 @@ async def test_rejects_region_scope_violation_before_execution() -> None:
     errors = await connector.validate_plan(plan, build_access())
 
     assert "REGION_SCOPE_VIOLATION" in errors
+
+
+@pytest.mark.asyncio
+async def test_rejects_unmapped_region_scope_before_execution() -> None:
+    connector = build_connector()
+
+    errors = await connector.validate_plan(
+        build_plan(),
+        build_access(regions={"EUROPE"}),
+    )
+
+    assert "REGION_SCOPE_UNMAPPED" in errors
 
 
 @pytest.mark.asyncio

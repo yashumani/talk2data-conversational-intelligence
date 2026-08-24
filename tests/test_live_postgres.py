@@ -137,7 +137,10 @@ def test_live_postgres_end_to_end_receipt_backed_answer(tmp_path: Path) -> None:
             )
 
     assert readiness.status_code == 200
-    assert readiness.json()["components"]["connector:telecom_semantic_warehouse"]["status"] == "ready"
+    connector_health = readiness.json()["components"]["connector:telecom_semantic_warehouse"]
+    assert connector_health["status"] == "ready"
+    assert connector_health["metadata"]["mapping_version"] == "2026.08.2"
+    assert len(connector_health["metadata"]["mapping_hash"]) == 64
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ANSWERED"
@@ -145,6 +148,9 @@ def test_live_postgres_end_to_end_receipt_backed_answer(tmp_path: Path) -> None:
     assert body["verification"]["status"] == "VERIFIED"
     assert body["receipt"]["row_count"] == 3
     assert body["receipt"]["result_hash"]
+    assert body["receipt"]["physical_mapping_version"] == "2026.08.2"
+    assert len(body["receipt"]["physical_mapping_hash"]) == 64
     assert "POSTGRESQL_READ_ONLY_TRANSACTION" in body["receipt"]["data_quality_checks"]
+    assert "GOVERNED_SCOPE_MAPPING_APPLIED" in body["receipt"]["data_quality_checks"]
     assert freshness.status_code == 200
     assert freshness.json()["freshness"]["coverage_end"] == "2026-07-31T23:59:59.999999Z"
