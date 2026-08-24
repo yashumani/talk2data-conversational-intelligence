@@ -13,6 +13,7 @@ from talk2data.api.routes import (
     physical_mappings,
     query_plans,
     questions,
+    runtime_packages,
     semantics,
     sessions,
 )
@@ -120,10 +121,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title=resolved_settings.app_name,
-        version="0.5.0",
+        version="0.6.0",
         description=(
-            "Governed question interpretation, deterministic query planning, and receipt-backed "
-            "answers through versioned semantic-to-physical connector mappings."
+            "Governed question interpretation, deterministic query planning, receipt-backed "
+            "answers, and installable tenant runtime package generation."
         ),
         lifespan=lifespan,
     )
@@ -151,6 +152,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(chat.router)
     app.include_router(connectors.router)
     app.include_router(physical_mappings.router)
+    app.include_router(runtime_packages.router)
     app.include_router(health.router)
     app.include_router(questions.router)
     app.include_router(query_plans.router)
