@@ -50,9 +50,7 @@ def test_builder_is_deterministic_and_credential_free() -> None:
     assert first.archive == second.archive
     assert first.preview.runtime_image == RUNTIME_IMAGE
     assert first.filename == "network-intelligence-assistant-talk2data-runtime.zip"
-    assert (
-        "postgresql://readonly_user:replace-me" in first.archive.decode("latin-1", errors="ignore") is False
-    )
+    assert "actual-secret" not in first.archive.decode("latin-1", errors="ignore")
 
     with zipfile.ZipFile(io.BytesIO(first.archive)) as archive:
         names = set(archive.namelist())
@@ -183,3 +181,4 @@ def test_embedded_database_credential_is_rejected(client: TestClient) -> None:
     assert response.status_code == 422
     assert "secret_ref must use env://NAME" in response.text
     assert "actual-secret" not in response.text
+    assert response.json()["detail"][0]["input"] == "[REDACTED]"
