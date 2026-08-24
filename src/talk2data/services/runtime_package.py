@@ -88,9 +88,7 @@ class RuntimePackageBuilder:
             RuntimePackageBuilder._validate_metric(metric, physical.aggregation, physical.allowed_dimensions)
 
         physical_metric_ids = {
-            metric.metric_id
-            for connector in mapping_pack.connectors
-            for metric in connector.metrics
+            metric.metric_id for connector in mapping_pack.connectors for metric in connector.metrics
         }
         unknown_metrics = physical_metric_ids - semantic_metric_ids
         if unknown_metrics:
@@ -106,22 +104,16 @@ class RuntimePackageBuilder:
         physical_dimensions: set[str],
     ) -> None:
         if physical_aggregation != metric.aggregation:
-            raise RuntimePackageValidationError(
-                f"Aggregation mismatch for metric {metric.id!r}."
-            )
+            raise RuntimePackageValidationError(f"Aggregation mismatch for metric {metric.id!r}.")
         if physical_dimensions != set(metric.allowed_dimensions):
-            raise RuntimePackageValidationError(
-                f"Dimension mapping mismatch for metric {metric.id!r}."
-            )
+            raise RuntimePackageValidationError(f"Dimension mapping mismatch for metric {metric.id!r}.")
 
     def _render_base_files(self, request: RuntimePackageRequest) -> dict[str, bytes]:
         secret_names = self._secret_names(request)
         return {
             "talk2data.yaml": _yaml_bytes(self._talk2data_config(request)),
             "config/domain-packs/domain-pack.yaml": _yaml_bytes(request.domain_pack),
-            "config/physical-mappings/physical-mapping.yaml": _yaml_bytes(
-                request.physical_mapping_pack
-            ),
+            "config/physical-mappings/physical-mapping.yaml": _yaml_bytes(request.physical_mapping_pack),
             "config/policies/policies.yaml": _yaml_bytes(self._policy_config(request)),
             "config/harness/harness.yaml": _yaml_bytes(self._harness_config(request)),
             "docker-compose.yml": _yaml_bytes(self._compose_config(request, secret_names)),
@@ -266,9 +258,7 @@ class RuntimePackageBuilder:
                         "./config/physical-mappings:/app/config/physical-mappings:ro",
                         "talk2data-state:/app/.talk2data",
                     ],
-                    "depends_on": {
-                        "ollama-model": {"condition": "service_completed_successfully"}
-                    },
+                    "depends_on": {"ollama-model": {"condition": "service_completed_successfully"}},
                     "healthcheck": {
                         "test": [
                             "CMD",
@@ -342,8 +332,7 @@ with read-only access to approved views.
     @staticmethod
     def _secret_names(request: RuntimePackageRequest) -> list[str]:
         names = {
-            connector.secret_ref.split("://", 1)[1]
-            for connector in request.physical_mapping_pack.connectors
+            connector.secret_ref.split("://", 1)[1] for connector in request.physical_mapping_pack.connectors
         }
         return sorted(names)
 
@@ -356,10 +345,7 @@ with read-only access to approved views.
             "physical_mapping_hash": request.physical_mapping_pack.canonical_hash(),
             "runtime_image": RUNTIME_IMAGE,
             "model": request.model.model_dump(mode="json"),
-            "files": {
-                path: hashlib.sha256(content).hexdigest()
-                for path, content in sorted(files.items())
-            },
+            "files": {path: hashlib.sha256(content).hexdigest() for path, content in sorted(files.items())},
         }
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
