@@ -51,9 +51,7 @@ def test_builder_is_deterministic_and_credential_free() -> None:
     assert first.preview.runtime_image == RUNTIME_IMAGE
     assert first.filename == "network-intelligence-assistant-talk2data-runtime.zip"
     assert (
-        "postgresql://readonly_user:replace-me"
-        in first.archive.decode("latin-1", errors="ignore")
-        is False
+        "postgresql://readonly_user:replace-me" in first.archive.decode("latin-1", errors="ignore") is False
     )
 
     with zipfile.ZipFile(io.BytesIO(first.archive)) as archive:
@@ -112,14 +110,9 @@ def test_download_api_returns_deterministic_zip(client: TestClient) -> None:
 
     assert first.status_code == 200
     assert first.headers["content-type"] == "application/zip"
-    assert "network-intelligence-assistant-talk2data-runtime.zip" in first.headers[
-        "content-disposition"
-    ]
+    assert "network-intelligence-assistant-talk2data-runtime.zip" in first.headers["content-disposition"]
     assert len(first.headers["x-talk2data-package-id"]) == 64
-    assert (
-        first.headers["x-talk2data-package-id"]
-        == second.headers["x-talk2data-package-id"]
-    )
+    assert first.headers["x-talk2data-package-id"] == second.headers["x-talk2data-package-id"]
     assert first.content == second.content
 
     with zipfile.ZipFile(io.BytesIO(first.content)) as archive:
