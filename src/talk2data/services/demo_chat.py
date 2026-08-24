@@ -7,6 +7,10 @@ from talk2data.connectors.demo_sqlite import (
     DemoConnectorValidationError,
     DemoSourceNotReadyError,
 )
+from talk2data.connectors.postgres import (
+    PostgreSQLConnectorError,
+    PostgreSQLSourceNotReadyError,
+)
 from talk2data.connectors.registry import ConnectorRegistry, ConnectorRegistryError
 from talk2data.domain.chat import (
     ChatStatus,
@@ -30,7 +34,7 @@ from talk2data.services.session_store import SQLiteSessionStore
 
 
 class DemoChatService:
-    """Runs the governed demo path from question to verified, receipt-backed answer."""
+    """Runs the governed chat path from question to verified, receipt-backed answer."""
 
     def __init__(
         self,
@@ -41,6 +45,7 @@ class DemoChatService:
         session_store: SQLiteSessionStore,
         connector_registry: ConnectorRegistry,
         ai_model: str | None,
+        synthetic_data: bool,
     ) -> None:
         self._domain_registry = domain_registry
         self._admissibility_engine = admissibility_engine
@@ -48,6 +53,7 @@ class DemoChatService:
         self._session_store = session_store
         self._connector_registry = connector_registry
         self._ai_model = ai_model
+        self._synthetic_data = synthetic_data
         self._validator = ResultSenseValidator()
         self._composer = CertifiedAnswerComposer()
 
@@ -107,7 +113,7 @@ class DemoChatService:
                 status=ChatStatus.CONTEXT_NOT_CONNECTED,
                 message=(
                     "The internal metric is recognized, but this question asks for external or "
-                    "organizational context. That evidence service is not connected in this demo yet."
+                    "organizational context. That evidence service is not connected yet."
                 ),
                 compilation_status=compilation.status,
                 query_ir=query_ir if request.include_debug else None,
@@ -135,7 +141,7 @@ class DemoChatService:
         try:
             connector = self._connector_registry.get(plan.connector_id)
             receipt = await connector.execute_read_only(plan, request.access_context)
-        except DemoSourceNotReadyError as exc:
+        except (DemoSourceNotReadyError, PostgreSQLSourceNotReadyError) as exc:
             return self._non_answer_response(
                 session_id=session_id,
                 decision=decision,
@@ -145,7 +151,11 @@ class DemoChatService:
                 query_ir=query_ir if request.include_debug else None,
                 warnings=compilation.warnings,
             )
-        except (ConnectorRegistryError, DemoConnectorValidationError) as exc:
+        except (
+            ConnectorRegistryError,
+            DemoConnectorValidationError,
+            PostgreSQLConnectorError,
+        ) as exc:
             return self._non_answer_response(
                 session_id=session_id,
                 decision=decision,
@@ -173,6 +183,7 @@ class DemoChatService:
                 receipt=receipt if request.include_debug else None,
                 verification=verification,
                 ai_model=self._resolved_ai_model(decision.interpreter_mode),
+                synthetic_data=self._synthetic_data,
                 warnings=[*compilation.warnings, *receipt.warnings],
             )
 
@@ -193,6 +204,7 @@ class DemoChatService:
             verification=verification,
             answer=answer,
             ai_model=self._resolved_ai_model(decision.interpreter_mode),
+            synthetic_data=self._synthetic_data,
             warnings=[*compilation.warnings, *receipt.warnings],
         )
 
@@ -221,6 +233,7 @@ class DemoChatService:
             compilation_status=compilation_status,
             query_ir=query_ir,
             ai_model=self._resolved_ai_model(decision.interpreter_mode),
+            synthetic_data=self._synthetic_data,
             warnings=warnings or [],
         )
 

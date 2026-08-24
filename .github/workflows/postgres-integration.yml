@@ -1,0 +1,67 @@
+name: PostgreSQL connector integration
+
+on:
+  push:
+    branches: [feat/postgresql-reference-connector]
+    paths:
+      - "src/talk2data/connectors/**"
+      - "src/talk2data/api/routes/connectors.py"
+      - "src/talk2data/core/config.py"
+      - "src/talk2data/main.py"
+      - "src/talk2data/services/demo_chat.py"
+      - "tests/test_live_postgres.py"
+      - "docker-compose.postgres.yml"
+      - "infra/postgres/**"
+      - "pyproject.toml"
+      - ".github/workflows/postgres-integration.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/talk2data/connectors/**"
+      - "src/talk2data/api/routes/connectors.py"
+      - "src/talk2data/core/config.py"
+      - "src/talk2data/main.py"
+      - "src/talk2data/services/demo_chat.py"
+      - "tests/test_live_postgres.py"
+      - "docker-compose.postgres.yml"
+      - "infra/postgres/**"
+      - "pyproject.toml"
+      - ".github/workflows/postgres-integration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: talk2data
+          POSTGRES_USER: talk2data
+          POSTGRES_PASSWORD: talk2data-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U talk2data -d talk2data"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      T2D_RUN_LIVE_POSTGRES: "1"
+      T2D_TEST_POSTGRES_DSN: postgresql://talk2data:talk2data-test@127.0.0.1:5432/talk2data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Run real PostgreSQL connector integration
+        run: pytest -m live_postgres -q
+      - name: Validate PostgreSQL Docker override
+        run: docker compose -f docker-compose.yml -f docker-compose.postgres.yml config --quiet

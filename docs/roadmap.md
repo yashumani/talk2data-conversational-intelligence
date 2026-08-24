@@ -2,7 +2,7 @@
 
 ## Stage 1 — Platform foundation and question admissibility
 
-Status: implemented in draft PR #1; CI and CodeQL passed.
+Status: complete on `main`.
 
 Delivered:
 
@@ -13,63 +13,82 @@ Delivered:
 - policy and classification harness
 - admissibility decisions and receipts
 - durable session history
-- Hermes API adapter
+- Hermes API adapter boundary
 - connector, memory, and evidence contracts
-- tests and CI
+- tests, CI, and CodeQL
 
-Acceptance outcome: Talk2Data can classify a question as accepted, clarified, unavailable, out of domain, analytically invalid, denied, conflicting, or source-not-ready before touching enterprise data.
+Acceptance outcome: Talk2Data classifies a request before enterprise data or organizational memory
+is accessed.
 
 ## Stage 2 — Business Query IR and semantic registry
 
-Status: implemented in stacked draft PR #2; validation in progress.
+Status: complete on `main`.
 
 Delivered:
 
-- canonical metric, entity, dimension, time, comparison, and filter contracts
-- versioned metric semantics, aggregation, additivity, units, and valid ranges
-- tenant fiscal-calendar, timezone, and currency references
-- governed dimension values and aliases
-- authorized semantic metric-resolution API
-- deterministic Business Query IR compiler
+- versioned metric semantics, aggregation, additivity, units, ranges, and source references
+- governed dimensions, values, aliases, calendars, currency, and timezone
+- authorized semantic resolution
+- deterministic Business Query IR
 - semantic snapshot and canonical plan hashes
-- invalid dimension, unavailable source, time-grain, and multi-metric controls
-- audit lineage from every compiled IR to its originating session and admissibility decision
-- classification revalidation for grouping dimensions and detected filter dimensions
-- controlled rejection of invalid explicit calendar dates
-- persisted query plans in tenant- and user-isolated sessions
-- tests for stable plan compilation, semantic security, audit lineage, and filter authorization
+- session and admissibility-decision lineage
+- dimension, filter, time, source, classification, and multi-metric controls
 
-Acceptance outcome: every accepted single-metric internal data question can compile into a deterministic, testable Business Query IR without executing a source.
+Acceptance outcome: every accepted single-metric request compiles into a deterministic source-neutral
+plan.
 
 ## Stage 3 — Universal data connector gateway
 
-Next priority:
+Status: in progress.
 
-- Connector registry implementation
-- PostgreSQL reference adapter
-- source-specific semantic mapping
-- parameterized read-only query compilation
-- source catalog, freshness, and quality APIs
-- row limits, timeouts, cancellation, and cost controls
-- policy pushdown and field/row enforcement
-- deterministic query receipts and result hashes
-- secrets-manager integration boundary
-- BigQuery, SQL Server, Teradata, Snowflake, Databricks, REST, and custom adapters
+Delivered:
 
-Acceptance outcome: an approved Business Query IR can execute through a governed adapter and return a reproducible receipt.
+- runtime connector registry
+- parameterized read-only synthetic SQLite adapter
+- governed PostgreSQL reference adapter
+- connector descriptor, catalog, freshness, test, and readiness APIs
+- identifier allowlists and parameter binding
+- repeatable-read, read-only PostgreSQL transactions
+- explicit certified source-period boundaries
+- source coverage validation
+- row limits, statement timeouts, lock timeouts, and cancellation
+- policy scope pushdown
+- deterministic SQL hashes, result hashes, and query receipts
+- local PostgreSQL Docker profile
+- real PostgreSQL GitHub Actions integration test
+
+Next:
+
+- tenant-configurable semantic-to-physical mappings
+- PostgreSQL cost estimation policy
+- secrets-manager provider interfaces
+- BigQuery reference adapter
+- SQL Server and Teradata adapters
+- Snowflake, Databricks, REST, GraphQL, and custom gateway adapters
+
+Acceptance outcome: an approved Business Query IR executes through a governed adapter and returns a
+reproducible receipt.
 
 ## Stage 4 — Certified answer and result-sense engine
 
-- Query receipts and source snapshots
-- data-quality gates
-- aggregation and denominator checks
-- join-cardinality validation
-- plausibility rules
-- claim compiler
-- numerical answer verifier
+Status: initial implementation complete for the current metric contracts.
+
+Delivered:
+
+- query receipts and source snapshots
+- source-coverage gates
+- aggregation, finiteness, range, row-count, uniqueness, and comparison checks
+- deterministic claim compiler
+- verified numerical answers
 - abstention paths
 
-Acceptance outcome: every internal number shown to a user is receipt-backed and verified.
+Next:
+
+- denominator reconciliation
+- join-cardinality controls for multi-table adapters
+- configurable plausibility rules
+- source-specific quality incident integration
+- human-review escalation for failed certification
 
 ## Stage 5 — Secure memory fabric
 
@@ -84,7 +103,8 @@ Acceptance outcome: every internal number shown to a user is receipt-backed and 
 - contradiction detection
 - retention and deletion policies
 
-Acceptance outcome: cross-session context can be retrieved securely without relying on one vector index or stale chat summaries.
+Acceptance outcome: cross-session context can be retrieved securely without relying on one vector
+index or stale chat summaries.
 
 ## Stage 6 — Unified AI Brain integration
 
@@ -95,7 +115,7 @@ Acceptance outcome: cross-session context can be retrieved securely without rely
 - prior investigations
 - coverage and ingestion watermarks
 
-Acceptance outcome: Talk2Data can connect certified data changes to approved internal business context.
+Acceptance outcome: Talk2Data connects certified data changes to approved internal business context.
 
 ## Stage 7 — Hermes bounded agent workflows
 
@@ -109,7 +129,8 @@ Acceptance outcome: Talk2Data can connect certified data changes to approved int
 - Response Composer
 - step, cost, timeout, retry, and approval controls
 
-Acceptance outcome: complex questions run as auditable workflows exchanging typed artifacts, not unrestricted agent chat.
+Acceptance outcome: complex questions run as auditable workflows exchanging typed artifacts, not
+unrestricted agent chat.
 
 ## Stage 8 — External intelligence
 
@@ -120,19 +141,20 @@ Acceptance outcome: complex questions run as auditable workflows exchanging type
 - entity and temporal alignment
 - internal/external evidence separation
 
-Acceptance outcome: external evidence can expand explanations while the product remains anchored to the tenant's business domain.
+Acceptance outcome: external evidence expands explanations while the product remains anchored to the
+tenant's business domain.
 
 ## Stage 9 — Conversational product experience
 
-- responsive chat interface
-- session and investigation navigation
-- visible source/freshness receipts
-- expandable evidence
-- role-aware presentation personas
-- clarification and abstention UX
-- saved investigations
+Status: executable GitHub-native control center and Codespaces runtime available.
 
-Acceptance outcome: users receive one coherent answer with visible trust boundaries and reusable investigation history.
+Next:
+
+- session and investigation navigation
+- richer source and freshness presentation
+- role-aware personas
+- saved investigations
+- guided tenant-project generation and installable runtime bundles
 
 ## Stage 10 — Production hardening
 
@@ -144,6 +166,6 @@ Acceptance outcome: users receive one coherent answer with visible trust boundar
 - load, latency, and failure testing
 - model evaluations and change gates
 - backup, restore, and incident procedures
-- deployment and observability
+- container registry, releases, deployment, and observability
 
 Acceptance outcome: the platform is ready for controlled enterprise use.

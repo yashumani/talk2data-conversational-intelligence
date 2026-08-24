@@ -1,7 +1,7 @@
 # GitHub-native Talk2Data runtime
 
-Talk2Data now uses GitHub for the control center, source of truth, complete evaluation runtime,
-testing, and future packaging.
+Talk2Data uses GitHub for the control center, source of truth, complete evaluation runtime, testing,
+and packaging.
 
 ## Launch
 
@@ -14,10 +14,10 @@ https://yashumani.github.io/talk2data-conversational-intelligence/
 Then select **Run Talk2Data now**, or open the Codespaces link directly:
 
 ```text
-https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=feat%2Fgithub-native-runtime&quickstart=1
+https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&quickstart=1
 ```
 
-GitHub creates or resumes a Codespace from `feat/github-native-runtime`.
+GitHub creates or resumes a Codespace from the permanent `main` runtime.
 
 ## What starts automatically
 
@@ -45,6 +45,10 @@ The working routes include:
 GET  /demo
 GET  /docs
 GET  /health/ready
+POST /v1/connectors/list
+POST /v1/connectors/catalog
+POST /v1/connectors/freshness
+POST /v1/connectors/test
 POST /v1/chat/demo
 POST /v1/questions/evaluate
 POST /v1/query-plans/compile
@@ -75,6 +79,20 @@ Restart the full stack:
 bash .devcontainer/start.sh
 ```
 
+## PostgreSQL execution profile
+
+The default Codespaces profile uses the synthetic SQLite connector to keep startup small. The same
+runtime can execute through the PostgreSQL reference adapter:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.postgres.yml \
+  up -d --build
+```
+
+See [`POSTGRESQL_CONNECTOR.md`](POSTGRESQL_CONNECTOR.md).
+
 ## Runtime boundary
 
 GitHub Pages is the durable public control center. GitHub Codespaces is the complete isolated
@@ -89,12 +107,12 @@ The same governed Docker stack can later run continuously on:
 - a Kubernetes platform;
 - a private cloud account.
 
-GitHub Actions certifies the full Docker pipeline using the same compact Ollama model and the
-same end-to-end smoke questions before a change is promoted.
+GitHub Actions certifies the Docker/Ollama pipeline and the real PostgreSQL connector path before a
+change is promoted.
 
 ## Current public-data boundary
 
-The current branch contains only synthetic, employer-neutral telecom data. Do not add production
+The repository contains only synthetic, employer-neutral telecom data. Do not add production
 credentials, private schemas, customer data, employee data, internal Domain Packs, or proprietary
 organizational memory to this public repository.
 
