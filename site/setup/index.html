@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b10">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <title>Talk2Data Data Source Builder</title>
+  <meta name="description" content="Generate a governed, installable Talk2Data runtime package without sharing database credentials.">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../">Talk2Data</a>
+    <nav aria-label="Setup navigation">
+      <a href="../">Control center</a>
+      <a href="https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&amp;quickstart=1" target="_blank" rel="noreferrer">Run in Codespaces</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">GitHub-first tenant generator</p>
+        <h1>Connect your data without rewriting Talk2Data.</h1>
+        <p class="lede">Map governed business metrics to approved PostgreSQL columns, choose a local Ollama model, and download a complete Docker runtime package. The browser never asks for or stores your database password.</p>
+      </div>
+      <div class="trust-card">
+        <span class="trust-dot" aria-hidden="true"></span>
+        <div>
+          <strong>Credential-free builder</strong>
+          <span>Only an environment-variable name enters the generated mapping. Set the real secret later in a local <code>.env</code> file.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="steps" aria-label="Setup progress">
+        <button class="step active" type="button" data-step-target="1"><span>1</span><b>Project</b><small>Name the tenant runtime.</small></button>
+        <button class="step" type="button" data-step-target="2"><span>2</span><b>Source</b><small>Choose the governed database object.</small></button>
+        <button class="step" type="button" data-step-target="3"><span>3</span><b>Mapping</b><small>Map semantic IDs to columns.</small></button>
+        <button class="step" type="button" data-step-target="4"><span>4</span><b>Runtime</b><small>Choose model and limits.</small></button>
+        <button class="step" type="button" data-step-target="5"><span>5</span><b>Review</b><small>Validate and download.</small></button>
+      </aside>
+
+      <form id="builder" class="builder" novalidate>
+        <section class="panel active" data-step-panel="1">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 1</p>
+            <h2>Project identity</h2>
+            <p>The package is configuration around the stable Talk2Data runtime—not a forked custom application.</p>
+          </div>
+          <div class="form-grid">
+            <label class="field span-2"><span>Display name</span><input id="displayName" value="Telecom Intelligence Runtime" maxlength="120" required></label>
+            <label class="field"><span>Project slug</span><input id="projectSlug" value="telecom-intelligence" pattern="[a-z0-9-]+" required><small>Lowercase letters, numbers, and hyphens.</small></label>
+            <label class="field"><span>Tenant ID</span><input id="tenantId" value="demo-telecom" readonly><small>The starter Domain Pack is the approved telecom sample.</small></label>
+            <label class="field"><span>Mapping version</span><input id="mappingVersion" value="1.0.0" maxlength="64" required></label>
+            <label class="field"><span>Effective date</span><input id="effectiveDate" type="date" required></label>
+          </div>
+        </section>
+
+        <section class="panel" data-step-panel="2">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 2</p>
+            <h2>Governed source</h2>
+            <p>PostgreSQL is live today. SQL Server, BigQuery, and Teradata will reuse the same mapping contract.</p>
+          </div>
+          <div class="source-choice selected">
+            <div><strong>PostgreSQL</strong><span>Read-only, parameterized, receipt-backed execution</span></div>
+            <span class="badge ready">Available</span>
+          </div>
+          <div class="planned-row">
+            <span>SQL Server <b>Next</b></span><span>BigQuery <b>Planned</b></span><span>Teradata <b>Planned</b></span>
+          </div>
+          <div class="form-grid top-gap">
+            <label class="field"><span>Schema</span><input id="schemaName" value="talk2data" required></label>
+            <label class="field"><span>Table or view</span><input id="tableName" value="metric_facts" required></label>
+            <label class="field span-2"><span>Secret environment variable</span><div class="prefix-input"><span>env://</span><input id="secretName" value="T2D_POSTGRES_DSN" required></div><small>Enter only the variable name. Never enter the DSN or password here.</small></label>
+          </div>
+        </section>
+
+        <section class="panel" data-step-panel="3">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 3</p>
+            <h2>Semantic-to-physical mapping</h2>
+            <p>These identifiers are validated and quoted. User question text is always passed as bound query parameters.</p>
+          </div>
+          <h3>Control columns</h3>
+          <div class="form-grid compact">
+            <label class="field"><span>Fact start date</span><input id="factDateColumn" value="fact_date" required></label>
+            <label class="field"><span>Period end date</span><input id="periodEndColumn" value="period_end" required></label>
+            <label class="field"><span>Metric discriminator</span><input id="metricIdColumn" value="metric_id" required></label>
+            <label class="field"><span>Sum amount</span><input id="amountColumn" value="amount" required></label>
+            <label class="field"><span>Ratio numerator</span><input id="numeratorColumn" value="numerator" required></label>
+            <label class="field"><span>Ratio denominator</span><input id="denominatorColumn" value="denominator" required></label>
+          </div>
+          <h3>Dimensions</h3>
+          <div class="mapping-grid">
+            <label><span>PLAN</span><input id="planColumn" value="plan_id" required></label>
+            <label><span>MARKET</span><input id="marketColumn" value="market_id" required></label>
+            <label><span>REGION</span><input id="regionColumn" value="region_id" required></label>
+            <label><span>CHANNEL</span><input id="channelColumn" value="channel_id" required></label>
+            <label><span>STORE</span><input id="storeColumn" value="store_id" required></label>
+            <label><span>CELL_SITE</span><input id="cellSiteColumn" value="cell_site_id" required></label>
+            <label><span>HOUR</span><input id="hourColumn" value="hour_id" required></label>
+            <label><span>TECHNOLOGY</span><input id="technologyColumn" value="technology_id" required></label>
+          </div>
+          <h3>Physical metric values</h3>
+          <div class="metric-table">
+            <label><span>POSTPAID_CHURN</span><input id="churnSourceValue" value="POSTPAID_CHURN" required><small>RATIO</small></label>
+            <label><span>MOBILE_ACTIVATIONS</span><input id="activationSourceValue" value="MOBILE_ACTIVATIONS" required><small>SUM</small></label>
+            <label><span>NETWORK_CONGESTION</span><input id="congestionSourceValue" value="NETWORK_CONGESTION" required><small>RATIO</small></label>
+          </div>
+        </section>
+
+        <section class="panel" data-step-panel="4">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 4</p>
+            <h2>Local runtime</h2>
+            <p>Ollama interprets language only. Database calculations, access checks, and receipts remain deterministic.</p>
+          </div>
+          <div class="form-grid">
+            <label class="field span-2"><span>Ollama model</span><input id="ollamaModel" value="qwen3:0.6b" required><small>Use the compact model for Codespaces. A larger local model can be selected later.</small></label>
+            <label class="field"><span>API port</span><input id="apiPort" type="number" value="8000" min="1024" max="65535" required></label>
+            <label class="field"><span>Maximum result rows</span><input id="maximumRows" type="number" value="1000" min="1" max="10000" required></label>
+            <label class="field"><span>Query timeout (seconds)</span><input id="queryTimeout" type="number" value="60" min="1" max="1800" required></label>
+            <label class="toggle span-2"><input id="includeCodespaces" type="checkbox" checked><span><b>Include Codespaces configuration</b><small>Useful after committing the downloaded package to a private GitHub repository.</small></span></label>
+          </div>
+        </section>
+
+        <section class="panel" data-step-panel="5">
+          <div class="panel-heading">
+            <p class="eyebrow">Step 5</p>
+            <h2>Review and generate</h2>
+            <p>The output includes the Domain Pack, physical mapping, Docker Compose, local-model bootstrap, checksums, startup scripts, and GitHub validation.</p>
+          </div>
+          <div id="validation" class="validation neutral" role="status">Run validation to inspect the package.</div>
+          <div id="summary" class="summary-grid"></div>
+          <div class="package-list">
+            <h3>Package contents</h3>
+            <ul id="fileList"></ul>
+          </div>
+          <div class="review-actions">
+            <button id="validateButton" class="button secondary" type="button">Validate configuration</button>
+            <button id="downloadButton" class="button primary" type="button">Download runtime package</button>
+          </div>
+          <p class="fine-print">The generated package contains no credentials or production data. Review all mappings before connecting a real source.</p>
+        </section>
+
+        <footer class="panel-footer">
+          <button id="backButton" class="button ghost" type="button" disabled>Back</button>
+          <span id="stepStatus">Step 1 of 5</span>
+          <button id="nextButton" class="button primary" type="button">Continue</button>
+        </footer>
+      </form>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

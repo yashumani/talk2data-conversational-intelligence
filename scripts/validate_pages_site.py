@@ -6,15 +6,23 @@ from html import unescape
 from pathlib import Path
 
 SITE = Path("site")
+SETUP = SITE / "setup"
 REQUIRED = [
     SITE / "index.html",
     SITE / "app.js",
     SITE / "config.js",
     SITE / ".nojekyll",
     SITE / "demo" / "index.html",
+    SETUP / "index.html",
+    SETUP / "styles.css",
+    SETUP / "app.js",
+    SETUP / "templates" / "telecom-domain-pack.yaml",
 ]
 
-CODESPACES_URL = "https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=feat%2Fgithub-native-runtime&quickstart=1"
+CODESPACES_URL = (
+    "https://codespaces.new/yashumani/talk2data-conversational-intelligence"
+    "?ref=feat%2Fgithub-native-runtime&quickstart=1"
+)
 
 
 def main() -> int:
@@ -48,6 +56,32 @@ def main() -> int:
     if "browserPrincipal()" not in script:
         raise SystemExit("The public client must isolate its synthetic browser principal.")
 
+    setup_html = (SETUP / "index.html").read_text(encoding="utf-8")
+    setup_script = (SETUP / "app.js").read_text(encoding="utf-8")
+    for marker in (
+        "GitHub-first tenant generator",
+        "Credential-free builder",
+        "Download runtime package",
+        "Semantic-to-physical mapping",
+        "Secret environment variable",
+    ):
+        if marker not in setup_html:
+            raise SystemExit(f"Required setup marker is missing: {marker!r}")
+    for marker in (
+        "makeZip(files)",
+        "env://",
+        "checksums.json",
+        "docker-compose.yml",
+        "telecom-domain-pack.yaml",
+        "ghcr.io/yashumani/talk2data-conversational-intelligence:main",
+    ):
+        if marker not in setup_script:
+            raise SystemExit(f"Required setup implementation marker is missing: {marker!r}")
+    if 'type="password"' in setup_html.lower():
+        raise SystemExit("The public setup wizard must not collect database passwords.")
+    if "postgresql://" in setup_script:
+        raise SystemExit("The public setup wizard must not embed a database DSN.")
+
     match = re.fullmatch(
         r"window\.T2D_PUBLIC_API_BASE_URL = (.+);\n?",
         config,
@@ -58,7 +92,7 @@ def main() -> int:
     if not isinstance(value, str):
         raise SystemExit("The public API base URL must be a string.")
 
-    print("GitHub Pages runtime launcher validation passed.")
+    print("GitHub Pages runtime launcher and setup generator validation passed.")
     print(f"Configured public API: {value or 'not set'}")
     return 0
 

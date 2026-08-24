@@ -1,5 +1,9 @@
 FROM python:3.12-slim
 
+LABEL org.opencontainers.image.source="https://github.com/yashumani/talk2data-conversational-intelligence" \
+      org.opencontainers.image.title="Talk2Data Conversational Intelligence" \
+      org.opencontainers.image.description="Governed conversational intelligence runtime for enterprise data"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 

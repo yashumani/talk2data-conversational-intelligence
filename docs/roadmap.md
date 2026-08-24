@@ -17,8 +17,7 @@ Delivered:
 - connector, memory, and evidence contracts
 - tests, CI, and CodeQL
 
-Acceptance outcome: Talk2Data classifies a request before enterprise data or organizational memory
-is accessed.
+Acceptance outcome: Talk2Data classifies a request before enterprise data or organizational memory is accessed.
 
 ## Stage 2 — Business Query IR and semantic registry
 
@@ -34,12 +33,11 @@ Delivered:
 - session and admissibility-decision lineage
 - dimension, filter, time, source, classification, and multi-metric controls
 
-Acceptance outcome: every accepted single-metric request compiles into a deterministic source-neutral
-plan.
+Acceptance outcome: every accepted single-metric request compiles into a deterministic source-neutral plan.
 
 ## Stage 3 — Universal data connector gateway
 
-Status: in progress.
+Status: PostgreSQL and tenant mapping foundation complete; connector expansion in progress.
 
 Delivered:
 
@@ -47,27 +45,35 @@ Delivered:
 - parameterized read-only synthetic SQLite adapter
 - governed PostgreSQL reference adapter
 - connector descriptor, catalog, freshness, test, and readiness APIs
+- versioned tenant semantic-to-physical mapping packs
 - identifier allowlists and parameter binding
 - repeatable-read, read-only PostgreSQL transactions
 - explicit certified source-period boundaries
 - source coverage validation
 - row limits, statement timeouts, lock timeouts, and cancellation
-- policy scope pushdown
-- deterministic SQL hashes, result hashes, and query receipts
+- policy scope pushdown and approved scope-value mappings
+- deterministic SQL, result, and physical-mapping hashes
+- environment-only secret references
 - local PostgreSQL Docker profile
 - real PostgreSQL GitHub Actions integration test
 
+Current slice:
+
+- administrator-facing Data Source builder
+- deterministic downloadable tenant runtime packages
+- package checksums and GitHub validation workflow
+- GitHub Container Registry runtime image publication
+- backend onboarding validation and package APIs
+
 Next:
 
-- tenant-configurable semantic-to-physical mappings
+- SQL Server reference adapter
 - PostgreSQL cost estimation policy
-- secrets-manager provider interfaces
-- BigQuery reference adapter
-- SQL Server and Teradata adapters
+- Azure, AWS, Google, Vault, Docker, and Kubernetes secret providers
+- BigQuery and Teradata adapters
 - Snowflake, Databricks, REST, GraphQL, and custom gateway adapters
 
-Acceptance outcome: an approved Business Query IR executes through a governed adapter and returns a
-reproducible receipt.
+Acceptance outcome: an approved Business Query IR executes through a governed adapter and returns a reproducible receipt.
 
 ## Stage 4 — Certified answer and result-sense engine
 
@@ -103,8 +109,7 @@ Next:
 - contradiction detection
 - retention and deletion policies
 
-Acceptance outcome: cross-session context can be retrieved securely without relying on one vector
-index or stale chat summaries.
+Acceptance outcome: cross-session context can be retrieved securely without relying on one vector index or stale chat summaries.
 
 ## Stage 6 — Unified AI Brain integration
 
@@ -129,8 +134,7 @@ Acceptance outcome: Talk2Data connects certified data changes to approved intern
 - Response Composer
 - step, cost, timeout, retry, and approval controls
 
-Acceptance outcome: complex questions run as auditable workflows exchanging typed artifacts, not
-unrestricted agent chat.
+Acceptance outcome: complex questions run as auditable workflows exchanging typed artifacts, not unrestricted agent chat.
 
 ## Stage 8 — External intelligence
 
@@ -141,12 +145,19 @@ unrestricted agent chat.
 - entity and temporal alignment
 - internal/external evidence separation
 
-Acceptance outcome: external evidence expands explanations while the product remains anchored to the
-tenant's business domain.
+Acceptance outcome: external evidence expands explanations while the product remains anchored to the tenant's business domain.
 
 ## Stage 9 — Conversational product experience
 
-Status: executable GitHub-native control center and Codespaces runtime available.
+Status: executable GitHub-native control center, Codespaces runtime, and tenant package generator available.
+
+Delivered in the onboarding slice:
+
+- five-step Data Source setup flow
+- credential-free PostgreSQL mapping generator
+- installable Docker runtime package
+- optional Codespaces project bootstrap
+- API-driven package generation for administrators
 
 Next:
 
@@ -154,7 +165,7 @@ Next:
 - richer source and freshness presentation
 - role-aware personas
 - saved investigations
-- guided tenant-project generation and installable runtime bundles
+- connector discovery and mapping suggestions
 
 ## Stage 10 — Production hardening
 
@@ -166,6 +177,6 @@ Next:
 - load, latency, and failure testing
 - model evaluations and change gates
 - backup, restore, and incident procedures
-- container registry, releases, deployment, and observability
+- versioned releases, deployment, and observability
 
 Acceptance outcome: the platform is ready for controlled enterprise use.

@@ -2,7 +2,10 @@ name: Deploy Talk2Data GitHub runtime launcher
 
 on:
   push:
-    branches: [main, feat/github-native-runtime]
+    branches:
+      - main
+      - feat/github-native-runtime
+      - feat/data-source-onboarding-package
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
@@ -51,8 +54,11 @@ jobs:
           )
           PY
 
-      - name: Validate static control center
-        run: python scripts/validate_pages_site.py
+      - name: Validate static control center and setup generator
+        run: |
+          python scripts/validate_pages_site.py
+          node --check site/app.js
+          node --check site/setup/app.js
 
       - name: Bind published launcher links to the default branch
         run: |
@@ -78,21 +84,24 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify published control center
+      - name: Verify published control center and setup generator
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           for attempt in $(seq 1 60); do
-            body="$(curl -fsSL "$PAGE_URL" || true)"
-            if grep -Fq "Run Talk2Data now" <<<"$body" \
-              && grep -Fq "GitHub-native governed execution" <<<"$body" \
-              && grep -Fq "ref=main" <<<"$body"; then
-              echo "Verified $PAGE_URL"
+            home="$(curl -fsSL "$PAGE_URL" || true)"
+            setup="$(curl -fsSL "${PAGE_URL%/}/setup/" || true)"
+            if grep -Fq "Run Talk2Data now" <<<"$home" \
+              && grep -Fq "GitHub-native governed execution" <<<"$home" \
+              && grep -Fq "ref=main" <<<"$home" \
+              && grep -Fq "Download runtime package" <<<"$setup" \
+              && grep -Fq "Credential-free builder" <<<"$setup"; then
+              echo "Verified $PAGE_URL and ${PAGE_URL%/}/setup/"
               exit 0
             fi
             sleep 5
           done
-          echo "The deployed page did not expose the expected runtime launcher."
+          echo "The deployed page did not expose the expected runtime launcher and setup generator."
           exit 1
 
       - name: Post deployment receipt to the open branch pull request
@@ -110,11 +119,12 @@ jobs:
           ### GitHub Pages deployment verified
 
           - Control center: ${PAGE_URL}
-          - Full runtime: https://codespaces.new/${GITHUB_REPOSITORY}?ref=${GITHUB_REF_NAME}&quickstart=1
+          - Data source builder: ${PAGE_URL%/}/setup/
+          - Full runtime: https://codespaces.new/${GITHUB_REPOSITORY}?ref=main&quickstart=1
           - Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           - Commit: ${GITHUB_SHA}
 
-          The published page was fetched after deployment and contained the expected GitHub-native Talk2Data runtime launcher.
+          The published pages were fetched after deployment and contained the expected runtime launcher and credential-free package generator.
           EOF
           )"
           fi

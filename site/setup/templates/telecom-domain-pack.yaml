@@ -1,0 +1,240 @@
+tenant_id: demo-telecom
+tenant_name: Demo Telecom
+industry: Telecommunications
+subindustries:
+  - Wireless
+  - Broadband
+  - Fiber
+  - Enterprise Connectivity
+version: "2026.08.3"
+status: APPROVED
+effective_from: 2026-08-17T00:00:00Z
+default_currency: USD
+default_calendar: CORPORATE_FISCAL
+default_timezone: America/New_York
+
+domains:
+  - id: WIRELESS_SUBSCRIBER
+    name: Wireless Subscriber Management
+    aliases: [wireless, subscriber, postpaid, prepaid, mobile service]
+    description: Subscriber acquisition, retention, plan, and line performance.
+    classification: INTERNAL
+  - id: RETAIL_SALES
+    name: Telecom Retail Sales
+    aliases: [retail store, store sales, mobile retail, activation sales]
+    description: Store and channel performance for telecom products and services.
+    classification: INTERNAL
+  - id: NETWORK_OPERATIONS
+    name: Network Operations
+    aliases: [network, radio access network, cell site, tower, network performance]
+    description: Wireless and broadband network capacity, quality, and reliability.
+    classification: CONFIDENTIAL
+  - id: CUSTOMER_CARE
+    name: Customer Care
+    aliases: [customer support, care center, contact center, support tickets]
+    description: Customer support demand, resolution, and service experience.
+    classification: INTERNAL
+
+metrics:
+  - id: POSTPAID_CHURN
+    name: Postpaid Churn
+    aliases: [postpaid churn, churn, disconnect rate, subscriber churn]
+    domain_id: WIRELESS_SUBSCRIBER
+    definition: Postpaid account or line disconnects divided by the approved average active base for the period.
+    semantic_version: "2.0"
+    value_type: PERCENTAGE
+    aggregation: RATIO
+    additivity: NON_ADDITIVE
+    unit: PERCENT
+    allowed_dimensions: [PLAN, MARKET, REGION, CHANNEL]
+    supported_time_grains: [DAY, WEEK, MONTH, QUARTER, YEAR]
+    default_time_grain: MONTH
+    default_time_window: PREVIOUS_COMPLETE_MONTH
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
+    valid_max: 1
+    classification: CONFIDENTIAL
+    source:
+      connector_id: telecom_semantic_warehouse
+      status: AVAILABLE
+      description: Certified subscriber performance mart.
+  - id: MOBILE_ACTIVATIONS
+    name: Mobile Activations
+    aliases: [mobile activations, wireless activations, new activations, activations]
+    domain_id: RETAIL_SALES
+    definition: Successfully completed new wireless service activations in the selected period.
+    semantic_version: "2.0"
+    value_type: INTEGER
+    aggregation: SUM
+    additivity: ADDITIVE
+    unit: COUNT
+    allowed_dimensions: [STORE, MARKET, REGION, CHANNEL, PLAN]
+    supported_time_grains: [DAY, WEEK, MONTH, QUARTER, YEAR]
+    default_time_grain: MONTH
+    default_time_window: PREVIOUS_COMPLETE_MONTH
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
+    classification: INTERNAL
+    source:
+      connector_id: telecom_semantic_warehouse
+      status: AVAILABLE
+      description: Certified activation fact view.
+  - id: NETWORK_CONGESTION
+    name: Network Congestion Rate
+    aliases: [network congestion, congestion rate, congested cells, evening congestion]
+    domain_id: NETWORK_OPERATIONS
+    definition: Share of monitored network intervals exceeding the governed congestion threshold.
+    semantic_version: "2.0"
+    value_type: PERCENTAGE
+    aggregation: RATIO
+    additivity: NON_ADDITIVE
+    unit: PERCENT
+    allowed_dimensions: [MARKET, CELL_SITE, HOUR, TECHNOLOGY]
+    supported_time_grains: [HOUR, DAY, WEEK, MONTH]
+    default_time_grain: DAY
+    default_time_window: PREVIOUS_COMPLETE_DAY
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
+    valid_max: 1
+    classification: CONFIDENTIAL
+    source:
+      connector_id: network_performance_platform
+      status: AVAILABLE
+      description: Certified network performance aggregate API.
+  - id: ARPA
+    name: Average Revenue per Account
+    aliases: [arpa, average revenue per account, account revenue]
+    domain_id: WIRELESS_SUBSCRIBER
+    definition: Governed service revenue divided by the approved average account base.
+    semantic_version: "2.0"
+    value_type: CURRENCY
+    aggregation: RATIO
+    additivity: NON_ADDITIVE
+    unit: CURRENCY_PER_ACCOUNT
+    allowed_dimensions: [PLAN, MARKET, REGION]
+    supported_time_grains: [MONTH, QUARTER, YEAR]
+    default_time_grain: MONTH
+    default_time_window: PREVIOUS_COMPLETE_MONTH
+    default_comparison: PRIOR_PERIOD
+    valid_min: 0
+    classification: CONFIDENTIAL
+    source:
+      connector_id: finance_semantic_warehouse
+      status: UNAVAILABLE
+      description: Contract defined, but the development tenant has no connected finance source.
+
+entities:
+  - id: PLAN
+    name: Service Plan
+    aliases: [plan, plans, rate plan, service plan]
+    domain_id: WIRELESS_SUBSCRIBER
+    classification: INTERNAL
+  - id: STORE
+    name: Retail Store
+    aliases: [store, stores, retail location, retail locations]
+    domain_id: RETAIL_SALES
+    classification: INTERNAL
+  - id: MARKET
+    name: Operating Market
+    aliases: [market, markets, dma]
+    domain_id: RETAIL_SALES
+    classification: INTERNAL
+  - id: REGION
+    name: Operating Region
+    aliases: [region, regions]
+    domain_id: WIRELESS_SUBSCRIBER
+    values:
+      - id: NORTHEAST
+        name: Northeast
+        aliases: [north east]
+      - id: SOUTHEAST
+        name: Southeast
+        aliases: [south east]
+      - id: CENTRAL
+        name: Central
+      - id: WEST
+        name: West
+        aliases: [western region]
+    classification: INTERNAL
+  - id: CHANNEL
+    name: Sales Channel
+    aliases: [channel, channels]
+    domain_id: RETAIL_SALES
+    values:
+      - id: RETAIL
+        name: Retail
+        aliases: [store channel]
+      - id: DIGITAL
+        name: Digital
+        aliases: [online, web]
+      - id: CARE
+        name: Customer Care
+        aliases: [call center]
+    classification: INTERNAL
+  - id: CELL_SITE
+    name: Cell Site
+    aliases: [cell site, cell sites, tower, towers]
+    domain_id: NETWORK_OPERATIONS
+    classification: CONFIDENTIAL
+  - id: HOUR
+    name: Hour of Day
+    aliases: [hour, hourly, evening, morning]
+    domain_id: NETWORK_OPERATIONS
+    classification: INTERNAL
+  - id: TECHNOLOGY
+    name: Network Technology
+    aliases: [technology, network technology, radio technology]
+    domain_id: NETWORK_OPERATIONS
+    values:
+      - id: LTE
+        name: LTE
+        aliases: [4g]
+      - id: FIVE_G
+        name: 5G
+        aliases: [5 g, fifth generation]
+    classification: RESTRICTED
+
+external_adjacencies:
+  - id: RESTAURANT_FOOT_TRAFFIC
+    name: Restaurant and Dining-Area Foot Traffic
+    phrases:
+      - restaurant foot traffic
+      - dining district foot traffic
+      - restaurant traffic near stores
+      - dining traffic near stores
+    anchor_metric_ids: [MOBILE_ACTIVATIONS]
+    anchor_entity_ids: [STORE, MARKET]
+    description: External mobility context may be relevant when analyzing telecom retail activations.
+  - id: FOOD_DELIVERY_APP_TRAFFIC
+    name: Food-Delivery Application Traffic
+    phrases:
+      - food-delivery application traffic
+      - food delivery application traffic
+      - food-delivery app traffic
+      - food delivery app traffic
+    anchor_metric_ids: [NETWORK_CONGESTION]
+    anchor_entity_ids: [HOUR, MARKET]
+    description: Application-traffic mix may be relevant to network-load investigations.
+  - id: WEATHER_IMPACT
+    name: Weather Impact
+    phrases: [severe weather, storm impact, hurricane impact, weather disruption]
+    anchor_metric_ids: [MOBILE_ACTIVATIONS, NETWORK_CONGESTION]
+    anchor_entity_ids: [STORE, MARKET, REGION]
+    description: Weather may provide approved external context for retail and network analysis.
+
+excluded_domains:
+  - id: RESTAURANT_OPERATIONS
+    name: Restaurant Operations
+    phrases:
+      - restaurant food-cost
+      - restaurant food cost
+      - food-cost margin
+      - food cost margin
+      - menu profitability
+      - restaurant margin
+      - recipe sales
+    explanation: The tenant Domain Pack contains no restaurant operating business, metric, entity, or data product.
+  - id: CLINICAL_HEALTHCARE
+    name: Clinical Healthcare
+    phrases: [patient diagnosis, medication dosage, clinical treatment, hospital mortality]
+    explanation: Clinical healthcare is outside the approved telecom business domain.

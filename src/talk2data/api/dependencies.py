@@ -5,6 +5,7 @@ from typing import cast
 from fastapi import Request
 
 from talk2data.connectors.registry import ConnectorRegistry
+from talk2data.deployment.runtime_package import RuntimePackageBuilder
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
@@ -21,6 +22,10 @@ def get_domain_registry(request: Request) -> DomainPackRegistry:
 
 def get_physical_mapping_registry(request: Request) -> PhysicalMappingRegistry:
     return cast(PhysicalMappingRegistry, request.app.state.physical_mapping_registry)
+
+
+def get_runtime_package_builder(request: Request) -> RuntimePackageBuilder:
+    return cast(RuntimePackageBuilder, request.app.state.runtime_package_builder)
 
 
 def get_admissibility_engine(request: Request) -> QuestionAdmissibilityEngine:
