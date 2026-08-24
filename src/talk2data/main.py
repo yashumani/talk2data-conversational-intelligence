@@ -53,15 +53,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     domain_registry.load()
     domain_pack = domain_registry.get(resolved_settings.default_tenant_id)
 
-    physical_mapping_registry = PhysicalMappingRegistry(
-        resolved_settings.physical_mapping_directory
-    )
+    physical_mapping_registry = PhysicalMappingRegistry(resolved_settings.physical_mapping_directory)
     physical_mapping_registry.load()
     mapping_failures = physical_mapping_registry.validate_domain_pack(domain_pack)
     if mapping_failures:
-        raise ValueError(
-            "physical mapping validation failed: " + ", ".join(mapping_failures)
-        )
+        raise ValueError("physical mapping validation failed: " + ", ".join(mapping_failures))
     runtime_package_builder = RuntimePackageBuilder(
         domain_registry=domain_registry,
         physical_mapping_registry=physical_mapping_registry,
@@ -105,20 +101,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         query_compiler=query_compiler,
         session_store=session_store,
         connector_registry=connector_registry,
-        ai_model=(
-            resolved_settings.ollama_model
-            if resolved_settings.ollama_enabled
-            else None
-        ),
+        ai_model=(resolved_settings.ollama_model if resolved_settings.ollama_enabled else None),
         synthetic_data=resolved_settings.data_backend == DataBackend.DEMO_SQLITE,
     )
 
     hermes_client = None
     if resolved_settings.hermes_enabled:
         if not resolved_settings.hermes_api_key:
-            raise ValueError(
-                "T2D_HERMES_API_KEY is required when Hermes integration is enabled"
-            )
+            raise ValueError("T2D_HERMES_API_KEY is required when Hermes integration is enabled")
         hermes_client = HermesGatewayClient(
             HermesConfiguration(
                 base_url=resolved_settings.hermes_base_url,
@@ -194,9 +184,7 @@ def _build_connectors(
             dsn = (
                 settings.postgres_dsn.get_secret_value()
                 if settings.postgres_dsn is not None
-                else secret_resolver.resolve(
-                    effective_mapping.secret_ref
-                ).get_secret_value()
+                else secret_resolver.resolve(effective_mapping.secret_ref).get_secret_value()
             )
             connectors.append(
                 PostgreSQLConnector(

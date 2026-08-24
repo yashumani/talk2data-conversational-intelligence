@@ -38,9 +38,7 @@ def test_onboarding_requires_admin(
     )
 
     assert response.status_code == 403
-    assert response.json()["detail"] == (
-        "Data source onboarding administration access denied."
-    )
+    assert response.json()["detail"] == ("Data source onboarding administration access denied.")
 
 
 def test_validates_approved_tenant_runtime_package(
@@ -75,12 +73,8 @@ def test_downloads_deterministic_credential_free_runtime_package(
     assert first.status_code == 200
     assert first.headers["content-type"] == "application/zip"
     assert first.content == second.content
-    assert first.headers["x-talk2data-package-sha256"] == hashlib.sha256(
-        first.content
-    ).hexdigest()
-    assert "network-insights-talk2data-runtime.zip" in first.headers[
-        "content-disposition"
-    ]
+    assert first.headers["x-talk2data-package-sha256"] == hashlib.sha256(first.content).hexdigest()
+    assert "network-insights-talk2data-runtime.zip" in first.headers["content-disposition"]
 
     with zipfile.ZipFile(io.BytesIO(first.content)) as bundle:
         names = set(bundle.namelist())
@@ -98,9 +92,7 @@ def test_downloads_deterministic_credential_free_runtime_package(
 
         environment = bundle.read(".env.example").decode("utf-8")
         compose = bundle.read("docker-compose.yml").decode("utf-8")
-        mapping = bundle.read(
-            "config/physical-mappings/demo-telecom.yaml"
-        ).decode("utf-8")
+        mapping = bundle.read("config/physical-mappings/demo-telecom.yaml").decode("utf-8")
         all_text = "\n".join(
             bundle.read(name).decode("utf-8")
             for name in names
@@ -114,10 +106,7 @@ def test_downloads_deterministic_credential_free_runtime_package(
         assert "password=" not in all_text.lower()
 
         expected = json.loads(bundle.read("checksums.json"))
-        actual = {
-            name: hashlib.sha256(bundle.read(name)).hexdigest()
-            for name in expected
-        }
+        actual = {name: hashlib.sha256(bundle.read(name)).hexdigest() for name in expected}
         assert actual == expected
 
 

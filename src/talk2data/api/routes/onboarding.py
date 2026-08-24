@@ -57,9 +57,7 @@ async def download_runtime_package(
         content=artifact.content,
         media_type="application/zip",
         headers={
-            "Content-Disposition": (
-                f'attachment; filename="{artifact.metadata.filename}"'
-            ),
+            "Content-Disposition": (f'attachment; filename="{artifact.metadata.filename}"'),
             "X-Talk2Data-Package-SHA256": artifact.metadata.sha256,
             "X-Talk2Data-Mapping-Version": artifact.metadata.mapping_version,
             "X-Talk2Data-Mapping-Hash": artifact.metadata.mapping_hash,

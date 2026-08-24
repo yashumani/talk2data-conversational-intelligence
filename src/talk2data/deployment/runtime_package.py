@@ -29,8 +29,7 @@ from talk2data.domain.physical_mapping import (
 RUNTIME_IMAGE = "ghcr.io/yashumani/talk2data-conversational-intelligence:main"
 SOURCE_REPOSITORY = "https://github.com/yashumani/talk2data-conversational-intelligence"
 _CODESPACES_URL = (
-    "https://codespaces.new/yashumani/talk2data-conversational-intelligence"
-    "?ref=main&quickstart=1"
+    "https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&quickstart=1"
 )
 _SECRET_NAME = re.compile(r"^env://([A-Z_][A-Z0-9_]*)$")
 
@@ -101,13 +100,8 @@ class RuntimePackageBuilder:
     def build(self, request: RuntimePackageRequest) -> RuntimePackageArtifact:
         resolved = self._resolve(request)
         files = self._render_files(request, resolved)
-        checksums = {
-            path: hashlib.sha256(content).hexdigest()
-            for path, content in sorted(files.items())
-        }
-        files["checksums.json"] = (
-            json.dumps(checksums, indent=2, sort_keys=True) + "\n"
-        ).encode("utf-8")
+        checksums = {path: hashlib.sha256(content).hexdigest() for path, content in sorted(files.items())}
+        files["checksums.json"] = (json.dumps(checksums, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
         archive = io.BytesIO()
         with zipfile.ZipFile(
@@ -119,9 +113,7 @@ class RuntimePackageBuilder:
             for path, content in sorted(files.items()):
                 info = zipfile.ZipInfo(path, date_time=(1980, 1, 1, 0, 0, 0))
                 info.compress_type = zipfile.ZIP_DEFLATED
-                info.external_attr = (
-                    (0o755 if path.endswith((".sh", ".ps1")) else 0o644) << 16
-                )
+                info.external_attr = (0o755 if path.endswith((".sh", ".ps1")) else 0o644) << 16
                 bundle.writestr(info, content)
 
         content = archive.getvalue()
@@ -153,38 +145,26 @@ class RuntimePackageBuilder:
                 "No approved Domain Pack and physical mapping are available for this tenant."
             ) from exc
         if mapping_pack.tenant_id != tenant_id:
-            raise RuntimePackageError(
-                "The physical mapping tenant does not match the authenticated tenant."
-            )
+            raise RuntimePackageError("The physical mapping tenant does not match the authenticated tenant.")
         if mapping_pack.status != "APPROVED":
-            raise RuntimePackageError(
-                "Only an APPROVED physical mapping pack can be packaged."
-            )
+            raise RuntimePackageError("Only an APPROVED physical mapping pack can be packaged.")
 
         failures = _validate_mapping_pack(domain_pack, mapping_pack)
         if failures:
-            raise RuntimePackageError(
-                "Physical mapping validation failed: " + ", ".join(failures)
-            )
+            raise RuntimePackageError("Physical mapping validation failed: " + ", ".join(failures))
 
         required_connectors = {
             metric.source.connector_id
             for metric in domain_pack.metrics
             if metric.source.status.value == "AVAILABLE"
         }
-        available_connectors = {
-            connector.connector_id for connector in mapping_pack.connectors
-        }
+        available_connectors = {connector.connector_id for connector in mapping_pack.connectors}
         selected = (
-            set(request.selected_connector_ids)
-            if request.selected_connector_ids
-            else required_connectors
+            set(request.selected_connector_ids) if request.selected_connector_ids else required_connectors
         )
         unknown = selected - available_connectors
         if unknown:
-            raise RuntimePackageError(
-                "Unknown connector selection: " + ", ".join(sorted(unknown))
-            )
+            raise RuntimePackageError("Unknown connector selection: " + ", ".join(sorted(unknown)))
         missing = required_connectors - selected
         if missing:
             raise RuntimePackageError(
@@ -195,17 +175,13 @@ class RuntimePackageBuilder:
         selected_pack = mapping_pack.model_copy(
             update={
                 "connectors": [
-                    connector
-                    for connector in mapping_pack.connectors
-                    if connector.connector_id in selected
+                    connector for connector in mapping_pack.connectors if connector.connector_id in selected
                 ]
             }
         )
         warnings: list[str] = []
         if request.physical_mapping_pack is not None:
-            warnings.append(
-                "A request-supplied physical mapping was validated and embedded."
-            )
+            warnings.append("A request-supplied physical mapping was validated and embedded.")
         if not request.include_codespaces:
             warnings.append("Codespaces bootstrap files were omitted.")
 
@@ -223,10 +199,7 @@ class RuntimePackageBuilder:
     ) -> dict[str, bytes]:
         tenant = resolved.domain_pack.tenant_id
         secret_names = sorted(
-            {
-                _secret_name(connector.secret_ref)
-                for connector in resolved.mapping_pack.connectors
-            }
+            {_secret_name(connector.secret_ref) for connector in resolved.mapping_pack.connectors}
         )
         files: dict[str, bytes] = {
             "README.md": _readme(request, resolved, secret_names).encode("utf-8"),
@@ -239,9 +212,7 @@ class RuntimePackageBuilder:
                 resolved,
                 secret_names,
             ).encode("utf-8"),
-            f"config/domain-packs/{tenant}.yaml": _yaml_bytes(
-                resolved.domain_pack.model_dump(mode="json")
-            ),
+            f"config/domain-packs/{tenant}.yaml": _yaml_bytes(resolved.domain_pack.model_dump(mode="json")),
             f"config/physical-mappings/{tenant}.yaml": _yaml_bytes(
                 resolved.mapping_pack.model_dump(mode="json")
             ),
@@ -261,14 +232,10 @@ class RuntimePackageBuilder:
             ),
             "scripts/start.sh": _start_sh().encode("utf-8"),
             "scripts/start.ps1": _start_ps1().encode("utf-8"),
-            ".github/workflows/validate.yml": _validation_workflow(
-                secret_names
-            ).encode("utf-8"),
+            ".github/workflows/validate.yml": _validation_workflow(secret_names).encode("utf-8"),
         }
         if request.include_codespaces:
-            files[".devcontainer/devcontainer.json"] = _devcontainer().encode(
-                "utf-8"
-            )
+            files[".devcontainer/devcontainer.json"] = _devcontainer().encode("utf-8")
         return files
 
 
@@ -296,9 +263,7 @@ def _validate_mapping_pack(
 def _secret_name(secret_ref: str) -> str:
     match = _SECRET_NAME.fullmatch(secret_ref)
     if match is None:
-        raise RuntimePackageError(
-            "Runtime packages currently support only env:// secret references."
-        )
+        raise RuntimePackageError("Runtime packages currently support only env:// secret references.")
     return match.group(1)
 
 
@@ -334,13 +299,12 @@ def _docker_compose(
     secret_names: list[str],
 ) -> str:
     secret_environment = "\n".join(
-        f'      {name}: "${{{name}:?Set {name} in .env}}"'
-        for name in secret_names
+        f'      {name}: "${{{name}:?Set {name} in .env}}"' for name in secret_names
     )
     if not secret_environment:
         secret_environment = "      # No connector secret references selected."
     tenant = resolved.domain_pack.tenant_id
-    return f'''name: ${{T2D_PROJECT_SLUG:-{request.project_slug}}}
+    return f"""name: ${{T2D_PROJECT_SLUG:-{request.project_slug}}}
 
 services:
   ollama:
@@ -403,7 +367,7 @@ services:
 volumes:
   ollama_models:
   talk2data_state:
-'''
+"""
 
 
 def _readme(
@@ -412,7 +376,7 @@ def _readme(
     secret_names: list[str],
 ) -> str:
     secrets = "\n".join(f"- `{name}`" for name in secret_names) or "- None"
-    return f'''# {request.display_name}
+    return f"""# {request.display_name}
 
 This package configures the stable Talk2Data runtime for tenant
 `{resolved.domain_pack.tenant_id}`.
@@ -447,11 +411,11 @@ all numerical answers.
 Runtime source: {SOURCE_REPOSITORY}
 
 Codespaces evaluation: {_CODESPACES_URL}
-'''
+"""
 
 
 def _start_sh() -> str:
-    return '''#!/usr/bin/env sh
+    return """#!/usr/bin/env sh
 set -eu
 if [ ! -f .env ]; then
   cp .env.example .env
@@ -460,11 +424,11 @@ if [ ! -f .env ]; then
 fi
 docker compose up -d
 docker compose ps
-'''
+"""
 
 
 def _start_ps1() -> str:
-    return '''$ErrorActionPreference = "Stop"
+    return """$ErrorActionPreference = "Stop"
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
     Write-Host "Created .env. Set the required connector secret values, then run again."
@@ -472,11 +436,11 @@ if (-not (Test-Path ".env")) {
 }
 docker compose up -d
 docker compose ps
-'''
+"""
 
 
 def _devcontainer() -> str:
-    return '''{
+    return """{
   "name": "Talk2Data tenant runtime",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
@@ -491,17 +455,14 @@ def _devcontainer() -> str:
   },
   "postCreateCommand": "cp -n .env.example .env || true"
 }
-'''
+"""
 
 
 def _validation_workflow(secret_names: list[str]) -> str:
-    placeholders = "\n".join(
-        f"          export {name}=placeholder"
-        for name in secret_names
-    )
+    placeholders = "\n".join(f"          export {name}=placeholder" for name in secret_names)
     if not placeholders:
         placeholders = "          true"
-    return f'''name: Validate Talk2Data tenant package
+    return f"""name: Validate Talk2Data tenant package
 
 on:
   push:
@@ -536,4 +497,4 @@ jobs:
         run: |
 {placeholders}
           docker compose config --quiet
-'''
+"""

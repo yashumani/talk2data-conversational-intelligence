@@ -30,9 +30,7 @@ class RuntimePackageRequest(BaseModel):
     def validate_project_slug(cls, value: str) -> str:
         normalized = value.strip().lower()
         if _PROJECT_SLUG.fullmatch(normalized) is None:
-            raise ValueError(
-                "project_slug must use lowercase letters, numbers, and single hyphens"
-            )
+            raise ValueError("project_slug must use lowercase letters, numbers, and single hyphens")
         return normalized
 
     @field_validator("display_name")
