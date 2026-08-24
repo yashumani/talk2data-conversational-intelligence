@@ -214,6 +214,17 @@ async function ask(text) {
   }
 }
 
+function installSetupLink() {
+  const actions = document.querySelector(".execution .actions");
+  if (!actions || actions.querySelector("[data-setup-link]")) return;
+  const link = document.createElement("a");
+  link.className = "action";
+  link.href = "./setup/";
+  link.textContent = "Configure a data source";
+  link.dataset.setupLink = "true";
+  actions.appendChild(link);
+}
+
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
   const text = elements.question.value.trim();
@@ -234,6 +245,7 @@ for (const text of examples) {
   elements.examples.appendChild(button);
 }
 
+installSetupLink();
 apiBase = configuredBaseUrl();
 elements.apiBase.value = apiBase;
 if (apiBase) {
