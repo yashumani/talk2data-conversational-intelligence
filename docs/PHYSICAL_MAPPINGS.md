@@ -2,6 +2,9 @@
 
 Talk2Data keeps business meaning separate from warehouse implementation.
 
+This layer extends the merged governed PostgreSQL runtime without changing the chatbot's semantic,
+policy, evidence, or verification contracts.
+
 The Tenant Domain Pack defines governed concepts such as `POSTPAID_CHURN`, `PLAN`, and `REGION`.
 A Tenant Physical Mapping Pack binds those concepts to an approved database object and its physical
 columns. The language model never sees or generates these physical identifiers.
@@ -72,7 +75,8 @@ provider may grant `NORTH_AMERICA`, while the database stores four operating reg
 
 `scope_value_mappings` explicitly expands the authorized value into approved physical values. An
 unknown scope is rejected with `REGION_SCOPE_UNMAPPED`; it never becomes an unrestricted query.
-A query filter must also remain inside the resolved physical scope.
+A query filter must also remain inside the resolved physical scope. Scope dimensions that are not part
+of a connector's approved physical object are not injected into its query.
 
 ## Secrets
 
