@@ -6,6 +6,7 @@ from fastapi import Request
 
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.domain.domain_pack import DomainPackRegistry
+from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.hermes import HermesGatewayClient
 from talk2data.services.interpreter import OllamaQuestionInterpreter
@@ -16,6 +17,10 @@ from talk2data.services.session_store import SQLiteSessionStore
 
 def get_domain_registry(request: Request) -> DomainPackRegistry:
     return cast(DomainPackRegistry, request.app.state.domain_registry)
+
+
+def get_physical_mapping_registry(request: Request) -> PhysicalMappingRegistry:
+    return cast(PhysicalMappingRegistry, request.app.state.physical_mapping_registry)
 
 
 def get_admissibility_engine(request: Request) -> QuestionAdmissibilityEngine:

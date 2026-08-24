@@ -15,6 +15,7 @@ def test_readiness_without_optional_runtimes(client: TestClient) -> None:
     body = response.json()
     assert body["status"] == "ready"
     assert body["components"]["domain_packs"]["status"] == "ready"
+    assert body["components"]["physical_mappings"]["status"] == "ready"
     assert body["components"]["session_store"]["status"] == "ready"
     assert body["components"]["ollama"]["status"] == "disabled"
     assert body["components"]["hermes"]["status"] == "disabled"

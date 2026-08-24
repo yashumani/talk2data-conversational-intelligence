@@ -6,13 +6,28 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from talk2data.api.routes import chat, connectors, health, query_plans, questions, semantics, sessions
+from talk2data.api.routes import (
+    chat,
+    connectors,
+    health,
+    physical_mappings,
+    query_plans,
+    questions,
+    semantics,
+    sessions,
+)
 from talk2data.connectors.base import DataConnector
 from talk2data.connectors.demo_sqlite import DemoSQLiteConnector
 from talk2data.connectors.postgres import PostgreSQLConnector
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.config import DataBackend, Settings, get_settings
 from talk2data.domain.domain_pack import DomainPackRegistry
+from talk2data.domain.models import TenantDomainPack
+from talk2data.domain.physical_mapping import (
+    PhysicalConnectorMapping,
+    PhysicalMappingRegistry,
+    physical_connector_hash,
+)
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.hermes import HermesConfiguration, HermesGatewayClient
@@ -24,6 +39,7 @@ from talk2data.services.interpreter import (
 )
 from talk2data.services.policy import PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
+from talk2data.services.secrets import EnvironmentSecretResolver, SecretResolver
 from talk2data.services.semantic import SemanticRegistry
 from talk2data.services.session_store import SQLiteSessionStore
 
@@ -33,6 +49,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     domain_registry = DomainPackRegistry(resolved_settings.domain_pack_directory)
     domain_registry.load()
+    domain_pack = domain_registry.get(resolved_settings.default_tenant_id)
+
+    physical_mapping_registry = PhysicalMappingRegistry(resolved_settings.physical_mapping_directory)
+    physical_mapping_registry.load()
+    mapping_failures = physical_mapping_registry.validate_domain_pack(domain_pack)
+    if mapping_failures:
+        raise ValueError("physical mapping validation failed: " + ", ".join(mapping_failures))
 
     ollama_client = (
         OllamaQuestionInterpreter(
@@ -56,7 +79,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     query_compiler = BusinessQueryCompiler(semantic_registry)
     session_store = SQLiteSessionStore(resolved_settings.database_path)
 
-    runtime_connectors = _build_connectors(resolved_settings)
+    runtime_connectors = _build_connectors(
+        settings=resolved_settings,
+        domain_pack=domain_pack,
+        physical_mappings=physical_mapping_registry,
+        secret_resolver=EnvironmentSecretResolver(),
+    )
     connector_registry = ConnectorRegistry()
     for connector in runtime_connectors:
         connector_registry.register(connector)
@@ -67,7 +95,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         query_compiler=query_compiler,
         session_store=session_store,
         connector_registry=connector_registry,
-        ai_model=resolved_settings.ollama_model if resolved_settings.ollama_enabled else None,
+        ai_model=(resolved_settings.ollama_model if resolved_settings.ollama_enabled else None),
         synthetic_data=resolved_settings.data_backend == DataBackend.DEMO_SQLITE,
     )
 
@@ -92,10 +120,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title=resolved_settings.app_name,
-        version="0.4.0",
+        version="0.5.0",
         description=(
             "Governed question interpretation, deterministic query planning, and receipt-backed "
-            "answers through read-only SQLite or PostgreSQL connector contracts."
+            "answers through versioned semantic-to-physical connector mappings."
         ),
         lifespan=lifespan,
     )
@@ -110,6 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.state.settings = resolved_settings
     app.state.domain_registry = domain_registry
+    app.state.physical_mapping_registry = physical_mapping_registry
     app.state.ollama_client = ollama_client
     app.state.hermes_client = hermes_client
     app.state.admissibility_engine = admissibility_engine
@@ -121,6 +150,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(chat.router)
     app.include_router(connectors.router)
+    app.include_router(physical_mappings.router)
     app.include_router(health.router)
     app.include_router(questions.router)
     app.include_router(query_plans.router)
@@ -129,28 +159,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     return app
 
 
-def _build_connectors(settings: Settings) -> list[DataConnector]:
-    metric_groups = [
-        ("telecom_semantic_warehouse", {"POSTPAID_CHURN", "MOBILE_ACTIVATIONS"}),
-        ("network_performance_platform", {"NETWORK_CONGESTION"}),
-    ]
+def _build_connectors(
+    *,
+    settings: Settings,
+    domain_pack: TenantDomainPack,
+    physical_mappings: PhysicalMappingRegistry,
+    secret_resolver: SecretResolver,
+) -> list[DataConnector]:
+    metric_groups = _available_metric_groups(domain_pack)
     if settings.data_backend == DataBackend.POSTGRESQL:
-        if settings.postgres_dsn is None:
-            raise ValueError("PostgreSQL DSN is required for the PostgreSQL data backend")
-        dsn = settings.postgres_dsn.get_secret_value()
-        return [
-            PostgreSQLConnector(
-                connector_id=connector_id,
-                dsn=dsn,
-                schema_name=settings.postgres_schema,
-                table_name=settings.postgres_table,
-                allowed_metric_ids=metric_ids,
-                maximum_rows=settings.postgres_maximum_rows,
-                query_timeout_seconds=settings.postgres_query_timeout_seconds,
-                connect_timeout_seconds=settings.postgres_connect_timeout_seconds,
+        mapping_pack = physical_mappings.get(domain_pack.tenant_id)
+        connectors: list[DataConnector] = []
+        for connector_id in sorted(metric_groups):
+            mapping = mapping_pack.connector(connector_id)
+            effective_mapping = _apply_physical_object_overrides(mapping, settings)
+            dsn = (
+                settings.postgres_dsn.get_secret_value()
+                if settings.postgres_dsn is not None
+                else secret_resolver.resolve(effective_mapping.secret_ref).get_secret_value()
             )
-            for connector_id, metric_ids in metric_groups
-        ]
+            connectors.append(
+                PostgreSQLConnector(
+                    mapping=effective_mapping,
+                    mapping_version=mapping_pack.version,
+                    mapping_hash=physical_connector_hash(
+                        tenant_id=mapping_pack.tenant_id,
+                        version=mapping_pack.version,
+                        connector=effective_mapping,
+                    ),
+                    dsn=dsn,
+                    maximum_rows=settings.postgres_maximum_rows,
+                    query_timeout_seconds=settings.postgres_query_timeout_seconds,
+                    connect_timeout_seconds=settings.postgres_connect_timeout_seconds,
+                )
+            )
+        return connectors
 
     demo_database_path = settings.database_path.with_name("demo-telecom.db")
     return [
@@ -159,8 +202,33 @@ def _build_connectors(settings: Settings) -> list[DataConnector]:
             database_path=demo_database_path,
             allowed_metric_ids=metric_ids,
         )
-        for connector_id, metric_ids in metric_groups
+        for connector_id, metric_ids in sorted(metric_groups.items())
     ]
+
+
+def _available_metric_groups(domain_pack: TenantDomainPack) -> dict[str, set[str]]:
+    groups: dict[str, set[str]] = {}
+    for metric in domain_pack.metrics:
+        if metric.source.status.value != "AVAILABLE":
+            continue
+        groups.setdefault(metric.source.connector_id, set()).add(metric.id)
+    return groups
+
+
+def _apply_physical_object_overrides(
+    mapping: PhysicalConnectorMapping,
+    settings: Settings,
+) -> PhysicalConnectorMapping:
+    update: dict[str, object] = {}
+    if settings.postgres_schema is not None:
+        update["schema_name"] = settings.postgres_schema
+    if settings.postgres_table is not None:
+        update["table_name"] = settings.postgres_table
+    if not update:
+        return mapping
+    payload = mapping.model_dump(mode="python")
+    payload.update(update)
+    return PhysicalConnectorMapping.model_validate(payload)
 
 
 app = create_app()

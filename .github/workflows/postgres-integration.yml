@@ -2,27 +2,37 @@ name: PostgreSQL connector integration
 
 on:
   push:
-    branches: [feat/postgresql-reference-connector]
+    branches: [feat/postgresql-reference-connector, feat/tenant-physical-mappings]
     paths:
       - "src/talk2data/connectors/**"
       - "src/talk2data/api/routes/connectors.py"
+      - "src/talk2data/api/routes/physical_mappings.py"
       - "src/talk2data/core/config.py"
+      - "src/talk2data/domain/physical_mapping.py"
       - "src/talk2data/main.py"
+      - "src/talk2data/resources/physical_mappings/**"
       - "src/talk2data/services/demo_chat.py"
       - "tests/test_live_postgres.py"
+      - "tests/test_physical_mapping.py"
+      - "tests/test_postgres_connector.py"
       - "docker-compose.postgres.yml"
       - "infra/postgres/**"
       - "pyproject.toml"
       - ".github/workflows/postgres-integration.yml"
   pull_request:
-    branches: [main]
+    branches: [main, feat/postgresql-reference-connector]
     paths:
       - "src/talk2data/connectors/**"
       - "src/talk2data/api/routes/connectors.py"
+      - "src/talk2data/api/routes/physical_mappings.py"
       - "src/talk2data/core/config.py"
+      - "src/talk2data/domain/physical_mapping.py"
       - "src/talk2data/main.py"
+      - "src/talk2data/resources/physical_mappings/**"
       - "src/talk2data/services/demo_chat.py"
       - "tests/test_live_postgres.py"
+      - "tests/test_physical_mapping.py"
+      - "tests/test_postgres_connector.py"
       - "docker-compose.postgres.yml"
       - "infra/postgres/**"
       - "pyproject.toml"

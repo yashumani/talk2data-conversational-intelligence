@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "talk2data-conversational-intelligence"
-version = "0.4.0"
+version = "0.5.0"
 description = "Governed conversational intelligence for enterprise data using Ollama and Hermes Agent."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,7 +33,10 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-talk2data = ["resources/domain_packs/*.yaml"]
+talk2data = [
+  "resources/domain_packs/*.yaml",
+  "resources/physical_mappings/*.yaml",
+]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --strict-config"

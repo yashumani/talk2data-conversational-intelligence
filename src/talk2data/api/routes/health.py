@@ -9,11 +9,13 @@ from talk2data.api.dependencies import (
     get_domain_registry,
     get_hermes_client,
     get_ollama_client,
+    get_physical_mapping_registry,
     get_session_store,
 )
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import ComponentHealth, ReadinessResponse
+from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 from talk2data.services.hermes import HermesGatewayClient
 from talk2data.services.interpreter import OllamaQuestionInterpreter
 from talk2data.services.session_store import SQLiteSessionStore
@@ -29,6 +31,10 @@ async def liveness() -> dict[str, str]:
 @router.get("/health/ready", response_model=ReadinessResponse)
 async def readiness(
     registry: Annotated[DomainPackRegistry, Depends(get_domain_registry)],
+    mappings: Annotated[
+        PhysicalMappingRegistry,
+        Depends(get_physical_mapping_registry),
+    ],
     sessions: Annotated[SQLiteSessionStore, Depends(get_session_store)],
     connectors: Annotated[ConnectorRegistry, Depends(get_connector_registry)],
     ollama: Annotated[OllamaQuestionInterpreter | None, Depends(get_ollama_client)],
@@ -38,7 +44,11 @@ async def readiness(
         "domain_packs": ComponentHealth(
             status="ready" if registry.loaded else "failed",
             detail=f"Loaded tenants: {', '.join(registry.list_tenants())}",
-        )
+        ),
+        "physical_mappings": ComponentHealth(
+            status="ready" if mappings.loaded else "failed",
+            detail=f"Loaded tenants: {', '.join(mappings.list_tenants())}",
+        ),
     }
 
     session_ok, session_detail = await sessions.health()
@@ -55,6 +65,8 @@ async def readiness(
             metadata={
                 "connector_type": connector.descriptor.connector_type,
                 "read_only": connector.descriptor.read_only,
+                "mapping_version": connector.descriptor.mapping_version,
+                "mapping_hash": connector.descriptor.mapping_hash,
             },
         )
 
@@ -79,7 +91,7 @@ async def readiness(
     hard_failure = any(
         component.status == "failed"
         for name, component in components.items()
-        if name in {"domain_packs", "session_store"} or name.startswith("connector:")
+        if name in {"domain_packs", "physical_mappings", "session_store"} or name.startswith("connector:")
     )
     overall = "failed" if hard_failure else "ready"
     return ReadinessResponse(status=overall, components=components)
