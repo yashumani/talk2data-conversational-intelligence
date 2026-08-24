@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from talk2data.api.routes import (
     chat,
@@ -43,6 +46,18 @@ from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.secrets import EnvironmentSecretResolver, SecretResolver
 from talk2data.services.semantic import SemanticRegistry
 from talk2data.services.session_store import SQLiteSessionStore
+
+_SENSITIVE_VALIDATION_FIELDS = frozenset(
+    {
+        "api_key",
+        "credential",
+        "dsn",
+        "password",
+        "secret",
+        "secret_ref",
+        "token",
+    }
+)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -128,6 +143,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         lifespan=lifespan,
     )
+
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_error_handler(
+        _: Request,
+        exc: RequestValidationError,
+    ) -> JSONResponse:
+        sanitized: list[dict[str, Any]] = []
+        for raw_error in exc.errors():
+            error: dict[str, Any] = dict(raw_error)
+            if _is_sensitive_validation_location(error.get("loc")):
+                error["input"] = "[REDACTED]"
+            context = error.get("ctx")
+            if isinstance(context, dict):
+                error["ctx"] = {str(key): str(value) for key, value in context.items()}
+            sanitized.append(error)
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"detail": sanitized},
+        )
+
     if resolved_settings.cors_allowed_origins:
         app.add_middleware(
             CORSMiddleware,
@@ -159,6 +194,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(semantics.router)
     app.include_router(sessions.router)
     return app
+
+
+def _is_sensitive_validation_location(location: Any) -> bool:
+    if not isinstance(location, (list, tuple)):
+        return False
+    return any(
+        any(sensitive in str(segment).lower() for sensitive in _SENSITIVE_VALIDATION_FIELDS)
+        for segment in location
+    )
 
 
 def _build_connectors(
