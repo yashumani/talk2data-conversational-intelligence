@@ -33,6 +33,19 @@ class RuntimePackageModelConfig(BaseModel):
         return normalized
 
 
+class RuntimePackageTemplateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    access_context: AccessContext
+
+
+class RuntimePackageTemplate(BaseModel):
+    domain_pack: TenantDomainPack
+    physical_mapping_pack: TenantPhysicalMappingPack
+    recommended_model: RuntimePackageModelConfig = Field(default_factory=RuntimePackageModelConfig)
+    runtime_image: str
+
+
 class RuntimePackageRequest(BaseModel):
     """Admin-authenticated request to generate an installable Talk2Data package."""
 
