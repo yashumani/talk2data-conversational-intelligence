@@ -1,0 +1,258 @@
+/* Setup workspace */
+.settings-workspace .topbar {
+  border-bottom-color: var(--line);
+  background: var(--surface);
+}
+
+.settings-scroll {
+  padding: 0 24px 128px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 920px);
+  gap: 28px;
+  justify-content: center;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding-top: 30px;
+}
+
+.settings-step-nav {
+  position: sticky;
+  top: 22px;
+  align-self: start;
+  display: grid;
+  gap: 3px;
+}
+
+.settings-step-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 0 9px;
+  border-radius: 9px;
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 620;
+  text-decoration: none;
+}
+
+.settings-step-link:hover,
+.settings-step-link.active {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.step-dot {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 740;
+}
+
+.settings-step-link.complete .step-dot {
+  border-color: color-mix(in srgb, var(--good) 45%, var(--line));
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.settings-content {
+  min-width: 0;
+}
+
+.settings-hero {
+  margin-bottom: 24px;
+}
+
+.settings-hero p {
+  margin-left: 0;
+}
+
+.connection-card,
+.settings-card {
+  scroll-margin-top: 20px;
+  margin-bottom: 14px;
+  padding: 18px;
+}
+
+.connection-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.connection-card .helper-copy {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.settings-card-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.settings-card-header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.field-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.field-grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.boundary-note {
+  display: flex;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--muted-strong);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.boundary-note strong {
+  color: var(--text);
+}
+
+.mapping-group {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-subtle);
+}
+
+.mapping-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--text-soft);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 680;
+  list-style: none;
+}
+
+.mapping-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.mapping-group summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.mapping-group[open] summary::after {
+  content: "−";
+}
+
+.mapping-group .field-grid {
+  padding: 0 12px 12px;
+}
+
+.settings-actionbar {
+  position: absolute;
+  right: var(--inspector-width);
+  bottom: 0;
+  left: var(--sidebar-width);
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(16px);
+  transition: right 180ms ease, left 180ms ease;
+}
+
+.actionbar-copy {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.file-list {
+  display: grid;
+  gap: 2px;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-soft);
+  font-size: 9px;
+}
+
+.file-row:last-child {
+  border-bottom: 0;
+}
+
+.file-row span:last-child {
+  color: var(--muted);
+}
+
+.warning {
+  margin: 6px 0;
+  color: var(--warn);
+  font-size: 9px;
+  line-height: 1.5;
+}
