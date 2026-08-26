@@ -28,6 +28,7 @@ const accessContext = {
 const elements = {
   apiBase: document.getElementById("api-base"),
   connect: document.getElementById("connect"),
+  setupStatus: document.getElementById("setup-status"),
   form: document.getElementById("setup-form"),
   projectName: document.getElementById("project-name"),
   projectSlug: document.getElementById("project-slug"),
@@ -59,6 +60,9 @@ const elements = {
   files: document.getElementById("files"),
   warnings: document.getElementById("warnings"),
   requestPreview: document.getElementById("request-preview"),
+  copyRequest: document.getElementById("copy-request"),
+  connectTrigger: document.getElementById("setup-connect-trigger"),
+  profileCard: document.getElementById("profile-card"),
 };
 
 let apiBase = "";
@@ -80,16 +84,12 @@ function configuredBaseUrl() {
   );
 }
 
-function setStatus(message, state = "degraded") {
+function setStatus(message, state = "degraded", label = null) {
   elements.statusDetail.textContent = message;
-  const existing = document.getElementById("setup-status-pill");
-  if (existing) existing.remove();
-  const pill = document.createElement("span");
-  pill.id = "setup-status-pill";
-  pill.className = `status ${state}`;
-  pill.textContent =
-    state === "ready" ? "Ready" : state === "failed" ? "Action required" : "Waiting";
-  elements.statusDetail.prepend(pill, document.createTextNode(" "));
+  elements.setupStatus.className = `status-pill ${state}`;
+  elements.setupStatus.textContent =
+    label || (state === "ready" ? "Ready" : state === "failed" ? "Action required" : "Working");
+  elements.setupStatus.title = message;
 }
 
 function clone(value) {
@@ -106,6 +106,28 @@ function setInput(element, value) {
   if (value !== undefined && value !== null && String(value).length) {
     element.value = String(value);
   }
+}
+
+function stepLink(name) {
+  return document.querySelector(`[data-step="${name}"]`);
+}
+
+function setStepComplete(name, complete) {
+  stepLink(name)?.classList.toggle("complete", Boolean(complete));
+}
+
+function sectionValid(id) {
+  const section = document.getElementById(id);
+  if (!section) return false;
+  return [...section.querySelectorAll("input")].every((input) => input.checkValidity());
+}
+
+function refreshStepStates() {
+  setStepComplete("connection", Boolean(template));
+  setStepComplete("project", Boolean(template) && sectionValid("project"));
+  setStepComplete("model", Boolean(template) && sectionValid("model"));
+  setStepComplete("source", Boolean(template) && sectionValid("source"));
+  setStepComplete("mapping", Boolean(template) && sectionValid("mapping"));
 }
 
 function applyTemplate(data) {
@@ -145,8 +167,15 @@ function applyTemplate(data) {
     `Mapping ${mappingPack.version} · ${data.runtime_image}`;
   elements.preview.disabled = false;
   elements.download.disabled = true;
-  setStatus("Approved tenant template loaded. Review the source mapping and validate the package.", "ready");
+  setStatus(
+    "Approved tenant template loaded. Review the source mapping and validate the package.",
+    "ready",
+    "Template loaded",
+  );
+  refreshStepStates();
   renderRequestSummary();
+  window.Talk2DataUI.setInspectorOpen(true);
+  window.Talk2DataUI.showToast("Approved tenant template loaded.");
 }
 
 function physicalColumnForDimension(dimensionId) {
@@ -237,9 +266,12 @@ function requestSummary(request) {
 
 function renderRequestSummary() {
   try {
-    elements.requestPreview.textContent = JSON.stringify(requestSummary(buildRequest()), null, 2);
+    const summary = requestSummary(buildRequest());
+    elements.requestPreview.textContent = JSON.stringify(summary, null, 2);
+    elements.copyRequest.disabled = false;
   } catch (error) {
     elements.requestPreview.textContent = error.message;
+    elements.copyRequest.disabled = true;
   }
 }
 
@@ -257,6 +289,7 @@ function renderPreview(data) {
     row.append(name, size);
     elements.files.appendChild(row);
   }
+
   elements.warnings.textContent = "";
   for (const warning of data.warnings || []) {
     const node = document.createElement("div");
@@ -265,8 +298,11 @@ function renderPreview(data) {
     elements.warnings.appendChild(node);
   }
   if (!(data.warnings || []).length) elements.warnings.textContent = "None.";
+
   elements.download.disabled = false;
-  setStatus("Package contract validated. Download is enabled.", "ready");
+  setStatus("Package contract validated. Download is enabled.", "ready", "Validated");
+  window.Talk2DataUI.activateInspectorTab("summary");
+  window.Talk2DataUI.showToast("Package contract validated.");
 }
 
 async function parseError(response) {
@@ -286,9 +322,11 @@ async function connect() {
   }
 
   elements.connect.disabled = true;
+  elements.connect.textContent = "Connecting…";
   elements.preview.disabled = true;
   elements.download.disabled = true;
-  setStatus(`Checking ${apiBase}…`, "degraded");
+  setStatus(`Checking ${apiBase}…`, "degraded", "Connecting");
+
   try {
     const readiness = await fetch(`${apiBase}/health/ready`, {
       headers: { Accept: "application/json" },
@@ -310,8 +348,10 @@ async function connect() {
     template = null;
     elements.templateDetail.textContent = "—";
     setStatus(`${error.message} Confirm the runtime URL, CORS, and API version.`, "failed");
+    refreshStepStates();
   } finally {
     elements.connect.disabled = false;
+    elements.connect.textContent = "Connect and load template";
   }
 }
 
@@ -323,7 +363,11 @@ async function preview(event) {
     lastPackageId = null;
     elements.preview.disabled = true;
     elements.download.disabled = true;
-    setStatus("Validating semantic, mapping, policy, and package contracts…", "degraded");
+    setStatus(
+      "Validating semantic, mapping, policy, and package contracts…",
+      "degraded",
+      "Validating",
+    );
     renderRequestSummary();
 
     const response = await fetch(`${apiBase}/v1/runtime-packages/preview`, {
@@ -339,6 +383,7 @@ async function preview(event) {
     elements.files.textContent = "—";
     elements.warnings.textContent = error.message;
     setStatus(error.message, "failed");
+    window.Talk2DataUI.activateInspectorTab("summary");
   } finally {
     elements.preview.disabled = !template;
   }
@@ -349,8 +394,9 @@ async function download() {
     setStatus("Validate the package before downloading it.", "failed");
     return;
   }
+
   elements.download.disabled = true;
-  setStatus("Building deterministic ZIP package…", "degraded");
+  setStatus("Building deterministic ZIP package…", "degraded", "Building ZIP");
   try {
     const response = await fetch(`${apiBase}/v1/runtime-packages/download`, {
       method: "POST",
@@ -359,7 +405,9 @@ async function download() {
     });
     if (!response.ok) throw new Error(await parseError(response));
     const packageId = response.headers.get("x-talk2data-package-id");
-    if (packageId !== lastPackageId) throw new Error("Package receipt changed between preview and download.");
+    if (packageId !== lastPackageId) {
+      throw new Error("Package receipt changed between preview and download.");
+    }
 
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
@@ -370,7 +418,12 @@ async function download() {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
-    setStatus("Package downloaded. Copy `.env.example` to `.env` and add the read-only DSN.", "ready");
+    setStatus(
+      "Package downloaded. Copy .env.example to .env and add the read-only DSN.",
+      "ready",
+      "Downloaded",
+    );
+    window.Talk2DataUI.showToast("Runtime package downloaded.");
   } catch (error) {
     setStatus(error.message, "failed");
   } finally {
@@ -378,22 +431,64 @@ async function download() {
   }
 }
 
+function installStepTracking() {
+  const scrollRoot = document.querySelector(".settings-scroll");
+  const sections = ["connection", "project", "model", "source", "mapping"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if (!scrollRoot || typeof IntersectionObserver !== "function") return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+      if (!visible) return;
+      for (const link of document.querySelectorAll("[data-step]")) {
+        link.classList.toggle("active", link.dataset.step === visible.target.id);
+      }
+    },
+    { root: scrollRoot, rootMargin: "-12% 0px -70%", threshold: [0.05, 0.25, 0.55] },
+  );
+  for (const section of sections) observer.observe(section);
+}
+
 elements.connect.addEventListener("click", () => void connect());
 elements.form.addEventListener("submit", (event) => void preview(event));
 elements.download.addEventListener("click", () => void download());
+elements.copyRequest.addEventListener("click", () => {
+  if (elements.copyRequest.disabled) return;
+  void window.Talk2DataUI.copyText(elements.requestPreview.textContent, "Request summary copied.");
+});
+elements.connectTrigger.addEventListener("click", () => {
+  document.getElementById("connection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  elements.apiBase.focus({ preventScroll: true });
+  window.Talk2DataUI.closeMobilePanels();
+});
+elements.profileCard.addEventListener("click", () => {
+  window.Talk2DataUI.showToast("This public wizard accepts a secret variable name only—never credentials.");
+});
+
 for (const input of elements.form.querySelectorAll("input")) {
   input.addEventListener("input", () => {
     lastRequest = null;
     lastPackageId = null;
     elements.download.disabled = true;
+    refreshStepStates();
     renderRequestSummary();
   });
 }
 
+installStepTracking();
+refreshStepStates();
 apiBase = configuredBaseUrl();
 elements.apiBase.value = apiBase;
 if (apiBase) {
   void connect();
 } else {
-  setStatus("Launch the Talk2Data runtime and enter its forwarded API URL.", "degraded");
+  setStatus(
+    "Launch the Talk2Data runtime and enter its forwarded API URL.",
+    "degraded",
+    "Waiting for runtime",
+  );
 }
