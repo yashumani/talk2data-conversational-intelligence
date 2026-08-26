@@ -1,14 +1,14 @@
-name: Deploy Talk2Data GitHub runtime launcher
+name: Deploy Talk2Data chat workspace
 
 on:
   push:
-    branches: [main, feat/github-native-runtime]
+    branches: [main, feat/openwebui-ui-redesign]
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
       - ".github/workflows/pages.yml"
   pull_request:
-    branches: [main, feat/github-pages-demo]
+    branches: [main]
     paths:
       - "site/**"
       - "scripts/validate_pages_site.py"
@@ -51,15 +51,8 @@ jobs:
           )
           PY
 
-      - name: Validate static control center
+      - name: Validate Open WebUI-inspired workspace
         run: python scripts/validate_pages_site.py
-
-      - name: Bind published launcher links to the default branch
-        run: |
-          sed -i \
-            -e 's/ref=feat%2Fgithub-native-runtime/ref=main/g' \
-            -e 's#tree/feat/github-native-runtime#tree/main#g' \
-            site/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
@@ -78,21 +71,22 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify published control center
+      - name: Verify published chat workspace
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           for attempt in $(seq 1 60); do
             body="$(curl -fsSL "$PAGE_URL" || true)"
-            if grep -Fq "Run Talk2Data now" <<<"$body" \
-              && grep -Fq "GitHub-native governed execution" <<<"$body" \
+            if grep -Fq "What do you want to know about your business?" <<<"$body" \
+              && grep -Fq "Connect runtime" <<<"$body" \
+              && grep -Fq "Evidence inspector" <<<"$body" \
               && grep -Fq "ref=main" <<<"$body"; then
               echo "Verified $PAGE_URL"
               exit 0
             fi
             sleep 5
           done
-          echo "The deployed page did not expose the expected runtime launcher."
+          echo "The deployed page did not expose the expected Talk2Data chat workspace."
           exit 1
 
       - name: Post deployment receipt to the open branch pull request
@@ -106,16 +100,16 @@ jobs:
               --jq '.[0].number // empty'
           )"
           if [[ -n "$pr_number" ]]; then
-            gh issue comment "$pr_number" --body "$(cat <<EOF
+            gh issue comment "$pr_number" --body "$(cat <<RECEIPT
           ### GitHub Pages deployment verified
 
-          - Control center: ${PAGE_URL}
-          - Full runtime: https://codespaces.new/${GITHUB_REPOSITORY}?ref=${GITHUB_REF_NAME}&quickstart=1
+          - Chat workspace: ${PAGE_URL}
+          - Full runtime: https://codespaces.new/${GITHUB_REPOSITORY}?ref=main&quickstart=1
           - Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           - Commit: ${GITHUB_SHA}
 
-          The published page was fetched after deployment and contained the expected GitHub-native Talk2Data runtime launcher.
-          EOF
+          The published page was fetched after deployment and contained the expected Open WebUI-inspired Talk2Data shell, runtime connector, and evidence inspector.
+          RECEIPT
           )"
           fi
 
