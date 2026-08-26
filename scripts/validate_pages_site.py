@@ -60,7 +60,11 @@ def require_markers(content: str, markers: tuple[str, ...], *, label: str) -> No
 
 
 def require_ids(parser: DocumentParser, required: set[str], *, label: str) -> None:
-    duplicates = sorted(identifier for identifier, count in Counter(parser.ids).items() if count > 1)
+    duplicates = sorted(
+        identifier
+        for identifier, count in Counter(parser.ids).items()
+        if count > 1
+    )
     if duplicates:
         raise SystemExit(f"Duplicate IDs in {label}: {', '.join(duplicates)}")
     missing = sorted(required.difference(parser.ids))
@@ -79,7 +83,13 @@ def main() -> int:
     ui_script = (SITE / "ui.js").read_text(encoding="utf-8")
     styles = "\n".join(
         (SITE / "styles" / name).read_text(encoding="utf-8")
-        for name in ("base.css", "chat.css", "inspector.css", "setup.css", "responsive.css")
+        for name in (
+            "base.css",
+            "chat.css",
+            "inspector.css",
+            "setup.css",
+            "responsive.css",
+        )
     )
     setup_html = (SITE / "setup" / "index.html").read_text(encoding="utf-8")
     normalized_setup_html = unescape(setup_html)
@@ -137,7 +147,9 @@ def main() -> int:
         label="chat page",
     )
     if main_parser.inline_scripts:
-        raise SystemExit("The chat page must use external scripts under the strict CSP.")
+        raise SystemExit(
+            "The chat page must use external scripts under the strict CSP."
+        )
 
     if 'fetch("/v1/' in script or "fetch('/v1/" in script:
         raise SystemExit("Static client must use the configured API base URL.")
@@ -229,11 +241,18 @@ def main() -> int:
         label="setup page",
     )
     if setup_parser.password_inputs:
-        raise SystemExit("The public setup wizard must never request a database password.")
-    if "actual password" not in setup_html.lower() and "never a password" not in setup_html.lower():
+        raise SystemExit(
+            "The public setup wizard must never request a database password."
+        )
+    if (
+        "actual password" not in setup_html.lower()
+        and "never a password" not in setup_html.lower()
+    ):
         raise SystemExit("The setup wizard must explain the secret boundary.")
     if setup_parser.inline_scripts:
-        raise SystemExit("The setup page must use external scripts under the strict CSP.")
+        raise SystemExit(
+            "The setup page must use external scripts under the strict CSP."
+        )
 
     require_markers(
         setup_script,
@@ -251,7 +270,9 @@ def main() -> int:
     if "feat/github-native-runtime" in "\n".join(
         (normalized_html, normalized_setup_html, script, setup_script)
     ):
-        raise SystemExit("Published UI links must target the main branch, not a retired feature branch.")
+        raise SystemExit(
+            "Published UI links must target the main branch, not a retired feature branch."
+        )
 
     match = re.fullmatch(
         r"window\.T2D_PUBLIC_API_BASE_URL = (.+);\n?",
