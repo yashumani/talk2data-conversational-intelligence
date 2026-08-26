@@ -1,14 +1,14 @@
-name: Verify live Talk2Data GitHub control center
+name: Verify live Talk2Data chat workspace
 
 on:
   push:
-    branches: [main, feat/github-native-runtime]
+    branches: [main, feat/openwebui-ui-redesign]
     paths:
       - "site/**"
       - ".github/workflows/pages.yml"
       - ".github/workflows/verify-live-pages.yml"
   pull_request:
-    branches: [main, feat/github-pages-demo]
+    branches: [main]
     paths:
       - "site/**"
       - ".github/workflows/pages.yml"
@@ -25,12 +25,13 @@ jobs:
     env:
       PAGE_URL: https://yashumani.github.io/talk2data-conversational-intelligence/
     steps:
-      - name: Wait for and verify the public control center
+      - name: Wait for and verify the public chat workspace
         run: |
           for attempt in $(seq 1 120); do
             body="$(curl -fsSL "$PAGE_URL" || true)"
-            if grep -Fq "Run Talk2Data now" <<<"$body" \
-              && grep -Fq "GitHub-native governed execution" <<<"$body" \
+            if grep -Fq "What do you want to know about your business?" <<<"$body" \
+              && grep -Fq "Connect runtime" <<<"$body" \
+              && grep -Fq "Evidence inspector" <<<"$body" \
               && grep -Fq "ref=main" <<<"$body"; then
               echo "Verified $PAGE_URL"
               exit 0
@@ -38,5 +39,5 @@ jobs:
             echo "Waiting for the GitHub Pages deployment (${attempt}/120)."
             sleep 5
           done
-          echo "The expected Talk2Data main runtime launcher was not available at $PAGE_URL."
+          echo "The expected Talk2Data chat workspace was not available at $PAGE_URL."
           exit 1
