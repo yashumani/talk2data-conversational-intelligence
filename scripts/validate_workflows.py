@@ -9,7 +9,8 @@ import yaml
 
 
 def main() -> int:
-    paths = sorted((Path(__file__).resolve().parents[1] / ".github/workflows").glob("*.yml"))
+    directory = Path(__file__).resolve().parents[1] / ".github/workflows"
+    paths = sorted(path for path in directory.glob("*") if path.suffix in {".yml", ".yaml"})
     if not paths:
         print("No GitHub workflow files found.", file=sys.stderr)
         return 1
