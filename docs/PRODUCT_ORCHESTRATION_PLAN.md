@@ -418,6 +418,8 @@ Maintain separate suites:
   Only test code is excluded. The in-memory React interaction tests are not browser or visual QA.
 - CI: lint, format, strict Python typing, Python 3.11/3.12/3.13 matrix, locked Node dependencies,
   TypeScript compilation, React tests, production build, and high-severity dependency audit.
+  Validate YAML syntax and top-level trigger/job structure for every workflow, including
+  workflows restricted to old branches; GitHub can reject malformed files after a main merge.
   Store Python and React coverage reports as CI artifacts tied to the tested commit.
 - Real service gates: retain PostgreSQL integration and Docker/Ollama smoke workflows. The
   smoke test must check requested metric, exact dimensions, row count, verification, and real
