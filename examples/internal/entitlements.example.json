@@ -1,0 +1,48 @@
+{
+  "bindings": [
+    {
+      "business_units": [
+        "CONSUMER"
+      ],
+      "classification_clearance": "CONFIDENTIAL",
+      "departments": [
+        "SALES"
+      ],
+      "permitted_actions": [
+        "ASK_BUSINESS_QUESTIONS",
+        "READ_AGGREGATED_DATA"
+      ],
+      "regions": [
+        "NORTHEAST"
+      ],
+      "roles": [
+        "BI_MANAGER"
+      ],
+      "tenant_id": "demo-telecom",
+      "user_id": "analyst"
+    },
+    {
+      "business_units": [
+        "CONSUMER"
+      ],
+      "classification_clearance": "CONFIDENTIAL",
+      "departments": [
+        "SALES"
+      ],
+      "permitted_actions": [
+        "ASK_BUSINESS_QUESTIONS",
+        "READ_AGGREGATED_DATA"
+      ],
+      "regions": [
+        "NORTHEAST"
+      ],
+      "roles": [
+        "BI_MANAGER"
+      ],
+      "tenant_id": "demo-telecom",
+      "user_id": "second-analyst"
+    }
+  ],
+  "issuer": "https://identity.example.test",
+  "version": "1"
+}

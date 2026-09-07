@@ -1,7 +1,8 @@
 # Talk2Data: consolidated product and orchestration plan
 
-Updated: 2026-09-07. Implementation baseline: main commit
-`1265578945c30bf14b7c98f78c944e192aaad64f`.
+Updated: 2026-09-07. Accepted Cycle 1 baseline: main commit
+`ba198541dc14821dc497217e97cf67db20234d5c`. Cycle 2 implementation and private
+acceptance procedure: [Internal identity and BigQuery](INTERNAL_BIGQUERY.md).
 
 ## 1. Decision and delivery boundary
 
@@ -14,10 +15,13 @@ The target product uses Claude for bounded language interpretation and agent tas
 BigQuery for approved internal analytical data. CSV is an optional demonstration connection,
 not a BigQuery loading mechanism, substitute warehouse, or automatic fallback.
 
-This branch is a **foundation increment**, not an enterprise production release. It delivers
-the separated application composition, an executable CSV demonstration, and the React
-workspace. Claude, BigQuery, production identity, live semantic publication, and durable
-multi-agent orchestration are not implemented or activated by this increment.
+Cycle 1 delivered the separated application composition, executable CSV demonstration and
+React workspace. Cycle 2 adds a separate internal API, signed identity verification and a
+governed BigQuery adapter. **Cycle 2 is complete on the user's revised placeholder boundary**;
+live GCP/SSO activation and validation remain deferred release gate DG-1. CSV imports remain
+an independent working data connection, never a BigQuery upload or automatic fallback.
+Claude, live semantic publication and durable multi-agent orchestration remain later cycles.
+The current increment is not an enterprise production release.
 
 No existing repository is archived, renamed, merged wholesale, or made private by this work.
 No existing UI redesign PR is overwritten. The repository is public: only generic code and
@@ -32,18 +36,18 @@ private location before integration.
 | One product repository | Talk2Data owns the backend, new React workspace, tests, and this plan | Review donor modules individually; retire duplicates only after migration acceptance |
 | React + Python | React/TypeScript in `apps/web`; FastAPI remains in `src/talk2data` | CopilotKit integration after the server run/event protocol is stable |
 | Thin main files | `main.py` exports ASGI application; `main.tsx` mounts UI; `App.tsx` composes panels | Keep future business logic out of these entry points |
-| Independent data connections | CSV adapter has its own configuration, workspace, and per-run registry; existing SQLite/PostgreSQL adapters retained | Separate BigQuery adapter, identity binding, approved physical mapping, and GCP tests |
+| Independent data connections | CSV has its own configuration/workspace; BigQuery now has a separate internal API, adapter, private mappings and identity binding; existing adapters retained | Execute restricted-principal GCP acceptance with approved private configuration |
 | CSV upload | Bounded UTF-8 template, isolated ephemeral sessions, source hash, replace/clear/state endpoints | Governed mapping wizard for additional schemas and metric families |
 | Business definitions | Reuses packaged approved metric contracts, versions, semantic hashes; UI shows the activation definition | Approval workflow, dimension definitions, effective dates, publication events, conflict handling |
 | Question-to-answer logic | Reuses admissibility, Business Query IR, deterministic execution, result checks, and receipt-backed composition | Wider question benchmark, fiscal-calendar correctness, ratio/time-grain coverage |
 | Frontend/backend synchronization | Backend source fingerprint, explicit state refresh, stale-source rejection, latest completed result | Durable runs, incremental events, reconnect/replay, idempotency, cancellation, cross-device history |
 | Claude API | Target architecture only; CSV never sends a file or question to a model | Provider adapter, schema validation, model configuration, budgets, approved data-egress policy |
 | Multiple agents | Responsibility and state-machine design below; not autonomous agents in this branch | Bounded orchestration, specialist tools, evaluations, permission enforcement, durable checkpoints |
-| Enterprise operation | Existing tests and CI extended; CSV is disabled by default | SSO, tenant isolation, secrets, private ingress, audit retention, load tests, SLOs, backups |
+| Enterprise operation | Signed identity and server-owned tenant/scope grants implemented in the private API; separate container; CSV disabled by default | Live SSO/IAM/private ingress acceptance, audit retention, load tests, SLOs and recovery |
 
-The existing main branch has working synthetic SQLite and PostgreSQL reference adapters.
-It does **not** contain a working BigQuery adapter. “BigQuery remains internal” describes the
-target security boundary, not a connection that has already been verified.
+The accepted baseline has working synthetic SQLite and PostgreSQL reference adapters.
+Cycle 2 adds a BigQuery implementation with recording-port and official-SDK contract tests.
+No real BigQuery connection or company schema has been verified yet.
 
 ## 3. Repository organization and dependency direction
 
@@ -97,13 +101,14 @@ in process memory. Sessions have a fixed lifetime, with expired entries pruned o
 operations. Expiry is an access limit, not an immediate secure-erasure guarantee. Clear removes
 the session's references; process shutdown removes all demo state. Single-worker use is required.
 
-### Internal BigQuery — planned, not connected
+### Internal BigQuery — implemented, live acceptance pending
 
-Implement a separate `connectors/bigquery.py`, dedicated configuration model, physical
-mapping loader, and factory binding. Do not add BigQuery options to the CSV request schema.
-Do not let the public demo app initialize a cloud client or receive a GCP identity.
+Cycle 2 implements `connectors/bigquery.py`, dedicated configuration and approved mapping
+models, an SDK port/driver and the `internal_main.py` application composition. The detailed
+contracts, restrictions and acceptance steps are in [the private runtime runbook](INTERNAL_BIGQUERY.md).
+The public demo cannot initialize this connection or select it through a CSV request.
 
-The internal adapter will receive:
+The internal adapter receives:
 
 - An identity verified by server middleware, including tenant and authorized data scope.
 - An approved logical metric plan, its semantic snapshot, and a validated physical mapping.
@@ -355,14 +360,16 @@ approved storage boundary while the canonical repository is public.
 | Milestone | Work | Acceptance gate | Dependencies |
 | --- | --- | --- | --- |
 | 1. Modular demo foundation | Thin entry points, typed tools, isolated CSV session/import/query path, React panels, source synchronization, packaged demo, this plan | Existing tests stay green; CSV answers reproduce uploaded counts; wrong scope/source, missing dates, invalid files, and truncation are rejected; installed React/Python demo passes HTTP acceptance | PR #18 is the delivery record; its accepted commit is the baseline for cycle 2 |
-| 2. Internal identity and BigQuery | Private deployment profile, SSO, tenant binding, approved mappings, dedicated BigQuery adapter, dry runs, budgets, cancellation, receipts | No internal endpoint accepts caller-granted roles; restricted-principal tests and read-only GCP integration benchmark pass | Approved GCP project/location, identity provider, datasets/views, private configuration location |
+| 2. Internal identity and BigQuery — complete with placeholders | Separate identity/BigQuery implementation, private configuration templates, dry runs, budgets, cancellation and receipts | User accepts tested implementation and unconfigured connection placeholders; optional CSV works independently. Live cloud acceptance moves to DG-1 | Real GCP/SSO configuration required only before internal activation and final release |
 | 3. Live semantic governance | Metric/dimension records, draft/review/approve lifecycle, effective snapshots, publication events, cache invalidation, definition UI | Changed definition applies to new runs; old runs reproduce against pinned versions; conflicts/revocation fail closed | Business metric owners and initial 10–20 metric contracts |
 | 4. Claude and bounded orchestration | Provider adapter, specialist task contracts, typed tools, execution budgets, injection controls | Model cannot expand access or execute arbitrary SQL; benchmark correctness and abstention thresholds pass | Approved model/endpoint and data-egress policy |
 | 5. Durable collaboration and sync | Conversation persistence, run/event store, SSE replay, idempotent jobs, cancellation, artifacts, optional CopilotKit adapter | Refresh/reconnect/retry cannot duplicate jobs or mix results across tenant/source/version; terminal states survive restart | Internal application database and job platform |
 | 6. Enterprise release | IaC, CI/CD promotion, observability, retention, security review, load/cost testing, recovery, operations runbooks | Named security/data/platform/product owners sign off; SLO, RPO/RTO, and budget tests pass | Milestones 2–5 complete |
 
 These six milestones are the six delivery cycles. Execute one milestone at a time and close
-its acceptance gate before starting the next. They are a scope plan, not a promise of six
+its current accepted gate before starting the next. The user explicitly revised Cycle 2 to
+accept connection placeholders and defer real cloud validation; this authorizes Cycle 3 using
+CSV imports. They are a scope plan, not a promise of six
 fixed-duration sessions: access to GCP, identity, business owners and the approved Claude
 endpoint determines when the dependent gates can actually pass. A completed UI is not
 evidence that backend permissions or metric correctness are ready.
@@ -444,7 +451,7 @@ that does not support an agreed row belongs in a separate proposal, not this rel
 | R1 | One Talk2Data repository; small tools and services; thin UI/main | Connector factory, definition/query tools, separate route/service/connector modules; import and build checks | New capabilities preserve these boundaries; one reviewed release commit and deployment profile |
 | R2 | Optional CSV data connection, independent of BigQuery | `test_csv_demo.py`: exact totals, source isolation, invalid input, gaps, capacity, expiry, stale fingerprints, replace/clear; React upload and evidence flows | Demo acceptance passes in its own deployment; internal credentials and data cannot enter the demo process |
 | R3 | Claude API | Provider contract tests protect the existing local-model boundary; **Claude adapter not implemented** | Configured Claude adapter passes schema, timeout, rate-limit, budget, prompt-injection, grounded-selection, and real-provider benchmark gates |
-| R4 | GCP BigQuery remains an internal separate connection | PostgreSQL tests validate the retained connector pattern; **BigQuery adapter and GCP integration not implemented** | Dedicated BigQuery tool/adapter passes read-only queries, allowed views, dry runs, byte caps, location, cancellation, receipts, and IAM tests with restricted GCP principals |
+| R4 | GCP BigQuery remains an internal separate connection | Separate internal API/adapter/configuration; signed-token, scope/classification, SQL, SDK budget/cancellation/receipt tests; opt-in live benchmark | Live read-only queries, approved views, byte caps, location, cancellation and IAM pass with restricted GCP principals; pending private environment |
 | R5 | Live context means business definitions of each metric and dimension | Registry/semantic tests enforce approved packaged contracts and pinned metric versions; **live publication not implemented** | Approved metric and dimension lifecycle, owners, effective dates, definition citations, atomic publication, cache invalidation, conflict/revocation behavior, and reproducible old runs |
 | R6 | Multiple agents working together | Interpretation, compiler, execution, and verification modules have separate tests; **durable agent orchestration not implemented** | Bounded specialist agents use typed tools; budgets and terminal states persist; cannot expand permission or change the selected source; causal claims require evidence |
 | R7 | Frontend/backend data sync and context | React flow/API tests: restore, upload, source-bound ask, refresh, expiry, error recovery, clear, old-answer removal; backend stale-source rejection | Durable conversations and semantic/source versions; event replay, reconnect, idempotency, cancellation, restart recovery and cross-session isolation pass |
@@ -463,7 +470,7 @@ that does not support an agreed row belongs in a separate proposal, not this rel
 4. Once the current increment passes its required gates, stop optional test expansion and
    advance the next agreed product milestone. Review and deployment use the same tested commit.
 
-## 14. Decisions required before milestone 2
+## 14. Private environment decisions required for acceptance
 
 1. Which GCP project, BigQuery location, billing project, and approved datasets/views?
 2. Which identity provider and tenant model, and who owns entitlement mapping?
@@ -477,8 +484,18 @@ them through the approved secret and workload-identity workflow when the integra
 
 ## 15. Next implementation boundary
 
-Deliver the tested foundation update through the existing PR, with coverage reports and real
-service CI results. Continue milestone 2 in the same repository using its dedicated identity
-and BigQuery modules. Resolve the concrete environment choices in section 14 when wiring the
-internal runtime; do not pass production access through the legacy demo authorization path.
-The [CSV workspace runbook](CSV_WORKSPACE.md) remains the demonstration acceptance procedure.
+Cycle 1 is accepted through PRs #18 and #19. Cycle 2 is accepted through PR #20 on the user's
+revised placeholder boundary. Continue Cycle 3 with versioned metric/dimension definitions,
+approval, publication and reproducibility using the separate CSV data connection.
+
+### Deferred release gate DG-1 — real GCP and SSO
+
+Status: **deferred, not validated**. Activation requires the approved billing project/location,
+views and dependency allowlist, IdP/issuer/audience, workload principal and private configuration
+location. Before enabling internal BigQuery or completing the enterprise release, run the
+restricted-principal benchmark, verify real scoped results, private ingress/IAM and controlled
+cancellation/timeouts. Placeholders must not report a connected or healthy warehouse. The
+user-approved deferral changes delivery sequencing, not the evidence required for cloud readiness.
+
+The [CSV workspace runbook](CSV_WORKSPACE.md) remains the independent demo acceptance procedure;
+[INTERNAL_BIGQUERY.md](INTERNAL_BIGQUERY.md) owns the private API activation procedure.

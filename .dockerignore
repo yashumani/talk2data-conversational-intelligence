@@ -3,6 +3,8 @@
 .env
 .env.*
 .talk2data
+.private
+**/*.token
 .mypy_cache
 .pytest_cache
 .ruff_cache

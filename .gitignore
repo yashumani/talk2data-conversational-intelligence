@@ -21,6 +21,8 @@ node_modules/
 .env.local
 .env.*.local
 .talk2data/
+.private/
+*.token
 *.db
 *.sqlite
 *.sqlite3
