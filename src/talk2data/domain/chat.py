@@ -38,9 +38,25 @@ class DemoChatRequest(QueryCompilationRequest):
     include_debug: bool = True
 
 
+class CloudQueryExecution(BaseModel):
+    job_id: str
+    billing_project: str
+    location: str
+    estimated_bytes: int = Field(ge=0)
+    maximum_bytes_billed: int = Field(gt=0)
+    processed_bytes: int | None = Field(default=None, ge=0)
+    billed_bytes: int | None = Field(default=None, ge=0)
+    cache_hit: bool = False
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    scope_hash: str
+    semantic_version: str
+
+
 class QueryReceipt(BaseModel):
     source_kind: str = "synthetic_demo"
     source_fingerprint: str | None = None
+    cloud_job: CloudQueryExecution | None = None
     receipt_id: UUID = Field(default_factory=uuid4)
     query_id: UUID
     decision_id: UUID

@@ -1,0 +1,30 @@
+{
+  "config_file": "/approved/private/acceptance/runtime.json",
+  "forbidden_probe_view": "example-project.denied.synthetic_probe",
+  "cases": [
+    {
+      "name": "synthetic_northeast",
+      "token_file": "/approved/private/acceptance/northeast.token",
+      "question": "What were mobile activations by region last month?",
+      "as_of": "2026-08-01T12:00:00Z",
+      "expected_rows": [
+        {
+          "REGION": "NORTHEAST",
+          "value": 3100.0
+        }
+      ]
+    },
+    {
+      "name": "synthetic_west",
+      "token_file": "/approved/private/acceptance/west.token",
+      "question": "What were mobile activations by region last month?",
+      "as_of": "2026-08-01T12:00:00Z",
+      "expected_rows": [
+        {
+          "REGION": "WEST",
+          "value": 6200.0
+        }
+      ]
+    }
+  ]
+}

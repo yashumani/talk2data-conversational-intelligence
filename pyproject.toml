@@ -20,7 +20,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+internal = [
+  "google-cloud-bigquery>=3.44,<4",
+  "PyJWT[crypto]>=2.13,<3",
+]
 dev = [
+  "google-cloud-bigquery>=3.44,<4",
+  "PyJWT[crypto]>=2.13,<3",
   "mypy>=1.14,<2",
   "pytest>=8.3,<10",
   "pytest-asyncio>=0.25,<2",
@@ -45,6 +51,7 @@ testpaths = ["tests"]
 markers = [
   "live_ollama: integration test that requires a running local Ollama model",
   "live_postgres: integration test that requires a running PostgreSQL reference schema",
+  "live_bigquery: integration test requiring approved private configuration and restricted GCP identities",
 ]
 
 [tool.ruff]

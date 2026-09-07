@@ -1,0 +1,55 @@
+name: Internal runtime package
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "Dockerfile.internal"
+      - ".dockerignore"
+      - "docker-compose.internal.yml"
+      - ".github/workflows/internal-runtime.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "Dockerfile.internal"
+      - ".dockerignore"
+      - "docker-compose.internal.yml"
+      - ".github/workflows/internal-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate the separate internal profile
+        env:
+          T2D_PRIVATE_CONFIG_DIRECTORY: /tmp/validation-only-config
+          T2D_ADC_CONFIGURATION_FILE: /tmp/validation-only-adc.json
+        run: docker compose -f docker-compose.internal.yml config --quiet
+      - name: Build the private application image
+        run: docker build -f Dockerfile.internal -t talk2data-internal:test .
+      - name: Verify installed dependencies and fail-closed startup
+        run: |
+          docker run --rm --entrypoint python talk2data-internal:test -c '
+          import os
+          from pydantic import ValidationError
+          from talk2data.internal.bootstrap import create_internal_app
+          from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
+          assert os.getuid() == 10001
+          assert not os.path.exists("/app/web")
+          try:
+              create_internal_app()
+          except ValidationError:
+              pass
+          else:
+              raise AssertionError("Internal startup must require private configuration")
+          print("Internal package verified; no GCP access was attempted.")
+          '

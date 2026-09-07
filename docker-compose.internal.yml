@@ -1,0 +1,39 @@
+name: talk2data-internal
+
+# Standalone private profile. Use approved read-only mounts and a federated ADC configuration.
+services:
+  internal-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.internal
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      T2D_INTERNAL_CONFIG_FILE: /run/talk2data/runtime.json
+      GOOGLE_APPLICATION_CREDENTIALS: /run/identity/adc.json
+    volumes:
+      - type: bind
+        source: ${T2D_PRIVATE_CONFIG_DIRECTORY:?Set the approved private configuration directory}
+        target: /run/talk2data
+        read_only: true
+      - type: bind
+        source: ${T2D_ADC_CONFIGURATION_FILE:?Set the approved federated ADC configuration file}
+        target: /run/identity/adc.json
+        read_only: true
+    read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3)"
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 30s

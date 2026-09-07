@@ -1,0 +1,261 @@
+default_calendar: GREGORIAN
+default_currency: USD
+default_timezone: UTC
+domains:
+- aliases:
+  - wireless
+  - subscriber
+  - postpaid
+  - prepaid
+  - mobile service
+  classification: INTERNAL
+  description: Subscriber acquisition, retention, plan, and line performance.
+  id: WIRELESS_SUBSCRIBER
+  name: Wireless Subscriber Management
+- aliases:
+  - retail store
+  - store sales
+  - mobile retail
+  - activation sales
+  classification: INTERNAL
+  description: Store and channel performance for telecom products and services.
+  id: RETAIL_SALES
+  name: Telecom Retail Sales
+- aliases:
+  - network
+  - radio access network
+  - cell site
+  - tower
+  - network performance
+  classification: CONFIDENTIAL
+  description: Wireless and broadband network capacity, quality, and reliability.
+  id: NETWORK_OPERATIONS
+  name: Network Operations
+- aliases:
+  - customer support
+  - care center
+  - contact center
+  - support tickets
+  classification: INTERNAL
+  description: Customer support demand, resolution, and service experience.
+  id: CUSTOMER_CARE
+  name: Customer Care
+effective_from: '2026-08-17T00:00:00Z'
+entities:
+- aliases:
+  - plan
+  - plans
+  - rate plan
+  - service plan
+  classification: INTERNAL
+  domain_id: WIRELESS_SUBSCRIBER
+  id: PLAN
+  name: Service Plan
+  values: []
+- aliases:
+  - store
+  - stores
+  - retail location
+  - retail locations
+  classification: INTERNAL
+  domain_id: RETAIL_SALES
+  id: STORE
+  name: Retail Store
+  values: []
+- aliases:
+  - market
+  - markets
+  - dma
+  classification: INTERNAL
+  domain_id: RETAIL_SALES
+  id: MARKET
+  name: Operating Market
+  values: []
+- aliases:
+  - region
+  - regions
+  classification: INTERNAL
+  domain_id: WIRELESS_SUBSCRIBER
+  id: REGION
+  name: Operating Region
+  values:
+  - aliases:
+    - north east
+    id: NORTHEAST
+    name: Northeast
+  - aliases:
+    - south east
+    id: SOUTHEAST
+    name: Southeast
+  - aliases: []
+    id: CENTRAL
+    name: Central
+  - aliases:
+    - western region
+    id: WEST
+    name: West
+- aliases:
+  - channel
+  - channels
+  classification: INTERNAL
+  domain_id: RETAIL_SALES
+  id: CHANNEL
+  name: Sales Channel
+  values:
+  - aliases:
+    - store channel
+    id: RETAIL
+    name: Retail
+  - aliases:
+    - online
+    - web
+    id: DIGITAL
+    name: Digital
+  - aliases:
+    - call center
+    id: CARE
+    name: Customer Care
+- aliases:
+  - cell site
+  - cell sites
+  - tower
+  - towers
+  classification: CONFIDENTIAL
+  domain_id: NETWORK_OPERATIONS
+  id: CELL_SITE
+  name: Cell Site
+  values: []
+- aliases:
+  - hour
+  - hourly
+  - evening
+  - morning
+  classification: INTERNAL
+  domain_id: NETWORK_OPERATIONS
+  id: HOUR
+  name: Hour of Day
+  values: []
+- aliases:
+  - technology
+  - network technology
+  - radio technology
+  classification: RESTRICTED
+  domain_id: NETWORK_OPERATIONS
+  id: TECHNOLOGY
+  name: Network Technology
+  values:
+  - aliases:
+    - 4g
+    id: LTE
+    name: LTE
+  - aliases:
+    - 5 g
+    - fifth generation
+    id: FIVE_G
+    name: 5G
+excluded_domains:
+- explanation: The tenant Domain Pack contains no restaurant operating business, metric,
+    entity, or data product.
+  id: RESTAURANT_OPERATIONS
+  name: Restaurant Operations
+  phrases:
+  - restaurant food-cost
+  - restaurant food cost
+  - food-cost margin
+  - food cost margin
+  - menu profitability
+  - restaurant margin
+  - recipe sales
+- explanation: Clinical healthcare is outside the approved telecom business domain.
+  id: CLINICAL_HEALTHCARE
+  name: Clinical Healthcare
+  phrases:
+  - patient diagnosis
+  - medication dosage
+  - clinical treatment
+  - hospital mortality
+external_adjacencies: []
+industry: Telecommunications
+metrics:
+- additivity: NON_ADDITIVE
+  aggregation: RATIO
+  aliases:
+  - postpaid churn
+  - churn
+  - disconnect rate
+  - subscriber churn
+  allowed_dimensions:
+  - PLAN
+  - MARKET
+  - REGION
+  - CHANNEL
+  classification: CONFIDENTIAL
+  default_comparison: PRIOR_PERIOD
+  default_time_grain: MONTH
+  default_time_window: PREVIOUS_COMPLETE_MONTH
+  definition: Postpaid account or line disconnects divided by the approved average
+    active base for the period.
+  domain_id: WIRELESS_SUBSCRIBER
+  id: POSTPAID_CHURN
+  name: Postpaid Churn
+  semantic_version: '2.0'
+  source:
+    connector_id: telecom_semantic_warehouse
+    description: Certified subscriber performance mart.
+    status: AVAILABLE
+  supported_time_grains:
+  - DAY
+  - WEEK
+  - MONTH
+  - QUARTER
+  - YEAR
+  unit: PERCENT
+  valid_max: 1.0
+  valid_min: 0.0
+  value_type: PERCENTAGE
+- additivity: ADDITIVE
+  aggregation: SUM
+  aliases:
+  - mobile activations
+  - wireless activations
+  - new activations
+  - activations
+  allowed_dimensions:
+  - STORE
+  - MARKET
+  - REGION
+  - CHANNEL
+  - PLAN
+  classification: INTERNAL
+  default_comparison: PRIOR_PERIOD
+  default_time_grain: MONTH
+  default_time_window: PREVIOUS_COMPLETE_MONTH
+  definition: Successfully completed new wireless service activations in the selected
+    period.
+  domain_id: RETAIL_SALES
+  id: MOBILE_ACTIVATIONS
+  name: Mobile Activations
+  semantic_version: '2.0'
+  source:
+    connector_id: telecom_semantic_warehouse
+    description: Certified activation fact view.
+    status: AVAILABLE
+  supported_time_grains:
+  - DAY
+  - WEEK
+  - MONTH
+  - QUARTER
+  - YEAR
+  unit: COUNT
+  valid_max: null
+  valid_min: 0.0
+  value_type: INTEGER
+status: APPROVED
+subindustries:
+- Wireless
+- Broadband
+- Fiber
+- Enterprise Connectivity
+tenant_id: demo-telecom
+tenant_name: Demo Telecom
+version: 2026.08.3

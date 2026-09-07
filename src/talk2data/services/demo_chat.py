@@ -142,6 +142,9 @@ class DemoChatService:
         )
         try:
             connector = self._connector_registry.get(plan.connector_id)
+            plan = plan.model_copy(
+                update={"row_limit": min(plan.row_limit, connector.descriptor.maximum_rows)}
+            )
             receipt = await ExecuteQueryTool(connector).run(plan, request.access_context)
         except (DemoSourceNotReadyError, PostgreSQLSourceNotReadyError, SourceNotReadyError) as exc:
             return self._non_answer_response(

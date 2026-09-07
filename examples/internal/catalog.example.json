@@ -1,0 +1,87 @@
+{
+  "mappings": [
+    {
+      "allowed_references": [
+        "example-project.analytics.approved_daily"
+      ],
+      "business_unit_column": "business_unit",
+      "connector_id": "telecom_semantic_warehouse",
+      "date_column": "fact_date",
+      "dimension_classifications": {
+        "CHANNEL": "INTERNAL",
+        "MARKET": "INTERNAL",
+        "PLAN": "INTERNAL",
+        "REGION": "INTERNAL",
+        "STORE": "INTERNAL"
+      },
+      "dimensions": {
+        "CHANNEL": "channel",
+        "MARKET": "market",
+        "PLAN": "plan",
+        "REGION": "region",
+        "STORE": "store"
+      },
+      "metric_column": "metric_id",
+      "metrics": [
+        {
+          "aggregation": "RATIO",
+          "allowed_dimensions": [
+            "MARKET",
+            "REGION",
+            "CHANNEL",
+            "PLAN"
+          ],
+          "amount_column": null,
+          "classification": "CONFIDENTIAL",
+          "currency": null,
+          "denominator_column": "denominator",
+          "metric_id": "POSTPAID_CHURN",
+          "numerator_column": "numerator",
+          "semantic_version": "2.0",
+          "source_value": "POSTPAID_CHURN",
+          "supported_time_grains": [
+            "DAY",
+            "MONTH",
+            "QUARTER",
+            "YEAR",
+            "WEEK"
+          ],
+          "unit": "PERCENT",
+          "value_type": "PERCENTAGE"
+        },
+        {
+          "aggregation": "SUM",
+          "allowed_dimensions": [
+            "STORE",
+            "PLAN",
+            "REGION",
+            "CHANNEL",
+            "MARKET"
+          ],
+          "amount_column": "amount",
+          "classification": "INTERNAL",
+          "currency": null,
+          "denominator_column": null,
+          "metric_id": "MOBILE_ACTIVATIONS",
+          "numerator_column": null,
+          "semantic_version": "2.0",
+          "source_value": "MOBILE_ACTIVATIONS",
+          "supported_time_grains": [
+            "DAY",
+            "MONTH",
+            "QUARTER",
+            "YEAR",
+            "WEEK"
+          ],
+          "unit": "COUNT",
+          "value_type": "INTEGER"
+        }
+      ],
+      "snapshot_column": "source_updated_at",
+      "tenant_column": "tenant_id",
+      "tenant_id": "demo-telecom",
+      "version": "1",
+      "view": "example-project.analytics.approved_daily"
+    }
+  ]
+}

@@ -26,9 +26,19 @@ the UI and Python service; no cloud credentials or model service are needed.
 
 See the [CSV workspace runbook](docs/CSV_WORKSPACE.md) and the
 [consolidated product orchestration plan](docs/PRODUCT_ORCHESTRATION_PLAN.md).
-This first increment supports a strict Mobile Activations template. Claude, internal BigQuery,
-live semantic publication, and durable multi-agent execution remain planned work—not active
-connections. Use only synthetic or explicitly approved demonstration data.
+The CSV increment supports a strict Mobile Activations template. Use only synthetic or
+explicitly approved demonstration data.
+
+### Internal identity and BigQuery — Cycle 2
+
+The separate private API now implements signed identity verification, server-owned tenant and
+data permissions, approved BigQuery mappings, parameterized read-only queries, cost limits,
+cancellation and cloud job receipts. It has its own container and configuration; CSV remains
+independent. See the [internal BigQuery runbook](docs/INTERNAL_BIGQUERY.md).
+
+Live GCP/SSO acceptance is pending approved private configuration. This is an implementation
+increment, not a production-connected release. Claude, live definition publication and durable
+multi-agent execution remain subsequent cycles in the agreed plan.
 
 ### Existing application
 

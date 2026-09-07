@@ -1,0 +1,24 @@
+{
+  "bigquery": {
+    "api_timeout_seconds": 10,
+    "billing_project": "example-project",
+    "location": "US",
+    "maximum_bytes_billed": 1000000,
+    "maximum_rows": 100,
+    "query_timeout_seconds": 60
+  },
+  "bigquery_catalog_path": "/run/talk2data/catalog.json",
+  "domain_pack_directory": "/run/talk2data/domains",
+  "entitlements_path": "/run/talk2data/entitlements.json",
+  "identity": {
+    "algorithm": "RS256",
+    "audience": "talk2data-internal",
+    "issuer": "https://identity.example.test",
+    "jwks_url": "https://identity.example.test/keys",
+    "key_cache_seconds": 60,
+    "leeway_seconds": 30,
+    "maximum_token_lifetime_seconds": 3600,
+    "token_header": "authorization"
+  },
+  "maximum_active_queries": 8
+}
