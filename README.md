@@ -15,6 +15,15 @@ An optional React/TypeScript workspace now supports isolated CSV demonstrations 
 existing governed Python query pipeline. CSV uploads never change the configured data
 backend or connect to BigQuery. The feature is disabled by default.
 
+Start the optional local demonstration with Docker Compose:
+
+```bash
+docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
+```
+
+Open [the React workspace](http://127.0.0.1:8000/workspace/). The standalone demo includes
+the UI and Python service; no cloud credentials or model service are needed.
+
 See the [CSV workspace runbook](docs/CSV_WORKSPACE.md) and the
 [consolidated product orchestration plan](docs/PRODUCT_ORCHESTRATION_PLAN.md).
 This first increment supports a strict Mobile Activations template. Claude, internal BigQuery,

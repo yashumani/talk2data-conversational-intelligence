@@ -10,6 +10,40 @@ Use Python 3.11+ and Node.js 24+. Run commands from the repository root unless s
 Use synthetic or explicitly approved demonstration data. This anonymous feature is not a
 production authentication or secure sensitive-file-upload service.
 
+## Start the packaged demonstration
+
+With Docker and Docker Compose installed, run this standalone configuration from the repository root:
+
+```bash
+docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
+```
+
+Open [the workspace](http://127.0.0.1:8000/workspace/). This builds the React assets and Python
+service into one image and starts one API worker. The demo binds only to the local machine,
+uses temporary in-memory CSV sessions and a temporary synthetic SQLite runtime, and needs
+no model service, cloud connection, provider key, or host `.env` file. Do not combine this
+standalone file with an internal deployment override.
+
+Verify the installed package with Python 3.11+ (standard library only):
+
+```bash
+python scripts/csv_workspace_smoke.py
+```
+
+The check retrieves the built assets and synthetic template over HTTP, independently sums
+July's 24,676 activations, verifies source-bound answers and definition versions, checks
+session isolation, invalid uploads, stale-source rejection and missing-day abstention, then
+clears its two temporary sessions. It does not exercise a browser or claim visual acceptance.
+
+Stop and remove the demo when finished:
+
+```bash
+docker compose -f docker-compose.csv-demo.yml down --volumes
+```
+
+The ordinary runtime image includes the workspace assets, while CSV stays disabled unless
+explicitly enabled. Internal BigQuery configuration remains a separate later milestone.
+
 ## Build and run one server
 
 ```bash

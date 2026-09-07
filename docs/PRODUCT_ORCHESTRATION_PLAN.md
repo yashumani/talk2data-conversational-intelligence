@@ -322,8 +322,9 @@ Production gates:
   drills, incident response, disaster recovery, and explicit RPO/RTO with owners.
 - Conduct tenant-isolation, injection, dependency, data-egress, and permission-revocation testing.
 
-The current repository's existing deployment workflows remain unchanged. This increment does
-not publish the React workspace, enable CSV in an existing public deployment, or connect GCP.
+The runtime image now bundles the React assets. Its existing main-branch workflow publishes
+an updated `edge` image after merge; CSV remains opt-in. The standalone demo configuration
+binds to loopback and does not enable CSV in an existing public deployment or connect GCP.
 The anonymous demonstration must not be advertised as production-safe.
 
 ## 11. Consolidation and reuse rules
@@ -353,16 +354,38 @@ approved storage boundary while the canonical repository is public.
 
 | Milestone | Work | Acceptance gate | Dependencies |
 | --- | --- | --- | --- |
-| 1. Modular demo foundation | Thin entry points, typed tools, isolated CSV session/import/query path, React panels, source synchronization, this plan | Existing tests stay green; CSV answers reproduce uploaded counts; wrong scope/source, missing dates, invalid files, and truncation are rejected; UI builds | Implemented on this branch; PR review pending |
+| 1. Modular demo foundation | Thin entry points, typed tools, isolated CSV session/import/query path, React panels, source synchronization, packaged demo, this plan | Existing tests stay green; CSV answers reproduce uploaded counts; wrong scope/source, missing dates, invalid files, and truncation are rejected; installed React/Python demo passes HTTP acceptance | PR #18 is the delivery record; its accepted commit is the baseline for cycle 2 |
 | 2. Internal identity and BigQuery | Private deployment profile, SSO, tenant binding, approved mappings, dedicated BigQuery adapter, dry runs, budgets, cancellation, receipts | No internal endpoint accepts caller-granted roles; restricted-principal tests and read-only GCP integration benchmark pass | Approved GCP project/location, identity provider, datasets/views, private configuration location |
 | 3. Live semantic governance | Metric/dimension records, draft/review/approve lifecycle, effective snapshots, publication events, cache invalidation, definition UI | Changed definition applies to new runs; old runs reproduce against pinned versions; conflicts/revocation fail closed | Business metric owners and initial 10–20 metric contracts |
 | 4. Claude and bounded orchestration | Provider adapter, specialist task contracts, typed tools, execution budgets, injection controls | Model cannot expand access or execute arbitrary SQL; benchmark correctness and abstention thresholds pass | Approved model/endpoint and data-egress policy |
 | 5. Durable collaboration and sync | Conversation persistence, run/event store, SSE replay, idempotent jobs, cancellation, artifacts, optional CopilotKit adapter | Refresh/reconnect/retry cannot duplicate jobs or mix results across tenant/source/version; terminal states survive restart | Internal application database and job platform |
 | 6. Enterprise release | IaC, CI/CD promotion, observability, retention, security review, load/cost testing, recovery, operations runbooks | Named security/data/platform/product owners sign off; SLO, RPO/RTO, and budget tests pass | Milestones 2–5 complete |
 
-Run these in dependency order. Frontend polish and metric benchmark authoring can proceed
-alongside internal integration, but a completed UI is not evidence that backend permissions
-or metric correctness are ready.
+These six milestones are the six delivery cycles. Execute one milestone at a time and close
+its acceptance gate before starting the next. They are a scope plan, not a promise of six
+fixed-duration sessions: access to GCP, identity, business owners and the approved Claude
+endpoint determines when the dependent gates can actually pass. A completed UI is not
+evidence that backend permissions or metric correctness are ready.
+
+### Cycle 1 delivery contract
+
+The goal is a reproducible modular demonstration that provides the starting point for the
+enterprise integrations. Its fixed scope covers R1, R2 and the foundation portions of R7–R9.
+
+| Acceptance item | Required evidence |
+| --- | --- |
+| One runnable UI/API package | Multi-stage `Dockerfile`; standalone `docker-compose.csv-demo.yml`; packaged asset retrieval |
+| Reproducible CSV answers | `scripts/csv_workspace_smoke.py`: 736 synthetic rows, July total 24,676, exact region totals and verified receipts |
+| Definition/source synchronization | Definition version and source fingerprint match the answer; restore and replace behavior pass |
+| Isolated optional data source | Independent CSV registry/configuration; empty second session; rejected connector injection; CSV disabled by default |
+| Failure behavior | Invalid upload preserves state; stale source returns 409; missing dates abstain; cleared session returns 401 |
+| Existing behavior and quality | Python/React coverage gates, typing/build checks, real PostgreSQL and Ollama regressions, container build and CodeQL |
+| Delivery handoff | PR #18 records measured validation and the accepted commit; README/runbook provide startup, verification and shutdown |
+
+The `CSV demo release acceptance` workflow builds and starts the actual container before
+running the HTTP acceptance script. This complements React interaction tests; browser,
+accessibility, GCP and Claude acceptance remain later explicit gates. Once these foundation
+checks pass and PR #18 is merged, cycle 1 is complete. Stop there before starting cycle 2.
 
 ## 13. Verification and benchmark strategy
 
