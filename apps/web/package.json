@@ -1,0 +1,24 @@
+{
+  "name": "@talk2data/workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": { "react": "19.2.8", "react-dom": "19.2.8" },
+  "devDependencies": {
+    "vitest": "5.0.0",
+    "@vitest/coverage-v8": "5.0.0",
+    "react-test-renderer": "19.2.8",
+    "@types/react-test-renderer": "^19.1.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.3",
+    "vite": "8.2.2"
+  }
+}

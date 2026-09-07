@@ -257,6 +257,8 @@ class CompositeQuestionInterpreter:
         use_llm: bool,
     ) -> InterpretationResult:
         deterministic = self._heuristic.interpret(question, pack)
+        if use_llm and self._ollama_required and self._ollama is None:
+            raise InterpretationError("The required interpretation provider is not configured")
         if not use_llm or self._ollama is None:
             return deterministic
 
@@ -275,7 +277,19 @@ class CompositeQuestionInterpreter:
         valid_metric_ids = {metric.id for metric in pack.metrics}
         valid_entity_ids = {entity.id for entity in pack.entities}
         valid_domain_ids = {domain.id for domain in pack.domains}
-        valid_dimension_ids = valid_entity_ids
+        # The catalog is an allowlist, not a request to group by every catalog dimension.
+        # Ground grouping in the user's actual words before it can enter a query plan.
+        normalized = normalize_text(question)
+        grouping = re.search(r"\b(?:by|per|across|for each)\s+(.+)", normalized)
+        valid_dimension_ids = {
+            entity.id
+            for entity in pack.entities
+            if grouping is not None
+            and any(
+                phrase_present(grouping.group(1), term)
+                for term in [entity.id.replace("_", " "), entity.name, *entity.aliases]
+            )
+        }
 
         filtered_metric_ids = [
             value.upper() for value in proposed.candidate_metric_ids if value.upper() in valid_metric_ids
@@ -300,15 +314,14 @@ class CompositeQuestionInterpreter:
             warnings.append("Rejected ungoverned model identifiers: " + ", ".join(sorted(rejected_ids)))
 
         deterministic_proposal = deterministic.proposal
+        anchored_metrics = deterministic_proposal.candidate_metric_ids
         merged = InterpretationProposal(
             intent=(
-                proposed.intent
-                if proposed.intent != QuestionIntent.UNKNOWN
-                else deterministic_proposal.intent
+                deterministic_proposal.intent
+                if anchored_metrics or proposed.intent == QuestionIntent.UNKNOWN
+                else proposed.intent
             ),
-            candidate_metric_ids=unique_preserving_order(
-                [*deterministic_proposal.candidate_metric_ids, *filtered_metric_ids]
-            ),
+            candidate_metric_ids=unique_preserving_order(anchored_metrics or filtered_metric_ids),
             candidate_entity_ids=unique_preserving_order(
                 [*deterministic_proposal.candidate_entity_ids, *filtered_entity_ids]
             ),
@@ -320,7 +333,11 @@ class CompositeQuestionInterpreter:
             ),
             external_topics=deterministic_proposal.external_topics,
             ambiguous_terms=unique_preserving_order(proposed.ambiguous_terms),
-            requested_operation=proposed.requested_operation or deterministic_proposal.requested_operation,
+            requested_operation=(
+                deterministic_proposal.requested_operation
+                if anchored_metrics
+                else proposed.requested_operation
+            ),
             summary=proposed.summary,
             confidence=max(deterministic_proposal.confidence, proposed.confidence),
         )

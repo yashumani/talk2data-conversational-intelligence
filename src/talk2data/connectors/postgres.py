@@ -166,6 +166,8 @@ class PostgreSQLConnector:
             errors.append("TENANT_SCOPE_MISMATCH")
         if not _can_read_data(access):
             errors.append("DATA_ACTION_NOT_ALLOWED")
+        if not access.regions:
+            errors.append("REGION_SCOPE_REQUIRED")
 
         metric_mapping = self._metric_mappings.get(plan.metric_id)
         if metric_mapping is None:
@@ -413,6 +415,8 @@ class PostgreSQLConnector:
                     current_query,
                     current_parameters,
                 )
+                if len(current_rows) > plan.row_limit:
+                    raise PostgreSQLConnectorValidationError("RESULT_TRUNCATED")
 
                 comparison_rows: list[dict[str, Any]] = []
                 comparison_query: SQLStatement | None = None
@@ -428,6 +432,8 @@ class PostgreSQLConnector:
                         comparison_query,
                         comparison_parameters,
                     )
+                    if len(comparison_rows) > plan.row_limit:
+                        raise PostgreSQLConnectorValidationError("COMPARISON_RESULT_TRUNCATED")
             finally:
                 with self._active_lock:
                     self._active_connections.pop(execution_id, None)
@@ -448,6 +454,7 @@ class PostgreSQLConnector:
                 sql_payload += "\n-- comparison\n" + comparison_query.as_string(connection)
 
         return QueryReceipt(
+            source_kind="postgresql",
             query_id=plan.query_id,
             decision_id=plan.decision_id,
             plan_hash=plan.plan_hash,
@@ -493,7 +500,7 @@ class PostgreSQLConnector:
             if value is not None:
                 numeric = float(value)
                 if not math.isfinite(numeric):
-                    continue
+                    raise PostgreSQLConnectorValidationError("NON_FINITE_RESULT")
                 item["value"] = numeric
             normalized.append(item)
         return normalized
@@ -572,7 +579,7 @@ class PostgreSQLConnector:
             group_by = sql.SQL(", ").join(sql.Identifier(column) for column in dimension_columns)
             query = query + sql.SQL(" GROUP BY {group_by} ORDER BY {group_by}").format(group_by=group_by)
         query = query + sql.SQL(" LIMIT %s")
-        parameters.append(plan.row_limit)
+        parameters.append(plan.row_limit + 1)
         return query, tuple(parameters)
 
     def _qualified_table(self) -> sql.Composed:

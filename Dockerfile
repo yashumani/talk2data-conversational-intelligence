@@ -1,12 +1,22 @@
+FROM node:24-bookworm-slim AS workspace
+
+WORKDIR /web
+COPY apps/web/package.json apps/web/package-lock.json ./
+RUN npm ci --ignore-scripts
+COPY apps/web/ ./
+RUN npm run build
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    T2D_WEB_DIRECTORY=/app/web
 
 WORKDIR /app
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY --from=workspace /web/dist ./web
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir .

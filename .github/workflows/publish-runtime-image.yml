@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "Dockerfile"
+      - ".dockerignore"
+      - "apps/web/**"
       - "pyproject.toml"
       - "src/**"
       - ".github/workflows/publish-runtime-image.yml"
@@ -12,6 +14,8 @@ on:
     branches: [main]
     paths:
       - "Dockerfile"
+      - ".dockerignore"
+      - "apps/web/**"
       - "pyproject.toml"
       - "src/**"
       - ".github/workflows/publish-runtime-image.yml"

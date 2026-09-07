@@ -9,6 +9,29 @@ result, and release only receipt-backed claims.
 
 ## Use the application
 
+### New modular CSV workspace
+
+An optional React/TypeScript workspace now supports isolated CSV demonstrations with the
+existing governed Python query pipeline. CSV uploads never change the configured data
+backend or connect to BigQuery. The feature is disabled by default.
+
+Start the optional local demonstration with Docker Compose:
+
+```bash
+docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
+```
+
+Open [the React workspace](http://127.0.0.1:8000/workspace/). The standalone demo includes
+the UI and Python service; no cloud credentials or model service are needed.
+
+See the [CSV workspace runbook](docs/CSV_WORKSPACE.md) and the
+[consolidated product orchestration plan](docs/PRODUCT_ORCHESTRATION_PLAN.md).
+This first increment supports a strict Mobile Activations template. Claude, internal BigQuery,
+live semantic publication, and durable multi-agent execution remain planned work—not active
+connections. Use only synthetic or explicitly approved demonstration data.
+
+### Existing application
+
 Public GitHub control center:
 
 ```text
@@ -229,11 +252,22 @@ semantic gates complete.
 ruff check .
 ruff format --check .
 mypy src
-pytest --cov=talk2data --cov-report=term-missing
+pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json
+python scripts/check_coverage.py
+npm --prefix apps/web test
+npm --prefix apps/web run build
 ```
+
+CI requires **96% line and 96% branch coverage independently** across the entire Python
+package. No connector or domain model is omitted. React CI requires at least 96% of lines,
+branches, functions, and statements across all application TypeScript, including components,
+hooks, and the entry point. Coverage reports are retained as workflow artifacts.
 
 A separate GitHub Actions workflow starts a real PostgreSQL service and runs the full PostgreSQL
 chat and receipt path. The full Docker/Ollama pipeline is also smoke-tested on GitHub-hosted runners.
+The canonical [product plan](docs/PRODUCT_ORCHESTRATION_PLAN.md#13-verification-and-benchmark-strategy)
+maps the original requirements to tests and enterprise release criteria. Passing coverage does
+not mean Claude, BigQuery, live semantic publication, or durable agents are implemented.
 
 ## Documentation
 

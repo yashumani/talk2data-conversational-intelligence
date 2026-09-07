@@ -1,0 +1,56 @@
+name: CSV demo release acceptance
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker-compose.csv-demo.yml"
+      - "scripts/csv_workspace_smoke.py"
+      - ".github/workflows/csv-demo-runtime.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "docker-compose.csv-demo.yml"
+      - "scripts/csv_workspace_smoke.py"
+      - ".github/workflows/csv-demo-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  packaged-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate the independent demo configuration
+        run: docker compose -f docker-compose.csv-demo.yml config --quiet
+      - name: Build and start the packaged workspace
+        run: docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
+      - name: Verify the installed UI assets and CSV API flow
+        run: python scripts/csv_workspace_smoke.py >csv-smoke-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: csv-demo-release-acceptance
+          path: csv-smoke-report.json
+          if-no-files-found: warn
+      - name: Capture diagnostics on failure
+        if: failure()
+        run: docker compose -f docker-compose.csv-demo.yml logs --tail=100
+      - name: Stop the demo
+        if: always()
+        run: docker compose -f docker-compose.csv-demo.yml down --volumes

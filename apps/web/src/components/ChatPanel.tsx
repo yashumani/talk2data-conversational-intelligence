@@ -1,0 +1,53 @@
+import { useState } from "react";
+import type { ChatResult } from "../lib/contracts";
+
+interface Props {
+  ready: boolean;
+  busy: boolean;
+  result: ChatResult | null;
+  asOf: string;
+  onDate: (value: string) => void;
+  onAsk: (question: string) => Promise<void>;
+}
+
+const EXAMPLES = [
+  "What were mobile activations by region last month?",
+  "What were mobile activations by channel last month?",
+  "What were mobile activations in Northeast yesterday?",
+];
+
+export function ChatPanel({ ready, busy, result, asOf, onDate, onAsk }: Props) {
+  const [question, setQuestion] = useState(EXAMPLES[0]);
+  return <section className="panel chat-panel" aria-labelledby="chat-heading">
+    <p className="eyebrow">02 / Ask your data</p>
+    <h2 id="chat-heading">A business question. A traceable answer.</h2>
+    <p>This increment supports Mobile Activations, using approved demo definitions and deterministic
+      interpretation. Claude and multi-agent execution are not enabled yet.</p>
+    <div className="examples" aria-label="Example questions">
+      {EXAMPLES.map(example => <button key={example} className="secondary"
+        disabled={busy} onClick={() => setQuestion(example)}>{example}</button>)}
+    </div>
+    <form onSubmit={event => { event.preventDefault(); void onAsk(question); }}>
+      <label htmlFor="question">Question</label>
+      <textarea id="question" value={question} onChange={event => setQuestion(event.target.value)}
+        maxLength={2000} required rows={4} disabled={busy} />
+      <div className="form-footer">
+        <label htmlFor="as-of">Interpret relative dates as of
+          <input id="as-of" type="date" value={asOf} required disabled={busy || !ready}
+            onChange={event => onDate(event.target.value)} />
+        </label>
+        <button disabled={!ready || busy || !question.trim() || !asOf} type="submit">Ask question</button>
+      </div>
+    </form>
+    <div className="answer" aria-live="polite" aria-busy={busy}>
+      {!result ? <p>{ready ? "Your answer and evidence will appear here." : "Start a demo session and upload the template to begin."}</p>
+        : <>
+          <p className="eyebrow">Latest completed run · {result.status.replaceAll("_", " ")}</p>
+          {result.answer && <h3>{result.answer.headline}</h3>}
+          <p className="answer-text">{result.message}</p>
+          {result.answer?.caveats.map(caveat => <p className="small" key={caveat}>{caveat}</p>)}
+        </>}
+    </div>
+    <p className="small">Ask self-contained questions. This demonstration retains the latest result, not conversational memory.</p>
+  </section>;
+}

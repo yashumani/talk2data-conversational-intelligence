@@ -39,6 +39,8 @@ class DemoChatRequest(QueryCompilationRequest):
 
 
 class QueryReceipt(BaseModel):
+    source_kind: str = "synthetic_demo"
+    source_fingerprint: str | None = None
     receipt_id: UUID = Field(default_factory=uuid4)
     query_id: UUID
     decision_id: UUID

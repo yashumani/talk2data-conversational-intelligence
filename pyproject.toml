@@ -77,13 +77,10 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["talk2data"]
-omit = [
-  "src/talk2data/connectors/base.py",
-  "src/talk2data/connectors/postgres.py",
-  "src/talk2data/domain/evidence.py",
-  "src/talk2data/domain/memory.py",
-]
+branch = true
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
+precision = 2
+fail_under = 96
