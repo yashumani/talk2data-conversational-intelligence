@@ -7,7 +7,7 @@ import secrets
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import uuid4
 
@@ -17,15 +17,19 @@ from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.csv_config import CsvDemoSettings
 from talk2data.domain.chat import DemoChatRequest, DemoChatResponse
 from talk2data.domain.domain_pack import DomainPackRegistry
+from talk2data.domain.governance import DefinitionSnapshot
 from talk2data.domain.models import AccessContext, ClassificationLevel
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.csv_import import REGIONS, CsvDataset, parse_csv
+from talk2data.services.definition_governance import EDIT, PUBLISH, REVIEW, REVOKE, DefinitionGovernance
+from talk2data.services.definition_store import DefinitionStore, DefinitionUnavailable
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.ephemeral_run import EphemeralRunStore
 from talk2data.services.interpreter import CompositeQuestionInterpreter, HeuristicQuestionInterpreter
 from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION, PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.semantic import SemanticRegistry
+from talk2data.services.semantic_context import cite_definitions
 from talk2data.tools.definitions import ResolveMetricTool
 
 
@@ -38,22 +42,37 @@ class DemoWorkspaceBusy(RuntimeError):
 
 
 @dataclass
+class SavedCsvRun:
+    dataset: CsvDataset
+    question: str
+    as_of: datetime
+    snapshot_id: str
+
+
+@dataclass
 class DemoWorkspaceSession:
     user_id: str
     expires_at: float
+    definitions: DefinitionGovernance
     dataset: CsvDataset | None = None
     last_response: DemoChatResponse | None = None
     busy: bool = False
+    history: dict[str, SavedCsvRun] = field(default_factory=dict)
 
 
 class CsvDemoWorkspace:
     def __init__(self, settings: CsvDemoSettings) -> None:
         self.settings = settings
         self._sessions: dict[str, DemoWorkspaceSession] = {}
+        self._definition_store = DefinitionStore()
         # Always use packaged, public demo semantics. Never the internal tenant registry.
         self._domains = DomainPackRegistry()
         self._domains.load()
         self._pack = self._domains.get("demo-telecom")
+        # CSV dates are explicit Gregorian UTC observation days, independent of internal calendars.
+        self._pack = self._pack.model_copy(
+            update={"default_calendar": "GREGORIAN", "default_timezone": "UTC"}, deep=True
+        )
         self._policy = PolicyEngine()
         self._semantics = SemanticRegistry(self._domains, self._policy)
         self._compiler = BusinessQueryCompiler(self._semantics)
@@ -64,6 +83,9 @@ class CsvDemoWorkspace:
 
     def _prune(self) -> None:
         now = time.monotonic()
+        for item in self._sessions.values():
+            if item.expires_at <= now and not item.busy:
+                self._definition_store.delete(item.definitions.namespace)
         self._sessions = {
             token: item for token, item in self._sessions.items() if item.expires_at > now or item.busy
         }
@@ -73,9 +95,13 @@ class CsvDemoWorkspace:
         if len(self._sessions) >= self.settings.maximum_sessions:
             raise DemoWorkspaceBusy("Demo capacity reached; retry after an existing session expires.")
         token = secrets.token_urlsafe(32)
+        user_id = str(uuid4())
         self._sessions[token] = DemoWorkspaceSession(
-            user_id=str(uuid4()),
+            user_id=user_id,
             expires_at=time.monotonic() + self.settings.session_ttl_seconds,
+            definitions=DefinitionGovernance(
+                self._definition_store, f"csv:{user_id}", self._pack, separate_reviewer=False
+            ),
         )
         return token
 
@@ -102,6 +128,7 @@ class CsvDemoWorkspace:
         if item.busy:
             raise DemoWorkspaceBusy("Wait for the current operation before clearing the session.")
         del self._sessions[token]
+        self._definition_store.delete(item.definitions.namespace)
 
     async def upload(self, item: DemoWorkspaceSession, raw: bytes) -> dict[str, object]:
         # Validate before replacing: an invalid upload leaves the previous source untouched.
@@ -123,13 +150,47 @@ class CsvDemoWorkspace:
             departments={"SALES"},
             regions=set(REGIONS),
             business_units={"CONSUMER"},
-            classification_clearance=ClassificationLevel.CONFIDENTIAL,
-            permitted_actions={ASK_ACTION, READ_DATA_ACTION},
+            classification_clearance=ClassificationLevel.RESTRICTED,
+            permitted_actions={ASK_ACTION, READ_DATA_ACTION, EDIT, REVIEW, PUBLISH, REVOKE},
         )
 
     def definition(self, item: DemoWorkspaceSession) -> dict[str, object]:
-        result = ResolveMetricTool(self._semantics).run(self._access(item), "MOBILE_ACTIVATIONS")
-        return result.model_dump(mode="json")
+        # The view remains inspectable after revocation; execution resolves usable snapshots separately.
+        pack = item.definitions.inspect_current(self._access(item)).pack
+        semantics = SemanticRegistry(DomainPackRegistry.from_snapshot(pack), self._policy)
+        return (
+            ResolveMetricTool(semantics).run(self._access(item), "MOBILE_ACTIVATIONS").model_dump(mode="json")
+        )
+
+    def state(self, item: DemoWorkspaceSession) -> dict[str, object]:
+        if item.last_response and item.last_response.semantic_context:
+            try:
+                item.definitions.resolve(self._access(item), item.last_response.semantic_context.snapshot_id)
+            except DefinitionUnavailable:
+                item.last_response = None
+        return {
+            "source": None if item.dataset is None else item.dataset.describe(),
+            "definition": self.definition(item),
+            "definitions": item.definitions.view(self._access(item)),
+            "last_response": None
+            if item.last_response is None
+            else item.last_response.model_dump(mode="json"),
+            "history": [
+                {
+                    "run_id": run_id,
+                    "question": run.question,
+                    "snapshot_id": run.snapshot_id,
+                    "source_fingerprint": run.dataset.fingerprint,
+                }
+                for run_id, run in reversed(item.history.items())
+            ],
+            "interpreter": "rules",
+            "internal_connections_available": False,
+            "connections": [
+                {"id": "csv", "status": "AVAILABLE"},
+                {"id": "bigquery", "status": "NOT_CONFIGURED"},
+            ],
+        }
 
     async def answer(
         self,
@@ -138,16 +199,37 @@ class CsvDemoWorkspace:
         question: str,
         as_of: datetime,
         source_fingerprint: str,
+        definition_snapshot_id: str | None = None,
     ) -> DemoChatResponse:
         dataset = item.dataset
         if dataset is None:
             raise ConnectorValidationError("Upload a CSV before asking a question.")
         if source_fingerprint != dataset.fingerprint:
             raise DemoWorkspaceBusy("The CSV changed. Refresh the source before asking again.")
+        snapshot = item.definitions.resolve(self._access(item), definition_snapshot_id, require_current=True)
+        return await self._execute(item, dataset, question, as_of, snapshot)
+
+    async def rerun(self, item: DemoWorkspaceSession, run_id: str) -> DemoChatResponse:
+        saved = item.history.get(run_id)
+        if saved is None:
+            raise DefinitionUnavailable("The saved run is not available in this demo session.")
+        snapshot = item.definitions.resolve(self._access(item), saved.snapshot_id)
+        return await self._execute(item, saved.dataset, saved.question, saved.as_of, snapshot)
+
+    async def _execute(
+        self,
+        item: DemoWorkspaceSession,
+        dataset: CsvDataset,
+        question: str,
+        as_of: datetime,
+        snapshot: DefinitionSnapshot,
+    ) -> DemoChatResponse:
         access = self._access(item)
+        domains = DomainPackRegistry.from_snapshot(snapshot.pack)
+        semantics = SemanticRegistry(domains, self._policy)
         registry = ConnectorRegistry()
         # A fresh per-run registry is the routing boundary: no internal connector can be reached.
-        for connector_id in {metric.source.connector_id for metric in self._pack.metrics}:
+        for connector_id in {metric.source.connector_id for metric in snapshot.pack.metrics}:
             registry.register(
                 CsvDemoConnector(
                     dataset=dataset,
@@ -157,9 +239,9 @@ class CsvDemoWorkspace:
                 )
             )
         service = DemoChatService(
-            domain_registry=self._domains,
+            domain_registry=domains,
             admissibility_engine=self._admissibility,
-            query_compiler=self._compiler,
+            query_compiler=BusinessQueryCompiler(semantics),
             session_store=EphemeralRunStore(),
             connector_registry=registry,
             ai_model=None,
@@ -174,5 +256,20 @@ class CsvDemoWorkspace:
                 include_debug=True,
             )
         )
-        item.last_response = response
+        # Publication can coexist with a pinned run; revocation cannot release its result.
+        item.definitions.resolve(access, snapshot.snapshot_id)
+        cite_definitions(response, snapshot)
+        if response.receipt:
+            item.history[str(response.receipt.query_id)] = SavedCsvRun(
+                dataset, question, as_of, snapshot.snapshot_id
+            )
+            while len(item.history) > 4:
+                item.history.pop(next(iter(item.history)))
+        # Historical reruns retain their source and never select an older upload silently.
+        if item.dataset and item.dataset.fingerprint == dataset.fingerprint:
+            item.last_response = response
         return response
+
+    def close(self) -> None:
+        self._sessions.clear()
+        self._definition_store.close()

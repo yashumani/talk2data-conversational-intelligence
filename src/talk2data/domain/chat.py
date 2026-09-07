@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from talk2data.domain.governance import SemanticCitation
 from talk2data.domain.models import (
     BusinessQueryIR,
     QueryCompilationRequest,
@@ -57,6 +58,7 @@ class QueryReceipt(BaseModel):
     source_kind: str = "synthetic_demo"
     source_fingerprint: str | None = None
     cloud_job: CloudQueryExecution | None = None
+    definition_snapshot_id: str | None = None
     receipt_id: UUID = Field(default_factory=uuid4)
     query_id: UUID
     decision_id: UUID
@@ -123,4 +125,5 @@ class DemoChatResponse(BaseModel):
     ai_model: str | None = None
     synthetic_data: bool = True
     context_used: bool = False
+    semantic_context: SemanticCitation | None = None
     warnings: list[str] = Field(default_factory=list)

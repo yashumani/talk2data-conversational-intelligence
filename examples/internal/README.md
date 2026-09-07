@@ -18,3 +18,8 @@ missing settings fail startup. Never supply internal configuration to the public
 For working data now, use the separate optional CSV import in the React workspace, following
 `docs/CSV_WORKSPACE.md`. CSV data stays in its isolated workspace and is never loaded into
 BigQuery. Configure each connection separately when its environment is available.
+
+The optional `governance_database_path` is null in the placeholder. A private deployment
+must supply an absolute path and a service-owned writable volume to retain definition
+publications across restarts; see `docs/DEFINITION_GOVERNANCE.md`. CSV definitions remain
+ephemeral and isolated regardless of the private store setting.

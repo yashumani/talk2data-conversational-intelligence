@@ -168,6 +168,8 @@ class MetricDefinition(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     domain_id: str
     definition: str
+    owner: str = "Unassigned"
+    definition_version: int = Field(default=1, ge=1)
     semantic_version: str = "1"
     value_type: MetricValueType = MetricValueType.DECIMAL
     aggregation: MetricAggregation = MetricAggregation.SUM
@@ -203,6 +205,9 @@ class DimensionValue(BaseModel):
 class BusinessEntity(BaseModel):
     id: str
     name: str
+    definition: str = ""
+    owner: str = "Unassigned"
+    definition_version: int = Field(default=1, ge=1)
     aliases: list[str] = Field(default_factory=list)
     domain_id: str
     values: list[DimensionValue] = Field(default_factory=list)

@@ -1,6 +1,8 @@
 import { ChatPanel } from "./components/ChatPanel";
 import { DataSourcePanel } from "./components/DataSourcePanel";
 import { EvidencePanel } from "./components/EvidencePanel";
+import { DefinitionPanel } from "./components/DefinitionPanel";
+import { HistoryPanel } from "./components/HistoryPanel";
 import { useWorkspace } from "./hooks/useWorkspace";
 
 export function App() {
@@ -21,12 +23,17 @@ export function App() {
       <div className="workspace-grid">
         <DataSourcePanel session={workspace.session} source={workspace.state?.source ?? null}
           busy={busy} onStart={workspace.start} onUpload={workspace.upload} onClear={workspace.clear} />
-        <ChatPanel ready={Boolean(workspace.state?.source)} busy={busy}
+        <ChatPanel ready={Boolean(workspace.state?.source) && workspace.state?.definitions?.status !== "REVOKED"} busy={busy}
           result={workspace.state?.last_response ?? null} asOf={workspace.asOf}
           onDate={workspace.setAsOf} onAsk={workspace.ask} />
         <EvidencePanel state={workspace.state} />
       </div>
+      {workspace.session && <div className="definitions-grid">
+        <DefinitionPanel view={workspace.state?.definitions ?? null} busy={busy}
+          onDraft={workspace.createDraft} onAction={workspace.reviewDraft} onRevoke={workspace.revokeDefinition} />
+        <HistoryPanel runs={workspace.state?.history ?? []} result={workspace.historyResult} busy={busy} onRerun={workspace.rerun} />
+      </div>}
     </main>
-    <footer>Talk2Data foundation release · Demonstration only. No production warehouse access.</footer>
+    <footer>CSV data and definition history last for this demo session. BigQuery setup is deferred.</footer>
   </div>;
 }

@@ -10,16 +10,19 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from talk2data.api.definition_errors import install_definition_errors
 from talk2data.connectors.bigquery import BigQueryConnector
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.internal_config import InternalRuntimeConfig, InternalSettings
 from talk2data.domain.bigquery_mapping import BigQueryCatalog
 from talk2data.domain.domain_pack import DomainPackRegistry
+from talk2data.internal.definitions import router as definitions_router
 from talk2data.internal.routes import router
 from talk2data.internal.runtime import InternalQueryRuntime
 from talk2data.services.bigquery_port import BigQueryTransport
 from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
+from talk2data.services.definition_store import DefinitionStore
 from talk2data.services.identity import (
     EntitlementStore,
     IdentityRejected,
@@ -63,7 +66,12 @@ def create_internal_app(
     verifier = IdentityVerifier(
         resolved.identity, EntitlementStore(resolved.entitlements_path, resolved.identity.issuer)
     )
-    runtime = InternalQueryRuntime(domains, registries, resolved.maximum_active_queries)
+    runtime = InternalQueryRuntime(
+        domains,
+        registries,
+        resolved.maximum_active_queries,
+        DefinitionStore(resolved.governance_database_path),
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -134,4 +142,6 @@ def create_internal_app(
         return {"status": "ready", "profile": "internal"}
 
     app.include_router(router)
+    app.include_router(definitions_router)
+    install_definition_errors(app)
     return app

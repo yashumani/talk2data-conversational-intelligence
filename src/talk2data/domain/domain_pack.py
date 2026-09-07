@@ -25,6 +25,12 @@ class DomainPackRegistry:
         self._directory = directory
         self._packs: dict[str, TenantDomainPack] = {}
 
+    @classmethod
+    def from_snapshot(cls, pack: TenantDomainPack) -> DomainPackRegistry:
+        registry = cls()
+        registry._packs = {pack.tenant_id: pack.model_copy(deep=True)}
+        return registry
+
     def load(self) -> None:
         paths = list(self._iter_pack_paths())
         if not paths:

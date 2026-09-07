@@ -158,12 +158,13 @@ certify any company definition. Copy and adapt them in the approved private loca
 | `runtime.json` | Identity trust, billing project/location, query limits and absolute private paths |
 | `entitlements.json` | Issuer and subject-to-tenant/action/scope/classification bindings |
 | `catalog.json` | Approved views, dependencies, columns and semantic contracts |
-| `domains/*.yaml` | Approved business definitions; immutable for this process lifetime |
+| `domains/*.yaml` | Approved bootstrap contracts; live metadata publications use the separate definition store |
 | `acceptance.json` | Approved benchmark questions, exact expected rows, token-file locations and forbidden synthetic probe |
 
 The runtime reads `T2D_INTERNAL_CONFIG_FILE`. There are no fallback project IDs or default
 internal grants. Definitions and physical mappings are pinned at startup; update them through
-an approved restart until atomic semantic publication is implemented in Cycle 3. Keep all real
+an approved restart for physical or security changes. Cycle 3 publishes business metadata through
+the separately authorized [definition API](DEFINITION_GOVERNANCE.md). Keep all real
 files outside this public repository and the Docker build context.
 
 BigQuery uses Application Default Credentials. In GCP, attach the approved workload identity

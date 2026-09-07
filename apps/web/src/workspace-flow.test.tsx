@@ -66,8 +66,9 @@ describe("workspace state synchronization", () => {
     await run(() => hook.setAsOf("")); await run(() => hook.ask("no date"));
     expect(api.ask).not.toHaveBeenCalled();
     await run(() => hook.setAsOf("2026-08-17"));
+    vi.mocked(api.state).mockResolvedValue({ ...loaded, last_response: result });
     await run(() => hook.ask("  What were mobile activations last month?  "));
-    expect(api.ask).toHaveBeenCalledWith("test-token", "What were mobile activations last month?", "2026-08-17", source.source_fingerprint);
+    expect(api.ask).toHaveBeenCalledWith("test-token", "What were mobile activations last month?", "2026-08-17", source.source_fingerprint, undefined);
     expect(hook.state?.last_response).toEqual(result);
     await run(() => hook.refresh()); expect(hook.asOf).toBe("2026-08-17");
     vi.mocked(api.state).mockResolvedValue({ ...loaded, source: { ...source, source_fingerprint: "new", coverage_end: "2026-08-31" } });
@@ -135,6 +136,7 @@ describe("rendered React interactions", () => {
     await run(() => renderer.root.findByType("textarea").props.onChange({ target: { value: "Mobile activations last month" } }));
     await run(() => renderer.root.findByProps({ id: "as-of" }).props.onChange({ target: { value: "2026-08-17" } }));
     const preventDefault = vi.fn();
+    vi.mocked(api.state).mockResolvedValue({ ...loaded, last_response: result });
     await run(() => renderer.root.findByType("form").props.onSubmit({ preventDefault }));
     expect(preventDefault).toHaveBeenCalled(); expect(textContent()).toContain("31 activations");
     expect(textContent()).toContain("Execution evidence"); expect(textContent()).toContain("VERIFIED");

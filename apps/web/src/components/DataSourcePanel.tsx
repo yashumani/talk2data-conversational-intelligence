@@ -20,7 +20,7 @@ export function DataSourcePanel({ session, source, busy, onStart, onUpload, onCl
     </div>
     <div className="connection">
       <strong>BigQuery · internal</strong>
-      <span>Separate integration planned. Not connected to this demo.</span>
+      <span>Not configured · connection placeholders ready. Live validation deferred.</span>
     </div>
     {!session ? <button disabled={busy} onClick={() => void onStart()}>Start CSV demo</button> : <>
       <label className="upload-label" htmlFor="csv-file">{source ? "Replace CSV" : "Choose a CSV file"}</label>

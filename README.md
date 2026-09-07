@@ -38,8 +38,18 @@ independent. See the [internal BigQuery runbook](docs/INTERNAL_BIGQUERY.md).
 
 Cycle 2 is complete on the approved connection-placeholder boundary. GCP/SSO activation and
 live acceptance are deferred; CSV imports are the working optional data connection. See the
-[connection placeholders](examples/internal/README.md). Claude, live definition publication
-and durable multi-agent execution remain subsequent cycles in the agreed plan.
+[connection placeholders](examples/internal/README.md). These placeholders do not report a
+healthy warehouse. CSV remains independently usable now.
+
+### Live business definitions — Cycle 3
+
+The CSV workspace now supports metric and dimension definition drafts, review, approval,
+publication, effective dates and withdrawal. Answers cite their exact definitions; the latest
+four successful CSV runs can be reproduced with their saved data and publication. The separate
+internal API enforces server-owned permissions and a different author/reviewer. See
+[the definition governance runbook](docs/DEFINITION_GOVERNANCE.md) for the workflow, storage and limits.
+
+Claude and bounded agents are Cycle 4; durable conversation/event synchronization is Cycle 5.
 
 ### Existing application
 

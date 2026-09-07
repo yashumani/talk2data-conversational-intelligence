@@ -1,3 +1,5 @@
+import type { DefinitionRecord, DefinitionView, SavedRun } from "./definitions";
+
 export interface Source {
   source_kind: "csv_demo";
   metric_ids: string[];
@@ -28,6 +30,13 @@ export interface ChatResult {
   };
   query_ir: null | { semantic_version: string; semantic_snapshot_hash: string; plan_hash: string };
   warnings: string[];
+  semantic_context?: null | {
+    snapshot_id: string;
+    metric: DefinitionRecord;
+    dimensions: DefinitionRecord[];
+    publication_sequence: number;
+    effective_from: string;
+  };
 }
 
 export interface WorkspaceState {
@@ -47,6 +56,8 @@ export interface WorkspaceState {
   last_response: ChatResult | null;
   interpreter: "rules";
   internal_connections_available: false;
+  definitions?: DefinitionView;
+  history?: SavedRun[];
 }
 
 export interface DemoSession {

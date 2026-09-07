@@ -60,6 +60,14 @@ class InternalRuntimeConfig(BaseModel):
     domain_pack_directory: Path
     bigquery_catalog_path: Path
     maximum_active_queries: int = Field(default=8, ge=1, le=32)
+    governance_database_path: Path | None = None
+
+    @field_validator("governance_database_path")
+    @classmethod
+    def private_definition_database(cls, value: Path | None) -> Path | None:
+        if value is not None and not value.is_absolute():
+            raise ValueError("The definition database requires an absolute private path.")
+        return value
 
     @field_validator("entitlements_path", "domain_pack_directory", "bigquery_catalog_path")
     @classmethod

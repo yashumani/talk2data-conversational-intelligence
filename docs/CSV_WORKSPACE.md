@@ -32,6 +32,7 @@ python scripts/csv_workspace_smoke.py
 
 The check retrieves the built assets and synthetic template over HTTP, independently sums
 July's 24,676 activations, verifies source-bound answers and definition versions, checks
+definition publication, stale-definition rejection, historical reproduction and withdrawal,
 session isolation, invalid uploads, stale-source rejection and missing-day abstention, then
 clears its two temporary sessions. It does not exercise a browser or claim visual acceptance.
 
@@ -42,7 +43,8 @@ docker compose -f docker-compose.csv-demo.yml down --volumes
 ```
 
 The ordinary runtime image includes the workspace assets, while CSV stays disabled unless
-explicitly enabled. Internal BigQuery configuration remains a separate later milestone.
+explicitly enabled. Internal BigQuery placeholders are complete; real activation and validation
+remain deferred to DG-1 in a separate deployment.
 
 ## Build and run one server
 
@@ -74,6 +76,13 @@ Inspect the business definition, version, result rows, file fingerprint, and rec
 Replace the file with another valid template to invalidate the previous result, then ask again.
 Use **Clear data and end session** when finished.
 
+In **Manage business definitions**, choose a metric or dimension, propose its business meaning,
+owner and aliases, and supply a reason. Save, submit, approve and publish with review notes.
+The demo labels this as a single-user exercise; it cannot approve internal definitions.
+New questions use the current effective publication. **Saved answers** can reproduce the latest
+four successful runs using their original CSV and definitions, even after a replacement upload.
+See [definition governance](DEFINITION_GOVERNANCE.md) for scheduling and withdrawal behavior.
+
 The built workspace is served only when `T2D_WEB_DIRECTORY` points to an existing build.
 This does not alter the existing root redirect or automatically publish GitHub Pages.
 
@@ -101,7 +110,7 @@ details in Vite environment variables. No browser-side BigQuery client is requir
 | `T2D_CSV_DEMO_SESSION_TTL_SECONDS` | 1800 | Fixed demo-session lifetime |
 | `T2D_WEB_DIRECTORY` | unset | Optional built frontend directory |
 
-These settings do not modify `T2D_DATA_BACKEND`, PostgreSQL settings, or any future BigQuery
+These settings do not modify `T2D_DATA_BACKEND`, PostgreSQL settings, or the separate BigQuery
 settings. The CSV workspace uses packaged public definitions and its own ephemeral run store.
 It never queries the ordinary runtime connector registry.
 
@@ -152,7 +161,8 @@ these local foundation checks.
 
 - **404:** CSV feature is off or the API proxy is not reaching this backend.
 - **401:** Session expired or is unknown. Start a new session and upload again.
-- **409:** Another operation is running, capacity is reached, or the file hash changed.
+- **409:** Another operation is running, capacity is reached, or a source/definition revision changed;
+  a requested saved run may also be unavailable or its definitions withdrawn.
   Wait for the current operation or refresh the workspace state.
 - **413:** Upload is too large.
 - **415:** API callers must send the raw file with `Content-Type: text/csv`.

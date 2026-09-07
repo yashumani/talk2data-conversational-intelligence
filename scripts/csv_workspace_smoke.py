@@ -102,6 +102,64 @@ def run(base_url: str) -> dict[str, Any]:
         request(API + "/chat", token=token, body={**question, "connector_id": "bigquery"}, expected=422)
         checks.append("Caller cannot select an internal connector")
 
+        definition = initial["definitions"]
+        check(definition["mode"] == "DEMO_SINGLE_USER", "Demo review authority is labeled explicitly")
+        check(
+            initial["connections"][1] == {"id": "bigquery", "status": "NOT_CONFIGURED"},
+            "BigQuery placeholder does not report a live connection",
+        )
+        draft = json.loads(
+            request(
+                API + "/definitions/drafts",
+                token=token,
+                body={
+                    "base_snapshot_id": definition["snapshot_id"],
+                    "kind": "DIMENSION",
+                    "definition_id": "REGION",
+                    "name": "Region",
+                    "definition": "Synthetic reporting territory assigned to each activation.",
+                    "owner": "Demo Sales Analytics",
+                    "aliases": ["territory"],
+                    "reason": "Clarify territory meaning.",
+                },
+                expected=201,
+            )
+        )
+        for action in ("submit", "approve", "publish"):
+            draft = json.loads(
+                request(
+                    API + f"/definitions/drafts/{draft['draft_id']}/{action}",
+                    token=token,
+                    body={"expected_revision": draft["revision"], "note": "Reviewed synthetic definition."},
+                )
+            )
+        current = json.loads(request(API + "/state", token=token))["definitions"]
+        check(
+            current["snapshot_id"] != definition["snapshot_id"], "Publication creates an immutable snapshot"
+        )
+        request(
+            API + "/chat",
+            token=token,
+            body={**question, "definition_snapshot_id": definition["snapshot_id"]},
+            expected=409,
+        )
+        checks.append("Stale business definitions reject a new question")
+        fresh = json.loads(
+            request(
+                API + "/chat",
+                token=token,
+                body={**question, "definition_snapshot_id": current["snapshot_id"]},
+            )
+        )
+        check(
+            fresh["semantic_context"]["dimensions"][0]["definition_version"] == 2,
+            "New answer cites the published dimension definition",
+        )
+        check(
+            fresh["receipt"]["result_rows"] == receipt["result_rows"],
+            "Definition metadata changes preserve the governed calculation",
+        )
+
         # Remove one July day; a complete-month answer must abstain, never silently undercount.
         incomplete = "\n".join(
             line for line in raw_csv.decode().splitlines() if not line.startswith("2026-07-15,")
@@ -111,6 +169,19 @@ def run(base_url: str) -> dict[str, Any]:
         checks.append("Replacing a source rejects stale questions")
         replaced_state = json.loads(request(API + "/state", token=token))
         check(replaced_state["last_response"] is None, "Replacing a source removes the old answer")
+        historical = json.loads(request(API + f"/history/{receipt['query_id']}/rerun", token=token, body=b""))
+        check(
+            historical["semantic_context"] == answer["semantic_context"],
+            "Old run keeps its exact definitions",
+        )
+        check(
+            historical["receipt"]["result_rows"] == receipt["result_rows"],
+            "Old run reproduces its original CSV",
+        )
+        check(
+            json.loads(request(API + "/state", token=token))["source"] == replacement,
+            "Historical reproduction preserves the selected replacement source",
+        )
         missing = json.loads(
             request(
                 API + "/chat",
@@ -119,6 +190,17 @@ def run(base_url: str) -> dict[str, Any]:
             )
         )
         check(missing["status"] == "SOURCE_NOT_READY" and missing["receipt"] is None, "Missing dates abstain")
+        request(
+            API + f"/definitions/snapshots/{definition['snapshot_id']}/revoke",
+            token=token,
+            body={
+                "expected_revision": current["revision"],
+                "note": "Withdraw original synthetic definition.",
+            },
+            expected=204,
+        )
+        request(API + f"/history/{receipt['query_id']}/rerun", token=token, body=b"", expected=409)
+        checks.append("Revoked definitions cannot reproduce a saved answer")
     finally:
         request(API + "/clear", token=token, body=b"", expected=204)
         request(API + "/clear", token=other, body=b"", expected=204)
