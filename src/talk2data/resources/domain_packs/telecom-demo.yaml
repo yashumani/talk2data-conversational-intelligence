@@ -38,6 +38,7 @@ domains:
 metrics:
   - id: POSTPAID_CHURN
     name: Postpaid Churn
+    owner: Demo Subscriber Analytics
     aliases: [postpaid churn, churn, disconnect rate, subscriber churn]
     domain_id: WIRELESS_SUBSCRIBER
     definition: Postpaid account or line disconnects divided by the approved average active base for the period.
@@ -60,6 +61,7 @@ metrics:
       description: Certified subscriber performance mart.
   - id: MOBILE_ACTIVATIONS
     name: Mobile Activations
+    owner: Demo Sales Analytics
     aliases: [mobile activations, wireless activations, new activations, activations]
     domain_id: RETAIL_SALES
     definition: Successfully completed new wireless service activations in the selected period.
@@ -81,6 +83,7 @@ metrics:
       description: Certified activation fact view.
   - id: NETWORK_CONGESTION
     name: Network Congestion Rate
+    owner: Demo Network Analytics
     aliases: [network congestion, congestion rate, congested cells, evening congestion]
     domain_id: NETWORK_OPERATIONS
     definition: Share of monitored network intervals exceeding the governed congestion threshold.
@@ -103,6 +106,7 @@ metrics:
       description: Certified network performance aggregate API.
   - id: ARPA
     name: Average Revenue per Account
+    owner: Demo Finance Analytics
     aliases: [arpa, average revenue per account, account revenue]
     domain_id: WIRELESS_SUBSCRIBER
     definition: Governed service revenue divided by the approved average account base.
@@ -126,21 +130,29 @@ metrics:
 entities:
   - id: PLAN
     name: Service Plan
+    owner: Demo Subscriber Analytics
+    definition: The subscribed service-plan category associated with the observation.
     aliases: [plan, plans, rate plan, service plan]
     domain_id: WIRELESS_SUBSCRIBER
     classification: INTERNAL
   - id: STORE
     name: Retail Store
+    owner: Demo Sales Analytics
+    definition: The retail location attributed to the activation observation; not a count of stores.
     aliases: [store, stores, retail location, retail locations]
     domain_id: RETAIL_SALES
     classification: INTERNAL
   - id: MARKET
     name: Operating Market
+    owner: Demo Sales Analytics
+    definition: The commercial operating market to which the observation is assigned.
     aliases: [market, markets, dma]
     domain_id: RETAIL_SALES
     classification: INTERNAL
   - id: REGION
     name: Operating Region
+    owner: Demo Subscriber Analytics
+    definition: The operating geography assigned to the observation using the approved region identifiers.
     aliases: [region, regions]
     domain_id: WIRELESS_SUBSCRIBER
     values:
@@ -158,6 +170,8 @@ entities:
     classification: INTERNAL
   - id: CHANNEL
     name: Sales Channel
+    owner: Demo Sales Analytics
+    definition: The originating sales route for the observation, such as retail, digital or customer care.
     aliases: [channel, channels]
     domain_id: RETAIL_SALES
     values:
@@ -173,16 +187,22 @@ entities:
     classification: INTERNAL
   - id: CELL_SITE
     name: Cell Site
+    owner: Demo Network Analytics
+    definition: The radio-network site associated with a network observation.
     aliases: [cell site, cell sites, tower, towers]
     domain_id: NETWORK_OPERATIONS
     classification: CONFIDENTIAL
   - id: HOUR
     name: Hour of Day
+    owner: Demo Network Analytics
+    definition: The hour bucket within the source observation's governed time zone.
     aliases: [hour, hourly, evening, morning]
     domain_id: NETWORK_OPERATIONS
     classification: INTERNAL
   - id: TECHNOLOGY
     name: Network Technology
+    owner: Demo Network Analytics
+    definition: The radio technology serving the network observation, such as LTE or 5G.
     aliases: [technology, network technology, radio technology]
     domain_id: NETWORK_OPERATIONS
     values:

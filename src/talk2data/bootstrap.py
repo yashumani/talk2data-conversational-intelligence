@@ -9,10 +9,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from talk2data.api.definition_errors import install_definition_errors
 from talk2data.api.demo_errors import install_demo_errors
 from talk2data.api.routes import (
     chat,
     connectors,
+    csv_definitions,
     csv_demo,
     health,
     physical_mappings,
@@ -135,7 +137,11 @@ def create_app(
         await session_store.initialize()
         for connector in runtime_connectors:
             await connector.initialize()
-        yield
+        try:
+            yield
+        finally:
+            if app.state.csv_workspace is not None:
+                app.state.csv_workspace.close()
 
     app = FastAPI(
         title=resolved_settings.app_name,
@@ -191,8 +197,10 @@ def create_app(
     )
 
     install_demo_errors(app)
+    install_definition_errors(app)
     install_web_assets(app, resolved_settings.web_directory)
     app.include_router(csv_demo.router)
+    app.include_router(csv_definitions.router)
     app.include_router(chat.router)
     app.include_router(connectors.router)
     app.include_router(physical_mappings.router)

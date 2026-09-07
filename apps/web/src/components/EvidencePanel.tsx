@@ -5,6 +5,7 @@ export function EvidencePanel({ state }: { state: WorkspaceState | null }) {
   const definition = state?.definition;
   const result = state?.last_response;
   const receipt = matchesSource(result ?? null, state?.source ?? null) ? result?.receipt : null;
+  const context = receipt ? result?.semantic_context : null;
   return <section className="panel evidence-panel" aria-labelledby="evidence-heading">
     <p className="eyebrow">03 / Definitions & evidence</p>
     <h2 id="evidence-heading">Know what was used</h2>
@@ -16,8 +17,17 @@ export function EvidencePanel({ state }: { state: WorkspaceState | null }) {
         <dt>Definition pack</dt><dd>{definition.domain_pack_version}</dd>
         <dt>Aggregation</dt><dd>{definition.metric.aggregation}</dd>
       </dl>
-      <p className="small">Definitions are the packaged approved snapshot. Live approval and refresh workflow is planned.</p>
+      <p className="small">This is the current published definition. Proposed changes apply only after approval and publication.</p>
     </> : <p>Start a demo session to inspect its approved metric definition.</p>}
+    {context && <div className="definition-current">
+      <h3>Definition used by this answer</h3>
+      <p>{context.metric.definition}</p>
+      <p className="small">Owner: {context.metric.owner} · Definition version {context.metric.definition_version}</p>
+      {context.snapshot_id !== state?.definitions?.snapshot_id && <p className="small">This answer uses an earlier publication, preserved with its evidence.</p>}
+      {context.dimensions.map(dimension => <p className="small" key={dimension.id}>
+        <strong>{dimension.name}:</strong> {dimension.definition} · version {dimension.definition_version}
+      </p>)}
+    </div>}
     {receipt ? <>
       <h3>Execution evidence</h3>
       <dl>

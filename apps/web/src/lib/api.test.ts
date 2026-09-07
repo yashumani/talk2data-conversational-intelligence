@@ -64,3 +64,28 @@ test("network failures are surfaced and never retried against another source", a
   await assert.rejects(api.state("token"), /Network unavailable/);
   assert.equal(calls, 1);
 });
+
+
+test("definition endpoints send review revisions and keep route identifiers encoded", async () => {
+  const calls: { path: string; body: unknown }[] = [];
+  globalThis.fetch = async (input, init) => {
+    assert.equal(new Headers(init?.headers).get("X-Demo-Session"), "token");
+    assert.equal(init?.method, "POST");
+    calls.push({ path: String(input), body: init?.body ? JSON.parse(String(init.body)) : null });
+    return String(input).endsWith("/revoke") ? new Response(null, { status: 204 }) : Response.json({});
+  };
+  const edit = { base_snapshot_id: "b".repeat(64), kind: "METRIC" as const, definition_id: "MOBILE_ACTIVATIONS",
+    name: "Activations", definition: "Completed connections", owner: "Sales", aliases: [], reason: "Clarify" };
+  await api.createDraft("token", edit);
+  await api.reviewDraft("token", { draft_id: "draft/1", revision: 3, status: "APPROVED", edit, review_note: "Checked" }, "publish", "Release");
+  await api.revokeDefinition("token", "snapshot/2", 7, "Withdraw");
+  await api.rerun("token", "run/1");
+  await api.ask("token", "Activations?", "2026-08-01", "a".repeat(64), edit.base_snapshot_id);
+  assert.deepEqual(calls.slice(0, 4), [
+    { path: "/v1/demo/csv/definitions/drafts", body: edit },
+    { path: "/v1/demo/csv/definitions/drafts/draft%2F1/publish", body: { expected_revision: 3, note: "Release" } },
+    { path: "/v1/demo/csv/definitions/snapshots/snapshot%2F2/revoke", body: { expected_revision: 7, note: "Withdraw" } },
+    { path: "/v1/demo/csv/history/run%2F1/rerun", body: null },
+  ]);
+  assert.equal((calls[4].body as { definition_snapshot_id: string }).definition_snapshot_id, edit.base_snapshot_id);
+});

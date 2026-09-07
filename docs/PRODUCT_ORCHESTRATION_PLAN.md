@@ -1,7 +1,8 @@
 # Talk2Data: consolidated product and orchestration plan
 
 Updated: 2026-09-07. Accepted Cycle 1 baseline: main commit
-`ba198541dc14821dc497217e97cf67db20234d5c`. Cycle 2 implementation and private
+`ba198541dc14821dc497217e97cf67db20234d5c`. Accepted Cycle 2 baseline:
+`67dba4f65887ed5ea8f572eb8972f98ac1797053` (PR #20). Cycle 2 implementation and private
 acceptance procedure: [Internal identity and BigQuery](INTERNAL_BIGQUERY.md).
 
 ## 1. Decision and delivery boundary
@@ -20,7 +21,8 @@ React workspace. Cycle 2 adds a separate internal API, signed identity verificat
 governed BigQuery adapter. **Cycle 2 is complete on the user's revised placeholder boundary**;
 live GCP/SSO activation and validation remain deferred release gate DG-1. CSV imports remain
 an independent working data connection, never a BigQuery upload or automatic fallback.
-Claude, live semantic publication and durable multi-agent orchestration remain later cycles.
+Cycle 3 implements live definition governance and CSV reproducibility, documented in
+[the governance runbook](DEFINITION_GOVERNANCE.md). Claude and durable multi-agent orchestration remain later cycles.
 The current increment is not an enterprise production release.
 
 No existing repository is archived, renamed, merged wholesale, or made private by this work.
@@ -38,7 +40,7 @@ private location before integration.
 | Thin main files | `main.py` exports ASGI application; `main.tsx` mounts UI; `App.tsx` composes panels | Keep future business logic out of these entry points |
 | Independent data connections | CSV has its own configuration/workspace; BigQuery now has a separate internal API, adapter, private mappings and identity binding; existing adapters retained | Execute restricted-principal GCP acceptance with approved private configuration |
 | CSV upload | Bounded UTF-8 template, isolated ephemeral sessions, source hash, replace/clear/state endpoints | Governed mapping wizard for additional schemas and metric families |
-| Business definitions | Reuses packaged approved metric contracts, versions, semantic hashes; UI shows the activation definition | Approval workflow, dimension definitions, effective dates, publication events, conflict handling |
+| Business definitions | Metric/dimension metadata, named owners, draft/review/approval, atomic snapshots/events, effective dates, revocation and citations; CSV review UI | Business-owned production contracts and benchmark approval; governed formula/mapping migrations; search index adapter if needed |
 | Question-to-answer logic | Reuses admissibility, Business Query IR, deterministic execution, result checks, and receipt-backed composition | Wider question benchmark, fiscal-calendar correctness, ratio/time-grain coverage |
 | Frontend/backend synchronization | Backend source fingerprint, explicit state refresh, stale-source rejection, latest completed result | Durable runs, incremental events, reconnect/replay, idempotency, cancellation, cross-device history |
 | Claude API | Target architecture only; CSV never sends a file or question to a model | Provider adapter, schema validation, model configuration, budgets, approved data-egress policy |
@@ -96,8 +98,9 @@ question binds a fresh connector registry containing only CSV adapters. An unava
 metric, missing date, permission mismatch, invalid filter, or oversized result ends in an
 explicit rejection or abstention. It never invokes the existing runtime registry.
 
-Uploads and questions are not persisted by the CSV workspace. One latest answer is retained
-in process memory. Sessions have a fixed lifetime, with expired entries pruned on subsequent
+Uploads and questions are not persisted to disk by the CSV workspace. One current answer and
+the latest four successful runs, including their original CSV references and definition snapshots,
+are retained in process memory. Sessions have a fixed lifetime, with expired entries pruned on subsequent
 operations. Expiry is an access limit, not an immediate secure-erasure guarantee. Clear removes
 the session's references; process shutdown removes all demo state. Single-worker use is required.
 
@@ -197,9 +200,23 @@ An embedding index can help find candidate IDs, but the semantic registry remain
 If definitions conflict, permissions are missing, or a requested effective version cannot be
 resolved, ask for clarification or abstain. Do not let an agent invent a formula to fill the gap.
 
-The foundation exposes a startup-loaded, approved public metric snapshot and its hash. It does
-not yet implement publication events, an admin approval interface, hot reload, or dimension
-definition authoring. Those are release-gated work in milestone 3.
+Cycle 3 implements this lifecycle for names, descriptions, owners and aliases of existing
+metrics and dimensions. Physical calculations, source bindings, classification and semantic
+calculation versions remain strict separate contracts. Formula changes require a reviewed
+mapping/definition migration and regression benchmark; changing explanatory text cannot alter SQL.
+
+The shared definition store atomically commits each immutable pack snapshot and its ordered
+publication event with an optimistic revision check. Every request reads the store and builds
+its compiler from a pinned copy; metric semantic hashes also include relevant dimension records.
+No stale semantic object or embedding cache is used. Publication and withdrawal are visible
+through state refresh and API reads; push delivery/replay belongs to Cycle 5.
+
+The CSV UI offers an explicitly labeled single-user review exercise. The private API verifies
+identity and requires distinct author/reviewer subjects with server-owned actions and complete
+publication clearance. Exact definition citations accompany queries in both profiles. CSV retains
+four old runs and their data for reproduction within the current session. Internal definition
+history can persist to a private SQLite file; durable internal query history belongs to Cycle 5.
+See [the implementation and acceptance contract](DEFINITION_GOVERNANCE.md).
 
 ## 7. Bounded multi-agent orchestration
 
@@ -361,7 +378,7 @@ approved storage boundary while the canonical repository is public.
 | --- | --- | --- | --- |
 | 1. Modular demo foundation | Thin entry points, typed tools, isolated CSV session/import/query path, React panels, source synchronization, packaged demo, this plan | Existing tests stay green; CSV answers reproduce uploaded counts; wrong scope/source, missing dates, invalid files, and truncation are rejected; installed React/Python demo passes HTTP acceptance | PR #18 is the delivery record; its accepted commit is the baseline for cycle 2 |
 | 2. Internal identity and BigQuery — complete with placeholders | Separate identity/BigQuery implementation, private configuration templates, dry runs, budgets, cancellation and receipts | User accepts tested implementation and unconfigured connection placeholders; optional CSV works independently. Live cloud acceptance moves to DG-1 | Real GCP/SSO configuration required only before internal activation and final release |
-| 3. Live semantic governance | Metric/dimension records, draft/review/approve lifecycle, effective snapshots, publication events, cache invalidation, definition UI | Changed definition applies to new runs; old runs reproduce against pinned versions; conflicts/revocation fail closed | Business metric owners and initial 10–20 metric contracts |
+| 3. Live semantic governance — complete in PR #21 | Metric/dimension metadata, draft/review/approve lifecycle, effective snapshots, atomic publication events, fresh request resolution, definition UI | New queries use active publications; CSV historical runs reproduce with pinned data/definitions; conflicts and revocation fail closed; 96% quality gates and packaged acceptance | Synthetic CSV proves mechanics; business owners approve production contracts before activation |
 | 4. Claude and bounded orchestration | Provider adapter, specialist task contracts, typed tools, execution budgets, injection controls | Model cannot expand access or execute arbitrary SQL; benchmark correctness and abstention thresholds pass | Approved model/endpoint and data-egress policy |
 | 5. Durable collaboration and sync | Conversation persistence, run/event store, SSE replay, idempotent jobs, cancellation, artifacts, optional CopilotKit adapter | Refresh/reconnect/retry cannot duplicate jobs or mix results across tenant/source/version; terminal states survive restart | Internal application database and job platform |
 | 6. Enterprise release | IaC, CI/CD promotion, observability, retention, security review, load/cost testing, recovery, operations runbooks | Named security/data/platform/product owners sign off; SLO, RPO/RTO, and budget tests pass | Milestones 2–5 complete |
@@ -452,7 +469,7 @@ that does not support an agreed row belongs in a separate proposal, not this rel
 | R2 | Optional CSV data connection, independent of BigQuery | `test_csv_demo.py`: exact totals, source isolation, invalid input, gaps, capacity, expiry, stale fingerprints, replace/clear; React upload and evidence flows | Demo acceptance passes in its own deployment; internal credentials and data cannot enter the demo process |
 | R3 | Claude API | Provider contract tests protect the existing local-model boundary; **Claude adapter not implemented** | Configured Claude adapter passes schema, timeout, rate-limit, budget, prompt-injection, grounded-selection, and real-provider benchmark gates |
 | R4 | GCP BigQuery remains an internal separate connection | Separate internal API/adapter/configuration; signed-token, scope/classification, SQL, SDK budget/cancellation/receipt tests; opt-in live benchmark | Live read-only queries, approved views, byte caps, location, cancellation and IAM pass with restricted GCP principals; pending private environment |
-| R5 | Live context means business definitions of each metric and dimension | Registry/semantic tests enforce approved packaged contracts and pinned metric versions; **live publication not implemented** | Approved metric and dimension lifecycle, owners, effective dates, definition citations, atomic publication, cache invalidation, conflict/revocation behavior, and reproducible old runs |
+| R5 | Live context means business definitions of each metric and dimension | `test_definition_governance.py`, `test_definition_workflows.py`, React definition flows and HTTP smoke: lifecycle, owners, effective dates, immutable citations, atomic publication, fresh resolution, conflicts/revocation and CSV historical reproduction | Production business-owner approval and benchmark; durable internal run reproduction integrated with Cycle 5; formula/mapping changes use coordinated migrations |
 | R6 | Multiple agents working together | Interpretation, compiler, execution, and verification modules have separate tests; **durable agent orchestration not implemented** | Bounded specialist agents use typed tools; budgets and terminal states persist; cannot expand permission or change the selected source; causal claims require evidence |
 | R7 | Frontend/backend data sync and context | React flow/API tests: restore, upload, source-bound ask, refresh, expiry, error recovery, clear, old-answer removal; backend stale-source rejection | Durable conversations and semantic/source versions; event replay, reconnect, idempotency, cancellation, restart recovery and cross-session isolation pass |
 | R8 | Validated answers aligned to business meaning | Known-sum CSV checks; interpreter grounding regression; complete-period coverage; receipt lineage/hash/row count; bounds, duplicate keys and comparison arithmetic tests | Business-owned question benchmark passes agreed correctness/abstention thresholds across initial metric scope, fiscal calendars, joins, ratios, dimensions and access scopes |
@@ -485,8 +502,11 @@ them through the approved secret and workload-identity workflow when the integra
 ## 15. Next implementation boundary
 
 Cycle 1 is accepted through PRs #18 and #19. Cycle 2 is accepted through PR #20 on the user's
-revised placeholder boundary. Continue Cycle 3 with versioned metric/dimension definitions,
-approval, publication and reproducibility using the separate CSV data connection.
+revised placeholder boundary. Cycle 3 is delivered through [PR #21](https://github.com/yashumani/talk2data-conversational-intelligence/pull/21): versioned metric/dimension definition metadata,
+approval, publication and reproducibility using the separate CSV data connection. Its PR must
+record exact source checks, measured coverage and packaged acceptance before closure. The next
+cycle is Cycle 4: the Claude adapter and bounded specialist orchestration; do not start it in
+this increment.
 
 ### Deferred release gate DG-1 — real GCP and SSO
 

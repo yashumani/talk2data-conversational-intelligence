@@ -10,6 +10,7 @@
   "bigquery_catalog_path": "/run/talk2data/catalog.json",
   "domain_pack_directory": "/run/talk2data/domains",
   "entitlements_path": "/run/talk2data/entitlements.json",
+  "governance_database_path": null,
   "identity": {
     "algorithm": "RS256",
     "audience": "talk2data-internal",

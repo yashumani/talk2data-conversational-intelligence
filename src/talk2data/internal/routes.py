@@ -11,11 +11,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from talk2data.domain.chat import DemoChatResponse
+from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import AccessContext
 from talk2data.internal.runtime import InternalQueryBusy, InternalQueryRuntime
 from talk2data.services.identity import IdentityVerifier
-from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION
-from talk2data.services.semantic import SemanticAccessDeniedError
+from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION, PolicyEngine
+from talk2data.services.semantic import SemanticAccessDeniedError, SemanticRegistry
 
 router = APIRouter(prefix="/v1/internal", tags=["internal"])
 
@@ -25,6 +26,7 @@ class InternalQuestion(BaseModel):
     request_id: UUID = Field(default_factory=uuid4)
     question: str = Field(min_length=1, max_length=2000)
     as_of: AwareDatetime = Field(default_factory=lambda: datetime.now(UTC))
+    definition_snapshot_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
 
 class InternalAnswer(BaseModel):
@@ -59,9 +61,11 @@ async def metrics(service: Runtime, access: Identity) -> list[dict[str, Any]]:
     if READ_DATA_ACTION not in access.permitted_actions:
         raise HTTPException(403, "Data access is not authorized.")
     result = []
-    for definition in service.domains.get(access.tenant_id).metrics:
+    snapshot = service.definitions[access.tenant_id].resolve(access)
+    semantics = SemanticRegistry(DomainPackRegistry.from_snapshot(snapshot.pack), PolicyEngine())
+    for definition in snapshot.pack.metrics:
         try:
-            _, allowed = service.semantics.resolve_metric(access, definition.id)
+            _, allowed = semantics.resolve_metric(access, definition.id)
         except SemanticAccessDeniedError:
             continue
         result.append(allowed.model_dump(mode="json"))
@@ -76,7 +80,11 @@ async def chat(
         raise HTTPException(403, "Question and data access must both be authorized.")
     try:
         answer = await service.answer(
-            request_id=payload.request_id, question=payload.question, as_of=payload.as_of, access=access
+            request_id=payload.request_id,
+            question=payload.question,
+            as_of=payload.as_of,
+            access=access,
+            definition_snapshot_id=payload.definition_snapshot_id,
         )
     except InternalQueryBusy as exc:
         raise HTTPException(409, str(exc)) from exc

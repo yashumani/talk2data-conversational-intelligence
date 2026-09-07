@@ -2,6 +2,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, input, textarea { font: inherit; }
+select { font: inherit; }
 button, a, input, textarea, summary { outline-offset: 4px; }
 button { border: 1px solid #164eb9; background: #164eb9; color: white; border-radius: 6px; padding: 10px 14px; cursor: pointer; font-weight: 600; }
 button:disabled { opacity: .5; cursor: not-allowed; }
@@ -46,5 +47,14 @@ summary { cursor: pointer; font-size: 13px; font-weight: 600; }
 pre { font-size: 11px; overflow: auto; max-height: 300px; background: #f4f6f9; padding: 12px; }
 .error { background: #fff1f0; border: 1px solid #e7b4ad; color: #8c2a20; border-radius: 6px; padding: 14px; margin-top: 12px; }
 footer { padding: 0 28px 24px; font-size: 12px; color: #617186; text-align: center; }
+.definitions-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
+.definitions-grid input, .definitions-grid select { width: 100%; padding: 10px; border: 1px solid #b9c6d6; border-radius: 6px; color: #20314a; background: white; }
+.definition-current, .definition-review, .saved-run, .reproduced-answer { border-top: 1px solid #e0e5ec; padding-top: 16px; margin-top: 16px; }
+.definition-editor { background: #f7f9fc; border: 1px solid #dce2e9; border-radius: 6px; padding: 20px; margin-top: 20px; }
+.definition-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.definition-status { color: #617186; font-size: 11px; font-weight: 500; }
+.definitions-grid details button { margin-top: 12px; }
+.definitions-grid li { color: #4b5d73; font-size: 12px; margin-bottom: 10px; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .definitions-grid { grid-template-columns: 1fr; } }
 @media (max-width: 1150px) { .workspace-grid { grid-template-columns: minmax(230px, .8fr) minmax(350px, 1.5fr); } .evidence-panel { grid-column: 1 / -1; } }
 @media (max-width: 720px) { .workspace-grid { grid-template-columns: 1fr; } .evidence-panel { grid-column: auto; } .app-header { padding: 20px; align-items: start; flex-direction: column; } main { padding: 12px; } .panel { padding: 20px; } .form-footer { align-items: stretch; flex-direction: column; gap: 14px; } .workspace-toolbar { align-items: start; } }

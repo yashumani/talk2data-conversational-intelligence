@@ -17,6 +17,7 @@ class CsvQuestion(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     as_of: AwareDatetime
     source_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    definition_snapshot_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
 
 def workspace(request: Request) -> CsvDemoWorkspace:
@@ -45,13 +46,7 @@ async def create_session(service: Workspace, response: Response) -> dict[str, ob
 async def state(service: Workspace, token: Token, response: Response) -> dict[str, object]:
     response.headers["Cache-Control"] = "no-store"
     item = service.get(token)
-    return {
-        "source": None if item.dataset is None else item.dataset.describe(),
-        "definition": service.definition(item),
-        "last_response": None if item.last_response is None else item.last_response.model_dump(mode="json"),
-        "interpreter": "rules",
-        "internal_connections_available": False,
-    }
+    return service.state(item)
 
 
 @router.post("/upload")
@@ -79,6 +74,7 @@ async def chat(payload: CsvQuestion, service: Workspace, token: Token) -> DemoCh
             question=payload.question,
             as_of=payload.as_of,
             source_fingerprint=payload.source_fingerprint,
+            definition_snapshot_id=payload.definition_snapshot_id,
         )
 
 

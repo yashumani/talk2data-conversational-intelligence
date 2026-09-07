@@ -102,6 +102,11 @@ class SemanticRegistry:
             "currency": pack.default_currency,
             "timezone": pack.default_timezone,
             "metric": metric.model_dump(mode="json"),
+            "dimensions": [
+                entity.model_dump(mode="json")
+                for entity in sorted(pack.entities, key=lambda item: item.id)
+                if entity.id in metric.allowed_dimensions
+            ],
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
