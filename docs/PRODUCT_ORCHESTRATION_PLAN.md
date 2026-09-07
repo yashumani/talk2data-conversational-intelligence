@@ -62,7 +62,7 @@ target security boundary, not a connection that has already been verified.
 | `src/talk2data/connectors` | Provider-specific execution behind `DataConnector` | Browser sessions or agent prompts |
 | `src/talk2data/core` | Validated runtime configuration | Real secret values in source control |
 | `resources/domain_packs` | Public synthetic semantic examples | Internal company definitions |
-| `tests` and `apps/web/src/lib/*.test.ts` | Regression, contract, and isolation tests | Live credentials or production data fixtures |
+| `tests` and `apps/web/src/**/*.test.{ts,tsx}` | Regression, contract, UI interaction, and isolation tests | Live credentials or production data fixtures |
 
 Dependencies flow from UI to API to application services to typed tools and connector ports.
 Drivers implement the ports. The UI never selects a project, table, credential, or physical
@@ -384,10 +384,59 @@ Maintain separate suites:
 - End-to-end browser acceptance and accessibility review before release. Not performed in
   this foundation implementation session.
 
-The existing Python coverage gate remains 85%; new tests do not lower it. The new React CI
-uses the committed lockfile, TypeScript compilation, protocol tests, production build, and
-dependency audit. Exact execution results for the branch belong in the PR, not an unverified
-claim that every deployment target has passed.
+### Mandatory quality gates
+
+- Python: measure every module in `src/talk2data`, including PostgreSQL and the memory/evidence
+  contracts. Enable branch measurement. Require **96% lines and 96% branches independently**;
+  retain the combined 96% pytest gate as well. `scripts/check_coverage.py` rejects missing
+  branch measurement or an empty report. Do not remove production modules to raise the score.
+- React: Vitest/V8 measures every `.ts` and `.tsx` application file, including components,
+  hooks, and `main.tsx`. Require **96% lines, statements, functions, and branches** independently.
+  Only test code is excluded. The in-memory React interaction tests are not browser or visual QA.
+- CI: lint, format, strict Python typing, Python 3.11/3.12/3.13 matrix, locked Node dependencies,
+  TypeScript compilation, React tests, production build, and high-severity dependency audit.
+  Store Python and React coverage reports as CI artifacts tied to the tested commit.
+- Real service gates: retain PostgreSQL integration and Docker/Ollama smoke workflows. The
+  smoke test must check requested metric, exact dimensions, row count, verification, and real
+  provider use. A model returning a catalog-wide grouping must fail acceptance even if SQL ran.
+- A failing correctness, permission, or isolation test blocks delivery regardless of coverage.
+  Record any skipped integration tests and the environment needed to execute them. Do not
+  count a mocked cloud call as proof of BigQuery IAM or a provider evaluation.
+
+Coverage configuration follows the [Coverage.py configuration reference](https://coverage.readthedocs.io/en/latest/config.html)
+and [Vitest coverage configuration](https://vitest.dev/config/coverage). Exact measured results,
+test counts, and CI outcomes belong in the PR attached to the tested commit.
+
+### Requirements traceability and release acceptance
+
+This table is the acceptance ledger for the original product. A working foundation may be
+reviewed as an increment; **the finalized enterprise product requires every row to pass**.
+Future changes must identify one of these requirement IDs and its acceptance evidence. Work
+that does not support an agreed row belongs in a separate proposal, not this release scope.
+
+| ID | Original requirement | Current executable evidence | Enterprise completion criterion |
+| --- | --- | --- | --- |
+| R1 | One Talk2Data repository; small tools and services; thin UI/main | Connector factory, definition/query tools, separate route/service/connector modules; import and build checks | New capabilities preserve these boundaries; one reviewed release commit and deployment profile |
+| R2 | Optional CSV data connection, independent of BigQuery | `test_csv_demo.py`: exact totals, source isolation, invalid input, gaps, capacity, expiry, stale fingerprints, replace/clear; React upload and evidence flows | Demo acceptance passes in its own deployment; internal credentials and data cannot enter the demo process |
+| R3 | Claude API | Provider contract tests protect the existing local-model boundary; **Claude adapter not implemented** | Configured Claude adapter passes schema, timeout, rate-limit, budget, prompt-injection, grounded-selection, and real-provider benchmark gates |
+| R4 | GCP BigQuery remains an internal separate connection | PostgreSQL tests validate the retained connector pattern; **BigQuery adapter and GCP integration not implemented** | Dedicated BigQuery tool/adapter passes read-only queries, allowed views, dry runs, byte caps, location, cancellation, receipts, and IAM tests with restricted GCP principals |
+| R5 | Live context means business definitions of each metric and dimension | Registry/semantic tests enforce approved packaged contracts and pinned metric versions; **live publication not implemented** | Approved metric and dimension lifecycle, owners, effective dates, definition citations, atomic publication, cache invalidation, conflict/revocation behavior, and reproducible old runs |
+| R6 | Multiple agents working together | Interpretation, compiler, execution, and verification modules have separate tests; **durable agent orchestration not implemented** | Bounded specialist agents use typed tools; budgets and terminal states persist; cannot expand permission or change the selected source; causal claims require evidence |
+| R7 | Frontend/backend data sync and context | React flow/API tests: restore, upload, source-bound ask, refresh, expiry, error recovery, clear, old-answer removal; backend stale-source rejection | Durable conversations and semantic/source versions; event replay, reconnect, idempotency, cancellation, restart recovery and cross-session isolation pass |
+| R8 | Validated answers aligned to business meaning | Known-sum CSV checks; interpreter grounding regression; complete-period coverage; receipt lineage/hash/row count; bounds, duplicate keys and comparison arithmetic tests | Business-owned question benchmark passes agreed correctness/abstention thresholds across initial metric scope, fiscal calendars, joins, ratios, dimensions and access scopes |
+| R9 | Enterprise product quality, more than 95% coverage | Independent 96% Python line/branch and React line/branch/function/statement gates; retained real PostgreSQL and Ollama jobs | SSO, trusted tenant identity, private ingress, secrets, audit/retention, load/cost/SLO and recovery gates pass; browser accessibility acceptance and release approval recorded |
+
+### Completion and stopping rules
+
+1. Each increment includes code, meaningful regression tests, this ledger's status updates,
+   and measured validation tied to the exact PR commit. A plan-only item stays incomplete.
+2. Keep CSV as an optional source and keep BigQuery internal throughout all increments.
+   No fallback or shared upload path may silently cross that boundary.
+3. Do not claim production readiness from UI completeness, coverage, or mock tests alone.
+   The final release requires the real Claude/GCP, identity, semantic publication, durable
+   orchestration, sync/recovery, performance, and browser acceptance gates above.
+4. Once the current increment passes its required gates, stop optional test expansion and
+   advance the next agreed product milestone. Review and deployment use the same tested commit.
 
 ## 14. Decisions required before milestone 2
 
@@ -401,9 +450,10 @@ claim that every deployment target has passed.
 No production credentials should be posted into an issue, chat, CSV, or source file. Configure
 them through the approved secret and workload-identity workflow when the integration is authorized.
 
-## 15. Immediate handoff
+## 15. Next implementation boundary
 
-Review the foundation branch, run the [CSV workspace runbook](CSV_WORKSPACE.md), verify the
-synthetic examples, and approve the milestone-2 environment choices. Do not enable internal
-data access through the legacy demo authorization path. This is the stopping boundary between
-a testable demonstration foundation and a privately configured enterprise integration.
+Deliver the tested foundation update through the existing PR, with coverage reports and real
+service CI results. Continue milestone 2 in the same repository using its dedicated identity
+and BigQuery modules. Resolve the concrete environment choices in section 14 when wiring the
+internal runtime; do not pass production access through the legacy demo authorization path.
+The [CSV workspace runbook](CSV_WORKSPACE.md) remains the demonstration acceptance procedure.

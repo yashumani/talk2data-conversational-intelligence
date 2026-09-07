@@ -243,11 +243,22 @@ semantic gates complete.
 ruff check .
 ruff format --check .
 mypy src
-pytest --cov=talk2data --cov-report=term-missing
+pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json
+python scripts/check_coverage.py
+npm --prefix apps/web test
+npm --prefix apps/web run build
 ```
+
+CI requires **96% line and 96% branch coverage independently** across the entire Python
+package. No connector or domain model is omitted. React CI requires at least 96% of lines,
+branches, functions, and statements across all application TypeScript, including components,
+hooks, and the entry point. Coverage reports are retained as workflow artifacts.
 
 A separate GitHub Actions workflow starts a real PostgreSQL service and runs the full PostgreSQL
 chat and receipt path. The full Docker/Ollama pipeline is also smoke-tested on GitHub-hosted runners.
+The canonical [product plan](docs/PRODUCT_ORCHESTRATION_PLAN.md#13-verification-and-benchmark-strategy)
+maps the original requirements to tests and enterprise release criteria. Passing coverage does
+not mean Claude, BigQuery, live semantic publication, or durable agents are implemented.
 
 ## Documentation
 

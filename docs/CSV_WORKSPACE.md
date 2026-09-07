@@ -99,13 +99,18 @@ CSV schemas require approved mappings and are explicitly left to later work.
 python -m ruff check .
 python -m ruff format --check .
 python -m mypy src
-python -m pytest --cov=talk2data --cov-report=term-missing --cov-fail-under=85
+python -m pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=96
+python scripts/check_coverage.py
 npm --prefix apps/web test
 npm --prefix apps/web run build
 npm --prefix apps/web audit --audit-level=high
 ```
 
 Live Ollama/PostgreSQL tests require their separately documented service configuration.
+Python line and branch coverage must each reach 96%. Frontend lines, statements, functions,
+and branches must each reach 96%. React flow tests run in an in-memory renderer and check
+session restore/expiry, uploads, question submission, error recovery, evidence matching,
+refresh, clearing, and overlapping-operation prevention. They do not provide browser or visual QA.
 BigQuery, Claude, browser end-to-end, load, and enterprise identity tests are not covered by
 these local foundation checks.
 

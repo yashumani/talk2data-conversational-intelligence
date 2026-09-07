@@ -1,5 +1,5 @@
 import { strict as assert } from "node:assert";
-import { afterEach, test } from "node:test";
+import { afterEach, test } from "vitest";
 import { api, ApiError } from "./api.ts";
 
 const originalFetch = globalThis.fetch;

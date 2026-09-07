@@ -72,6 +72,15 @@ def run(base_url: str, require_ollama: bool) -> int:
                 if not body["receipt"]["result_hash"]:
                     print("Answer did not include a result hash.", file=sys.stderr)
                     return 1
+                expected_metric = "POSTPAID_CHURN" if "postpaid churn" in question else "MOBILE_ACTIVATIONS"
+                expected_dimensions = ["PLAN"] if "by plan" in question else []
+                if (
+                    body["query_ir"]["metric_id"] != expected_metric
+                    or body["query_ir"]["dimensions"] != expected_dimensions
+                    or body["receipt"]["row_count"] != (3 if expected_dimensions else 1)
+                ):
+                    print("The interpreted metric or grouping differs from the question.", file=sys.stderr)
+                    return 1
                 if require_ollama and body["decision"]["interpreter_mode"] != "OLLAMA_AND_RULES":
                     print("Real Ollama interpretation was not used.", file=sys.stderr)
                     return 1

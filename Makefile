@@ -7,7 +7,8 @@ run:
 	uvicorn talk2data.main:app --reload
 
 test:
-	pytest --cov=talk2data --cov-report=term-missing
+	pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json
+	python scripts/check_coverage.py
 
 lint:
 	ruff check .

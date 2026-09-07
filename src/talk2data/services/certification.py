@@ -5,7 +5,7 @@ import json
 import math
 from calendar import monthrange
 from datetime import date
-from typing import Any
+from typing import Any, TypeGuard
 
 from talk2data.domain.chat import (
     CertifiedAnswer,
@@ -30,19 +30,32 @@ class ResultSenseValidator:
         checks: list[str] = []
         failures: list[str] = []
 
-        canonical = json.dumps(
-            receipt.result_rows,
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        )
+        try:
+            canonical = json.dumps(
+                receipt.result_rows,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+        except (TypeError, ValueError):
+            return receipt.model_copy(update={"data_quality_status": "FAILED"}), VerificationReport(
+                status=VerificationStatus.FAILED,
+                checks=[],
+                failures=["RESULT_NOT_CANONICAL"],
+            )
         expected_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         if expected_hash == receipt.result_hash:
             checks.append("RESULT_HASH_MATCHED")
         else:
             failures.append("RESULT_HASH_MISMATCH")
 
-        if receipt.query_id == query_ir.query_id and receipt.plan_hash == query_ir.plan_hash:
+        if (
+            receipt.query_id == query_ir.query_id
+            and receipt.plan_hash == query_ir.plan_hash
+            and receipt.decision_id == query_ir.decision_id
+            and receipt.connector_id == query_ir.source_connector_id
+            and receipt.policy_decision_id == str(query_ir.decision_id)
+        ):
             checks.append("QUERY_LINEAGE_MATCHED")
         else:
             failures.append("QUERY_LINEAGE_MISMATCH")
@@ -52,7 +65,13 @@ class ResultSenseValidator:
         else:
             failures.append("ROW_COUNT_MISMATCH")
 
-        if receipt.resolved_end <= receipt.coverage_end:
+        periods = [(receipt.resolved_start, receipt.resolved_end)]
+        comparison_complete = (receipt.comparison_start is None) == (receipt.comparison_end is None)
+        if receipt.comparison_start is not None and receipt.comparison_end is not None:
+            periods.append((receipt.comparison_start, receipt.comparison_end))
+        if comparison_complete and all(
+            receipt.coverage_start <= start <= end <= receipt.coverage_end for start, end in periods
+        ):
             checks.append("SOURCE_COVERAGE_VALID")
         else:
             failures.append("SOURCE_COVERAGE_EXCEEDED")
@@ -62,6 +81,9 @@ class ResultSenseValidator:
 
         seen_dimension_keys: set[tuple[Any, ...]] = set()
         for index, row in enumerate(receipt.result_rows):
+            if any(not isinstance(row.get(dimension), (str, int)) for dimension in query_ir.dimensions):
+                failures.append(f"INVALID_DIMENSION_KEY_AT_ROW_{index}")
+                continue
             dimension_key = tuple(row.get(dimension) for dimension in query_ir.dimensions)
             if dimension_key in seen_dimension_keys:
                 failures.append(f"DUPLICATE_DIMENSION_KEY_AT_ROW_{index}")
@@ -79,6 +101,10 @@ class ResultSenseValidator:
                     label=f"ROW_{index}_COMPARISON_VALUE",
                     failures=failures,
                 )
+                if not self._comparison_is_consistent(row):
+                    failures.append(f"ROW_{index}_COMPARISON_ARITHMETIC_MISMATCH")
+            elif receipt.comparison_start is not None:
+                failures.append(f"ROW_{index}_COMPARISON_VALUE_MISSING")
             percent_change = row.get("percent_change")
             if percent_change is not None and not self._is_finite_number(percent_change):
                 failures.append(f"ROW_{index}_PERCENT_CHANGE_NOT_FINITE")
@@ -96,6 +122,24 @@ class ResultSenseValidator:
             }
         )
         return updated_receipt, VerificationReport(status=status, checks=checks, failures=failures)
+
+    @classmethod
+    def _comparison_is_consistent(cls, row: dict[str, Any]) -> bool:
+        current, previous = row.get("value"), row.get("comparison_value")
+        if not cls._is_finite_number(current) or not cls._is_finite_number(previous):
+            return False
+        change = float(current) - float(previous)
+        absolute = row.get("absolute_change")
+        if not cls._is_finite_number(absolute) or not math.isclose(
+            float(absolute), change, rel_tol=1e-9, abs_tol=1e-9
+        ):
+            return False
+        relative = row.get("percent_change")
+        if previous == 0:
+            return relative is None
+        return cls._is_finite_number(relative) and math.isclose(
+            float(relative), change / abs(float(previous)), rel_tol=1e-9, abs_tol=1e-9
+        )
 
     @classmethod
     def _validate_value(
@@ -118,7 +162,7 @@ class ResultSenseValidator:
             failures.append(f"{label}_NOT_INTEGER")
 
     @staticmethod
-    def _is_finite_number(value: Any) -> bool:
+    def _is_finite_number(value: Any) -> TypeGuard[int | float]:
         return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
 
 
@@ -198,17 +242,20 @@ class CertifiedAnswerComposer:
             text=text,
             claims=claims,
             caveats=[
-                (
-                    "This answer uses an uploaded demo CSV; "
-                    "business completeness is not independently verified."
-                    if receipt.source_kind == "csv_demo"
-                    else "This answer uses synthetic telecommunications demonstration data."
-                ),
+                source_caveat(receipt.source_kind),
                 "No Unified AI Brain context or external evidence was used.",
                 f"Reported source coverage ends {receipt.coverage_end.isoformat()}.",
             ],
             suggested_questions=suggested,
         )
+
+
+def source_caveat(source_kind: str) -> str:
+    if source_kind == "csv_demo":
+        return "This answer uses an uploaded demo CSV; business completeness is not independently verified."
+    if source_kind == "synthetic_demo":
+        return "This answer uses synthetic telecommunications demonstration data."
+    return "This answer uses the configured read-only data source."
 
 
 def format_metric_value(value: float, metric: MetricDefinition, currency: str) -> str:

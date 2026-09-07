@@ -26,4 +26,11 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src
-      - run: pytest --cov=talk2data --cov-report=term-missing --cov-fail-under=85
+      - run: pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=96
+      - run: python scripts/check_coverage.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-coverage-${{ matrix.python-version }}
+          path: coverage.json
+          if-no-files-found: error
