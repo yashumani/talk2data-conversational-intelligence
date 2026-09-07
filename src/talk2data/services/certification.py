@@ -198,9 +198,14 @@ class CertifiedAnswerComposer:
             text=text,
             claims=claims,
             caveats=[
-                "This answer uses synthetic telecommunications demonstration data.",
+                (
+                    "This answer uses an uploaded demo CSV; "
+                    "business completeness is not independently verified."
+                    if receipt.source_kind == "csv_demo"
+                    else "This answer uses synthetic telecommunications demonstration data."
+                ),
                 "No Unified AI Brain context or external evidence was used.",
-                f"Certified source coverage ends {receipt.coverage_end.isoformat()}.",
+                f"Reported source coverage ends {receipt.coverage_end.isoformat()}.",
             ],
             suggested_questions=suggested,
         )

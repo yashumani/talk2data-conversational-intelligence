@@ -9,6 +9,20 @@ result, and release only receipt-backed claims.
 
 ## Use the application
 
+### New modular CSV workspace
+
+An optional React/TypeScript workspace now supports isolated CSV demonstrations with the
+existing governed Python query pipeline. CSV uploads never change the configured data
+backend or connect to BigQuery. The feature is disabled by default.
+
+See the [CSV workspace runbook](docs/CSV_WORKSPACE.md) and the
+[consolidated product orchestration plan](docs/PRODUCT_ORCHESTRATION_PLAN.md).
+This first increment supports a strict Mobile Activations template. Claude, internal BigQuery,
+live semantic publication, and durable multi-agent execution remain planned work—not active
+connections. Use only synthetic or explicitly approved demonstration data.
+
+### Existing application
+
 Public GitHub control center:
 
 ```text

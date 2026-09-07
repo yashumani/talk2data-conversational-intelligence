@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     database_path: Path = Path(".talk2data/talk2data.db")
+    web_directory: Path | None = None
     default_tenant_id: str = "demo-telecom"
     domain_pack_directory: Path | None = None
     physical_mapping_directory: Path | None = None

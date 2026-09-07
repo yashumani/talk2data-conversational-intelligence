@@ -11,9 +11,13 @@ htmlcov/
 venv/
 dist/
 build/
+node_modules/
+*.tsbuildinfo
 
 # Local runtime
 .env
+.env.local
+.env.*.local
 .talk2data/
 *.db
 *.sqlite

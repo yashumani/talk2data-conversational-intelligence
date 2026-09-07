@@ -7,6 +7,7 @@ from talk2data.connectors.demo_sqlite import (
     DemoConnectorValidationError,
     DemoSourceNotReadyError,
 )
+from talk2data.connectors.errors import ConnectorValidationError, SourceNotReadyError
 from talk2data.connectors.postgres import (
     PostgreSQLConnectorError,
     PostgreSQLSourceNotReadyError,
@@ -30,7 +31,8 @@ from talk2data.domain.models import (
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.certification import CertifiedAnswerComposer, ResultSenseValidator
 from talk2data.services.query_compiler import BusinessQueryCompiler
-from talk2data.services.session_store import SQLiteSessionStore
+from talk2data.services.session_port import ChatSessionStore
+from talk2data.tools.query import ExecuteQueryTool
 
 
 class DemoChatService:
@@ -42,7 +44,7 @@ class DemoChatService:
         domain_registry: DomainPackRegistry,
         admissibility_engine: QuestionAdmissibilityEngine,
         query_compiler: BusinessQueryCompiler,
-        session_store: SQLiteSessionStore,
+        session_store: ChatSessionStore,
         connector_registry: ConnectorRegistry,
         ai_model: str | None,
         synthetic_data: bool,
@@ -140,8 +142,8 @@ class DemoChatService:
         )
         try:
             connector = self._connector_registry.get(plan.connector_id)
-            receipt = await connector.execute_read_only(plan, request.access_context)
-        except (DemoSourceNotReadyError, PostgreSQLSourceNotReadyError) as exc:
+            receipt = await ExecuteQueryTool(connector).run(plan, request.access_context)
+        except (DemoSourceNotReadyError, PostgreSQLSourceNotReadyError, SourceNotReadyError) as exc:
             return self._non_answer_response(
                 session_id=session_id,
                 decision=decision,
@@ -153,6 +155,7 @@ class DemoChatService:
             )
         except (
             ConnectorRegistryError,
+            ConnectorValidationError,
             DemoConnectorValidationError,
             PostgreSQLConnectorError,
         ) as exc:
