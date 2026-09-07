@@ -17,7 +17,9 @@ not a BigQuery loading mechanism, substitute warehouse, or automatic fallback.
 
 Cycle 1 delivered the separated application composition, executable CSV demonstration and
 React workspace. Cycle 2 adds a separate internal API, signed identity verification and a
-governed BigQuery adapter. **Live GCP/SSO acceptance is pending** approved private configuration.
+governed BigQuery adapter. **Cycle 2 is complete on the user's revised placeholder boundary**;
+live GCP/SSO activation and validation remain deferred release gate DG-1. CSV imports remain
+an independent working data connection, never a BigQuery upload or automatic fallback.
 Claude, live semantic publication and durable multi-agent orchestration remain later cycles.
 The current increment is not an enterprise production release.
 
@@ -358,14 +360,16 @@ approved storage boundary while the canonical repository is public.
 | Milestone | Work | Acceptance gate | Dependencies |
 | --- | --- | --- | --- |
 | 1. Modular demo foundation | Thin entry points, typed tools, isolated CSV session/import/query path, React panels, source synchronization, packaged demo, this plan | Existing tests stay green; CSV answers reproduce uploaded counts; wrong scope/source, missing dates, invalid files, and truncation are rejected; installed React/Python demo passes HTTP acceptance | PR #18 is the delivery record; its accepted commit is the baseline for cycle 2 |
-| 2. Internal identity and BigQuery | Private deployment profile, SSO, tenant binding, approved mappings, dedicated BigQuery adapter, dry runs, budgets, cancellation, receipts | No internal endpoint accepts caller-granted roles; restricted-principal tests and read-only GCP integration benchmark pass | Approved GCP project/location, identity provider, datasets/views, private configuration location |
+| 2. Internal identity and BigQuery — complete with placeholders | Separate identity/BigQuery implementation, private configuration templates, dry runs, budgets, cancellation and receipts | User accepts tested implementation and unconfigured connection placeholders; optional CSV works independently. Live cloud acceptance moves to DG-1 | Real GCP/SSO configuration required only before internal activation and final release |
 | 3. Live semantic governance | Metric/dimension records, draft/review/approve lifecycle, effective snapshots, publication events, cache invalidation, definition UI | Changed definition applies to new runs; old runs reproduce against pinned versions; conflicts/revocation fail closed | Business metric owners and initial 10–20 metric contracts |
 | 4. Claude and bounded orchestration | Provider adapter, specialist task contracts, typed tools, execution budgets, injection controls | Model cannot expand access or execute arbitrary SQL; benchmark correctness and abstention thresholds pass | Approved model/endpoint and data-egress policy |
 | 5. Durable collaboration and sync | Conversation persistence, run/event store, SSE replay, idempotent jobs, cancellation, artifacts, optional CopilotKit adapter | Refresh/reconnect/retry cannot duplicate jobs or mix results across tenant/source/version; terminal states survive restart | Internal application database and job platform |
 | 6. Enterprise release | IaC, CI/CD promotion, observability, retention, security review, load/cost testing, recovery, operations runbooks | Named security/data/platform/product owners sign off; SLO, RPO/RTO, and budget tests pass | Milestones 2–5 complete |
 
 These six milestones are the six delivery cycles. Execute one milestone at a time and close
-its acceptance gate before starting the next. They are a scope plan, not a promise of six
+its current accepted gate before starting the next. The user explicitly revised Cycle 2 to
+accept connection placeholders and defer real cloud validation; this authorizes Cycle 3 using
+CSV imports. They are a scope plan, not a promise of six
 fixed-duration sessions: access to GCP, identity, business owners and the approved Claude
 endpoint determines when the dependent gates can actually pass. A completed UI is not
 evidence that backend permissions or metric correctness are ready.
@@ -480,9 +484,18 @@ them through the approved secret and workload-identity workflow when the integra
 
 ## 15. Next implementation boundary
 
-Cycle 1 is accepted through PRs #18 and #19. Deliver the reviewed Cycle 2 implementation with
-coverage and CI evidence, then complete its real GCP/SSO acceptance against the private
-configuration in section 14. The code increment can be reviewed while the environment is
-pending; Cycle 2 itself stays open. Do not begin Cycle 3 or claim enterprise readiness from
-mocked cloud tests. The [CSV workspace runbook](CSV_WORKSPACE.md) remains the independent demo
-acceptance procedure; [INTERNAL_BIGQUERY.md](INTERNAL_BIGQUERY.md) owns the private API procedure.
+Cycle 1 is accepted through PRs #18 and #19. Cycle 2 is accepted through PR #20 on the user's
+revised placeholder boundary. Continue Cycle 3 with versioned metric/dimension definitions,
+approval, publication and reproducibility using the separate CSV data connection.
+
+### Deferred release gate DG-1 — real GCP and SSO
+
+Status: **deferred, not validated**. Activation requires the approved billing project/location,
+views and dependency allowlist, IdP/issuer/audience, workload principal and private configuration
+location. Before enabling internal BigQuery or completing the enterprise release, run the
+restricted-principal benchmark, verify real scoped results, private ingress/IAM and controlled
+cancellation/timeouts. Placeholders must not report a connected or healthy warehouse. The
+user-approved deferral changes delivery sequencing, not the evidence required for cloud readiness.
+
+The [CSV workspace runbook](CSV_WORKSPACE.md) remains the independent demo acceptance procedure;
+[INTERNAL_BIGQUERY.md](INTERNAL_BIGQUERY.md) owns the private API activation procedure.

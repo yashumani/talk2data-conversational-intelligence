@@ -1,6 +1,7 @@
 # Cycle 2: trusted identity and internal BigQuery
 
-Status: implementation available for review; live enterprise acceptance is pending. The
+Status: **Cycle 2 complete on the user-approved placeholder boundary.** Live GCP/SSO activation
+and acceptance are deferred to release gate DG-1; they have not passed. The
 accepted Cycle 1 baseline is `ba198541dc14821dc497217e97cf67db20234d5c` (PRs #18 and #19).
 This increment implements requirements R1, R4 and the identity portion of R9 in the
 [product plan](PRODUCT_ORCHESTRATION_PLAN.md). It preserves the independent CSV demonstration.
@@ -234,9 +235,11 @@ the probe and abstention under a one-byte scan budget. Supply an uncached fixtur
 estimate exceeds one byte. Preserve logs/reports privately because failures may include
 approved benchmark metadata.
 
-Cycle 2 closes only after these real checks pass and the platform owner records private ingress,
+Before enabling a real internal connection, these real checks must pass and the platform owner must record private ingress,
 restricted runtime IAM, supported source schema, dependency allowlist and a controlled live
 cancellation/timeout observation. Do not test write denial by executing a write against business
 data. No production GCP project, views, IdP, runtime identity or private configuration location
-has yet been supplied or verified in this project. Therefore cloud acceptance remains blocked
-and the implementation must not be labeled a completed enterprise release.
+has yet been supplied or verified in this project. The user's subsequent direction explicitly
+accepts connection placeholders and CSV as the working optional data source, closing Cycle 2
+without activating GCP. Track the real checks as DG-1 in the product plan; enterprise release
+still requires them. Continue Cycle 3 without requiring cloud credentials.

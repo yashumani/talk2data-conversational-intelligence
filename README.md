@@ -36,9 +36,10 @@ data permissions, approved BigQuery mappings, parameterized read-only queries, c
 cancellation and cloud job receipts. It has its own container and configuration; CSV remains
 independent. See the [internal BigQuery runbook](docs/INTERNAL_BIGQUERY.md).
 
-Live GCP/SSO acceptance is pending approved private configuration. This is an implementation
-increment, not a production-connected release. Claude, live definition publication and durable
-multi-agent execution remain subsequent cycles in the agreed plan.
+Cycle 2 is complete on the approved connection-placeholder boundary. GCP/SSO activation and
+live acceptance are deferred; CSV imports are the working optional data connection. See the
+[connection placeholders](examples/internal/README.md). Claude, live definition publication
+and durable multi-agent execution remain subsequent cycles in the agreed plan.
 
 ### Existing application
 
