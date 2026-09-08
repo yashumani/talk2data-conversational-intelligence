@@ -70,8 +70,6 @@ jobs:
       T2D_CLAUDE_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       CLAUDE_ACCEPTANCE_MODEL: ${{ inputs.model || vars.T2D_CLAUDE_MODEL }}
       T2D_RUN_LIVE_CLAUDE: "1"
-      T2D_CLAUDE_ACCEPTANCE_CONFIG: ${{ runner.temp }}/claude-acceptance-config.json
-      T2D_CLAUDE_ACCEPTANCE_REPORT: ${{ runner.temp }}/claude-acceptance-report.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -90,9 +88,13 @@ jobs:
               allowed_tenants={'demo-telecom'}, allowed_metric_ids={'MOBILE_ACTIVATIONS'},
               maximum_concurrent_requests=1,
           )
-          path = Path(os.environ['T2D_CLAUDE_ACCEPTANCE_CONFIG'])
+          path = Path(os.environ['RUNNER_TEMP']) / 'claude-acceptance-config.json'
           path.write_text(config.model_dump_json(indent=2))
           path.chmod(0o600)
+          report = Path(os.environ['RUNNER_TEMP']) / 'claude-acceptance-report.json'
+          with open(os.environ['GITHUB_ENV'], 'a') as environment:
+              environment.write(f'T2D_CLAUDE_ACCEPTANCE_CONFIG={path}\n')
+              environment.write(f'T2D_CLAUDE_ACCEPTANCE_REPORT={report}\n')
           PY
       - name: Verify real interpretation, exact totals, abstention and saved replay
         run: python -m pytest tests/test_live_claude.py -q
