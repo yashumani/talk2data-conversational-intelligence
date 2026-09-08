@@ -1,7 +1,7 @@
 # Repository activation and final verification guide
 
 Reviewed on 2026-09-08 against BigQuery-first redesign candidate
-`9cead56216812b6a8b2ef23a3d733a8330a9b012` on
+`415c2b8a303528665d283b7003b8a98c9441a421` on
 `feat/cycle-6-operations-readiness`.
 
 This is the single activation runbook for the repository. It does not treat implemented code,
@@ -54,7 +54,7 @@ prove every business definition or cloud policy correct.
 | Python | Ruff, formatting, strict mypy over 116 source files, compile-all | Passed |
 | Python tests without PostgreSQL | 834 collected; 807 passed, 27 skipped | All runnable tests passed |
 | Python local coverage without PostgreSQL | 92.89% combined | Expectedly below 96%; shared-state tests were unavailable locally |
-| Python CI with PostgreSQL 16 | 828 passed, 6 opt-in live checks skipped; 98.46% combined coverage | Passed on exact reviewed source across Python 3.11/3.12/3.13 |
+| Python CI with PostgreSQL 16 | 828 passed, 6 opt-in live checks skipped; 98.47% combined coverage | Passed on exact reviewed source across Python 3.11/3.12/3.13 |
 | React | 99 tests, TypeScript, CSV build and internal build | Passed |
 | React coverage | 100% statements/lines/functions; 98.42% branches | Passed |
 | Node dependencies | `npm audit --audit-level=high` | No vulnerability reported |
