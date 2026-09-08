@@ -12,6 +12,8 @@ result, and release only receipt-backed claims.
 Start with the [product handoff](docs/HANDOFF.md) for the reviewed candidate, runnable CSV demo,
 cycle status and remaining live acceptance inputs. The [final review](docs/FINAL_REVIEW.md)
 records corrections, verification and the boundaries of the handoff.
+Use the [repository activation guide](docs/REPOSITORY_ACTIVATION_GUIDE.md) for the complete
+merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release procedure.
 
 ### New modular CSV workspace
 
