@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import timedelta
@@ -271,6 +272,53 @@ def test_expired_leases_cannot_publish_or_redispatch(database: PostgresDatabase)
     expire(database, running.run_id, "expires_at")
     assert not store.heartbeat(job)
     assert store.finish(job, "COMPLETED").status == "INTERRUPTED"
+
+
+@pytest.mark.parametrize("operation", ["heartbeat", "progress", "finish"])
+def test_lease_expiry_during_a_row_lock_wait_rejects_late_work(
+    database: PostgresDatabase, operation: str
+) -> None:
+    store = PostgresRunStore(database)
+    owner, scope, run = submit(store)
+    job = claimed(store)
+    other_db = PostgresDatabase(database.settings)
+    other = PostgresRunStore(other_db)
+    operations = {
+        "heartbeat": lambda: other.heartbeat(job),
+        "progress": lambda: other.progress(job, AgentRunReport()),
+        "finish": lambda: other.finish(job, "COMPLETED"),
+    }
+    try:
+        with other_db.transaction() as db:
+            pid = db.execute("SELECT pg_backend_pid()").fetchone()[0]
+        with database.transaction() as db:
+            db.execute(
+                "UPDATE t2d_runs SET lease_until=clock_timestamp()+interval '0.5 second' WHERE id=%s",
+                (run.run_id,),
+            )
+        with ThreadPoolExecutor(1) as pool:
+            with database.transaction() as db:
+                # Lock without updating the row; SELECT projections must not keep a pre-wait clock value.
+                db.execute("SELECT id FROM t2d_runs WHERE id=%s FOR UPDATE", (run.run_id,))
+                future = pool.submit(operations[operation])
+                deadline = time.monotonic() + 1
+                while time.monotonic() < deadline:
+                    waiting = db.execute(
+                        "SELECT wait_event_type FROM pg_stat_activity WHERE pid=%s", (pid,)
+                    ).fetchone()
+                    if waiting == ("Lock",):
+                        break
+                    time.sleep(0.01)
+                else:
+                    pytest.fail("The independent worker did not enter the intended row-lock wait.")
+                db.execute("SELECT pg_sleep(0.6)")
+            with pytest.raises(LeaseLost):
+                future.result(timeout=5)
+        assert store.read(owner, scope, run.run_id) == job.run
+        assert store.claim("binding") is None
+        assert store.read(owner, scope, run.run_id).status == "INTERRUPTED"
+    finally:
+        other.close()
 
 
 def test_capacity_is_shared_and_skips_unrelated_tenants(database: PostgresDatabase) -> None:

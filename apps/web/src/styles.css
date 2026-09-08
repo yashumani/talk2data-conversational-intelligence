@@ -41,7 +41,11 @@ input[type=date] { display: block; margin-top: 8px; }
 dl { display: grid; grid-template-columns: 1fr; gap: 5px; font-size: 12px; margin: 18px 0; }
 dt { color: #67788d; }
 dd { margin: 0 0 10px; font-weight: 600; overflow-wrap: anywhere; }
-.hash { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 400; }
+.hash { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 400; overflow-wrap: anywhere; }
+.result-table { max-width: 100%; overflow-x: auto; margin: 16px 0; }
+.result-table table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.result-table caption { text-align: left; font-weight: 600; padding-bottom: 8px; }
+.result-table th, .result-table td { border-bottom: 1px solid #dce2e9; padding: 8px; text-align: left; overflow-wrap: anywhere; }
 details { border-top: 1px solid #e0e5ec; padding: 14px 0; }
 summary { cursor: pointer; font-size: 13px; font-weight: 600; }
 pre { font-size: 11px; overflow: auto; max-height: 300px; background: #f4f6f9; padding: 12px; }

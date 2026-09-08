@@ -121,7 +121,7 @@ resource "google_cloud_run_v2_service" "runtime" {
         }
       }
       env {
-        name = "ANTHROPIC_API_KEY"
+        name = "T2D_CLAUDE_API_KEY"
         value_source {
           secret_key_ref {
             secret  = var.claude_key_secret.secret

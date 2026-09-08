@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { InternalApp } from "./InternalApp";
+import { InternalEvidence } from "./InternalEvidence";
 import { useInternalWorkspace } from "./useInternalWorkspace";
 import { internalApi, internalRequest, type InternalRun } from "./api";
 import { ApiError } from "../lib/api";
@@ -32,6 +33,7 @@ beforeEach(() => {
   vi.spyOn(internalApi, "submit").mockImplementation(async payload => ({ ...initial, request: payload }));
   vi.spyOn(internalApi, "get").mockResolvedValue(final);
   vi.spyOn(internalApi, "cancel").mockResolvedValue({ ...initial, status: "CANCELLATION_REQUESTED" });
+  vi.spyOn(internalApi, "remove").mockResolvedValue(undefined);
   vi.spyOn(internalApi, "watch").mockImplementation(async (run, _, receive) => { const done = { ...final, request: run.request }; receive(done); return done; });
 });
 afterEach(async () => { if (renderer) await action(() => renderer!.unmount()); renderer = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -66,7 +68,7 @@ it("recovers the exact request after a lost acknowledgement", async () => {
 
 it("allows correction after a definitive rejection while preserving ambiguous retries", async () => {
   await mount(); await action(() => hook.create());
-  for (const status of [409, 422]) {
+  for (const status of [404, 409, 422]) {
     vi.mocked(internalApi.submit).mockRejectedValueOnce(new ApiError(status, "Refresh the current definitions"));
     await action(() => hook.ask("mobile activations", "2026-08-01"));
     expect(hook.pending).toBe(false); expect(stored.has(pendingKey)).toBe(false);
@@ -74,6 +76,7 @@ it("allows correction after a definitive rejection while preserving ambiguous re
   vi.mocked(internalApi.submit).mockRejectedValueOnce(new ApiError(429, "At capacity"));
   await action(() => hook.ask("mobile activations", "2026-08-01"));
   expect(hook.pending).toBe(true); expect(stored.has(pendingKey)).toBe(true);
+  await action(() => hook.remove()); expect(internalApi.remove).not.toHaveBeenCalled();
   await action(() => hook.refresh()); expect(hook.run?.status).toBe("COMPLETED");
 });
 
@@ -84,6 +87,8 @@ it("restores a pending request after reload and rejects changed authority", asyn
   await action(() => hook.refresh()); expect(hook.error).toContain("was not resent");
   expect(stored.has(pendingKey)).toBe(false);
   stored.set(pendingKey, "broken"); await action(() => hook.refresh()); expect(hook.error).toBeTruthy();
+  expect(stored.has(pendingKey)).toBe(false);
+  await action(() => hook.refresh()); expect(hook.error).toBe("");
 });
 
 it("restores server history across devices and rejects a changed source", async () => {
@@ -114,6 +119,7 @@ it("allows cancellation while the stream is active and blocks another submission
   expect(hook.busy).toBe(true);
   await action(() => hook.create()); await action(() => hook.ask("other", "2026-08-01"));
   expect(internalApi.create).toHaveBeenCalledOnce();
+  await action(() => hook.remove()); expect(internalApi.remove).not.toHaveBeenCalled();
   await action(() => hook.cancel()); expect(hook.run?.status).toBe("CANCELLATION_REQUESTED");
   vi.mocked(internalApi.cancel).mockRejectedValueOnce(new Error("Access lost"));
   await action(() => hook.cancel()); expect(hook.state).toBeNull();
@@ -207,4 +213,60 @@ it("replays internal SSE and validates snapshots without resubmission", async ()
   await expect(internalApi.watch(initial, controller.signal, receive)).rejects.toMatchObject({ status: 401 });
   controller.abort(); await expect(internalApi.watch(initial, controller.signal, receive)).rejects.toThrow();
   expect(await internalApi.watch(final, new AbortController().signal, receive)).toEqual(final);
+});
+
+it("clears a previous answer before refreshing an empty or unavailable conversation", async () => {
+  vi.mocked(internalApi.load).mockResolvedValue({ ...workspace, conversations: [conversation] });
+  await mount(); expect(hook.run?.result?.message).toBe("3100");
+  vi.mocked(internalApi.history).mockResolvedValueOnce({ conversation, runs: [] });
+  await action(() => hook.refresh()); expect(hook.run).toBeNull();
+  await action(() => hook.select("conversation")); expect(hook.run).toEqual(final);
+  vi.mocked(internalApi.history).mockRejectedValueOnce(new ApiError(503, "Disconnected"));
+  await action(() => hook.select("another"));
+  expect(hook.run).toBeNull(); expect(hook.history).toBeNull();
+  await action(() => hook.select("conversation"));
+  vi.mocked(internalApi.submit).mockRejectedValueOnce(new TypeError("Lost acknowledgement"));
+  await action(() => hook.ask("mobile activations", "2026-08-01"));
+  expect(hook.pending).toBe(true); expect(hook.run).toBeNull();
+});
+
+it("recovers conversation capacity through explicit removal and preserves rejected removals", async () => {
+  await mount(); await action(() => hook.remove()); expect(internalApi.remove).not.toHaveBeenCalled();
+  await action(() => hook.create());
+  vi.mocked(internalApi.remove).mockRejectedValueOnce(new ApiError(409, "Conversation has active work"));
+  await action(() => hook.remove()); expect(hook.history?.conversation.conversation_id).toBe("conversation");
+  await action(() => hook.remove());
+  expect(internalApi.remove).toHaveBeenLastCalledWith("conversation");
+  expect(hook.history).toBeNull(); expect(hook.run).toBeNull(); expect(hook.state?.conversations).toEqual([]);
+});
+
+it("requires confirmation before removing the selected conversation", async () => {
+  vi.mocked(internalApi.load).mockResolvedValue({ ...workspace, conversations: [conversation] });
+  await mount(<InternalApp />);
+  await action(() => button("Remove conversation").props.onClick());
+  expect(text()).toContain("saved questions and answers");
+  await action(() => button("Keep conversation").props.onClick()); expect(internalApi.remove).not.toHaveBeenCalled();
+  await action(() => button("Remove conversation").props.onClick());
+  vi.mocked(internalApi.load).mockResolvedValueOnce(workspace);
+  await action(() => button("Confirm removal").props.onClick());
+  expect(internalApi.remove).toHaveBeenCalledOnce(); expect(text()).not.toContain("3100 successful activations");
+});
+
+it("renders actual grouped rows and the pinned metric and dimension definitions", async () => {
+  const result = { ...final.result!, receipt: { ...final.result!.receipt!, row_count: 2,
+    result_rows: [{ region: "NORTHEAST", value: 3100, notes: null }, { region: "WEST", value: 2200, notes: { scope: "approved" }, extra: "detail" }] },
+    semantic_context: { ...final.result!.semantic_context!, dimensions: [{ ...definition, id: "region", name: "Region", definition: "Sales attribution region", definition_version: 2 }] } };
+  await mount(<InternalEvidence result={result} currentSnapshot="new-publication" />);
+  const cells = renderer!.root.findAllByType("td").map(node => node.children.join(""));
+  expect(cells).toEqual(["NORTHEAST", "3100", "—", "—", "WEST", "2200", '{"scope":"approved"}', "detail"]);
+  expect(text()).toContain("earlier publication"); expect(text()).toContain("Sales attribution region");
+  expect(renderer!.root.findAllByType("th").every(node => node.props.scope === "col")).toBe(true);
+  await action(() => renderer!.update(<InternalEvidence result={result} currentSnapshot="snapshot" />));
+  expect(text()).not.toContain("earlier publication");
+  await action(() => renderer!.update(<InternalEvidence result={{ ...result, semantic_context: null, verification: null }} currentSnapshot="snapshot" />));
+  expect(text()).not.toContain("Definitions used by this answer");
+  await action(() => renderer!.update(<InternalEvidence result={null} currentSnapshot="snapshot" />));
+  expect(renderer!.toJSON()).toBeNull();
+  await action(() => renderer!.update(<InternalEvidence result={{ ...result, receipt: null }} currentSnapshot="snapshot" />));
+  expect(renderer!.toJSON()).toBeNull();
 });

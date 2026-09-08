@@ -280,10 +280,17 @@ class PostgresRunStore:
 
     def _owned(self, db: DB, job: ClaimedRun) -> RunSnapshot:
         row = db.execute(
-            "SELECT payload,lease_until>clock_timestamp() FROM t2d_runs WHERE id=%s AND fence=%s FOR UPDATE",
+            "SELECT payload FROM t2d_runs WHERE id=%s AND fence=%s FOR UPDATE",
             (job.run.run_id, job.fence),
         ).fetchone()
-        if row is None or not row[1]:
+        if row is None:
+            raise LeaseLost()
+        # Evaluate expiry after obtaining the row lock. A SELECT projection may be evaluated
+        # before waiting for that lock, allowing an expired owner to renew or release late work.
+        valid = db.execute(
+            "SELECT lease_until>clock_timestamp() FROM t2d_runs WHERE id=%s", (job.run.run_id,)
+        ).fetchone()
+        if valid is None or not valid[0]:
             raise LeaseLost()
         run = RunSnapshot.model_validate_json(row[0])
         if run.status not in {"RUNNING", "CANCELLATION_REQUESTED"}:

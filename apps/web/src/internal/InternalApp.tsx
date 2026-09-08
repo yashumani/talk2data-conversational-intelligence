@@ -2,11 +2,13 @@ import { useState } from "react";
 import { AgentRunPanel } from "../components/AgentRunPanel";
 import { terminal } from "../lib/runs";
 import { useInternalWorkspace } from "./useInternalWorkspace";
+import { InternalEvidence } from "./InternalEvidence";
 
 export function InternalApp() {
   const workspace = useInternalWorkspace();
   const [question, setQuestion] = useState("");
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
+  const [removeId, setRemoveId] = useState<string | null>(null);
   const running = Boolean(workspace.run && !terminal(workspace.run.status));
   const blocked = workspace.busy || workspace.pending || running;
   const result = workspace.run?.result;
@@ -28,6 +30,12 @@ export function InternalApp() {
               <button className="secondary" disabled={blocked} onClick={() => void workspace.select(item.conversation_id)}>{item.title}</button>
             </li>)}</ul>
             <p className="small">Your access controls determine which saved conversations are available.</p>
+            {workspace.history && (removeId === workspace.history.conversation.conversation_id ? <div>
+              <p>Remove this conversation and its saved questions and answers?</p>
+              <button disabled={blocked} onClick={() => { setRemoveId(null); void workspace.remove(); }}>Confirm removal</button>
+              <button className="secondary" onClick={() => setRemoveId(null)}>Keep conversation</button>
+            </div> : <button className="secondary" disabled={blocked}
+              onClick={() => setRemoveId(workspace.history!.conversation.conversation_id)}>Remove conversation</button>)}
           </section>
           <section className="panel"><h2>Ask a business question</h2>
             <p>Questions use your approved internal connection and current business definitions.</p>
@@ -49,13 +57,7 @@ export function InternalApp() {
               {result?.answer?.caveats.map(caveat => <p className="small" key={caveat}>{caveat}</p>)}
             </div>
             <AgentRunPanel run={workspace.run?.progress ?? null} />
-            {result?.receipt && <details><summary>Answer evidence</summary>
-              <p>Source: {result.receipt.source_kind} · Verified rows: {result.receipt.row_count}</p>
-              <p>Period: {result.receipt.resolved_start} to {result.receipt.resolved_end}</p>
-              <p>Verification: {result.verification?.status}</p>
-              <p>Definition: {result.semantic_context?.metric.definition}</p>
-              <p className="small">Definition publication: {result.semantic_context?.snapshot_id}</p>
-            </details>}
+            <InternalEvidence result={result} currentSnapshot={workspace.state.definitions.snapshot_id} />
           </section>
           <section className="panel"><h2>Live business definitions</h2>
             <p>Publication {workspace.state.definitions.version} · {workspace.state.definitions.status}</p>

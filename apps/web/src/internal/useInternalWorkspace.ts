@@ -29,7 +29,7 @@ export function useInternalWorkspace() {
         controller.current?.abort(); setState(null); setHistory(null); setRun(null);
         pendingRequest.current = null; sessionStorage.removeItem(pendingKey); setPending(false);
       }
-      if (failure instanceof ApiError && [400, 409, 422].includes(failure.status)) {
+      if (failure instanceof ApiError && [400, 404, 409, 422].includes(failure.status)) {
         // A definitive rejection can be corrected; a lost acknowledgement or busy server retains its ID.
         pendingRequest.current = null; sessionStorage.removeItem(pendingKey); setPending(false);
       }
@@ -53,11 +53,17 @@ export function useInternalWorkspace() {
 
   async function refresh() {
     await action(async () => {
+      // Do not display a previous answer under refreshed identity, source or conversation state.
+      setRun(null); setHistory(null);
       const workspace = await internalApi.load();
       if (!alive.current) return;
       setState(workspace);
       const raw = sessionStorage.getItem(pendingKey);
-      const saved: Pending | null = pendingRequest.current || (raw ? JSON.parse(raw) as Pending : null);
+      let saved = pendingRequest.current;
+      if (!saved && raw) {
+        try { saved = JSON.parse(raw) as Pending | null; }
+        catch { throw new ApiError(409, "The saved request is unreadable. Review saved questions before asking again."); }
+      }
       if (saved) {
         if (saved.scope !== workspace.identity.scope_id || saved.binding !== workspace.identity.source_binding) {
           sessionStorage.removeItem(pendingKey); pendingRequest.current = null; setPending(false);
@@ -89,6 +95,7 @@ export function useInternalWorkspace() {
   }
   async function select(id: string) {
     await action(async () => {
+      setHistory(null); setRun(null);
       const workspace = await internalApi.load();
       setState(workspace);
       const selected = await internalApi.history(id); setHistory(selected); setRun(null);
@@ -98,6 +105,7 @@ export function useInternalWorkspace() {
   async function ask(question: string, asOf: string) {
     if (!state || !history || pending || (run && !terminal(run.status))) return;
     await action(async () => {
+      setRun(null);
       const request: InternalRequest = { client_request_id: crypto.randomUUID(),
         conversation_id: history.conversation.conversation_id, expected_revision: history.conversation.revision,
         question: question.trim(), as_of: asOf + "T12:00:00Z", definition_snapshot_id: state.definitions.snapshot_id };
@@ -116,7 +124,15 @@ export function useInternalWorkspace() {
     catch { controller.current?.abort(); setRun(null); setHistory(null); setState(null); setError("Cancellation could not be confirmed. Refresh your signed session."); }
   }
   async function view(id: string) {
-    await action(async () => { if (state) await follow(await internalApi.get(id), state); });
+    await action(async () => { setRun(null); if (state) await follow(await internalApi.get(id), state); });
   }
-  return { state, history, run, busy, pending, error, refresh, create, select, ask, cancel, view };
+  async function remove() {
+    if (!history || pending || (run && !terminal(run.status))) return;
+    await action(async () => {
+      await internalApi.remove(history.conversation.conversation_id);
+      controller.current?.abort(); setHistory(null); setRun(null);
+      setState(await internalApi.load());
+    });
+  }
+  return { state, history, run, busy, pending, error, refresh, create, select, ask, cancel, view, remove };
 }
