@@ -110,3 +110,4 @@ reasons above. There is no additional feature-development cycle proposed.
 | Shared state, workers and private infrastructure | [SHARED_INTERNAL_RUNTIME.md](SHARED_INTERNAL_RUNTIME.md) |
 | Conversation, retry and replay contracts | [DURABLE_CONVERSATIONS.md](DURABLE_CONVERSATIONS.md) |
 | Backup, retention, evidence and release operations | [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md) |
+| Complete CSV and enterprise activation sequence | [REPOSITORY_ACTIVATION_GUIDE.md](REPOSITORY_ACTIVATION_GUIDE.md) |
