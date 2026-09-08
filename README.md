@@ -49,7 +49,17 @@ four successful CSV runs can be reproduced with their saved data and publication
 internal API enforces server-owned permissions and a different author/reviewer. See
 [the definition governance runbook](docs/DEFINITION_GOVERNANCE.md) for the workflow, storage and limits.
 
-Claude and bounded agents are Cycle 4; durable conversation/event synchronization is Cycle 5.
+### Claude and bounded specialists — Cycle 4
+
+An opt-in Claude interpreter now resolves questions against approved business definitions.
+Five bounded specialist stages reuse the governed query and verification services. CSV and
+internal configuration remain separate; CSV rows and query results are not sent to Claude.
+Saved CSV answers reuse their validated interpretation without another model call.
+
+See the [Claude configuration and orchestration runbook](docs/CLAUDE_ORCHESTRATION.md).
+Local contract validation is implemented; the real-provider acceptance gate **LA-1 remains
+open until the configured live benchmark passes**. Durable conversation/event synchronization
+is Cycle 5.
 
 ### Existing application
 
@@ -262,10 +272,10 @@ Talk2Data abstains rather than guessing when:
 
 ## Hermes Agent integration
 
-Hermes is the bounded agent runtime for later multi-step investigations. Ollama remains the local
-model provider. Talk2Data never delegates authorization, semantic definitions, or certified data
-execution to Hermes. Hermes will receive only approved tools and typed evidence after policy and
-semantic gates complete.
+Hermes remains an optional extension boundary for later multi-step investigations. Cycle 4 uses
+the native bounded specialist runtime and an opt-in Claude adapter; existing local Ollama behavior
+remains available. Authorization, semantic definitions and certified execution stay in deterministic
+services. Any future Hermes adapter must receive approved tools and typed evidence after those gates.
 
 ## Quality checks
 
@@ -287,8 +297,8 @@ hooks, and the entry point. Coverage reports are retained as workflow artifacts.
 A separate GitHub Actions workflow starts a real PostgreSQL service and runs the full PostgreSQL
 chat and receipt path. The full Docker/Ollama pipeline is also smoke-tested on GitHub-hosted runners.
 The canonical [product plan](docs/PRODUCT_ORCHESTRATION_PLAN.md#13-verification-and-benchmark-strategy)
-maps the original requirements to tests and enterprise release criteria. Passing coverage does
-not mean Claude, BigQuery, live semantic publication, or durable agents are implemented.
+maps the original requirements to tests and enterprise release criteria. Passing coverage
+does not prove real Claude/GCP acceptance, production semantic approval, durable runs or enterprise readiness.
 
 ## Documentation
 

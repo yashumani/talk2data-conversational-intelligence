@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ChatResult } from "../lib/contracts";
+import { AgentRunPanel } from "./AgentRunPanel";
 
 interface Props {
   ready: boolean;
@@ -8,6 +9,7 @@ interface Props {
   asOf: string;
   onDate: (value: string) => void;
   onAsk: (question: string) => Promise<void>;
+  interpreter?: "rules" | "claude";
 }
 
 const EXAMPLES = [
@@ -16,17 +18,19 @@ const EXAMPLES = [
   "What were mobile activations in Northeast yesterday?",
 ];
 
-export function ChatPanel({ ready, busy, result, asOf, onDate, onAsk }: Props) {
+export function ChatPanel({ ready, busy, result, asOf, onDate, onAsk, interpreter = "rules" }: Props) {
   const [question, setQuestion] = useState(EXAMPLES[0]);
   return <section className="panel chat-panel" aria-labelledby="chat-heading">
     <p className="eyebrow">02 / Ask your data</p>
     <h2 id="chat-heading">A business question. A traceable answer.</h2>
-    <p>This increment supports Mobile Activations, using approved demo definitions and deterministic
-      interpretation. Claude and multi-agent execution are not enabled yet.</p>
+    <p>This workspace supports Mobile Activations using approved business definitions.
+      {interpreter === "claude" ? " Claude interprets your question; governed services query and verify the data." : " Rules interpret your question; governed services query and verify the data."}</p>
+    {interpreter === "claude" && <p className="small">Your question and approved definition metadata are sent to Claude. CSV rows and query results stay in this workspace.</p>}
     <div className="examples" aria-label="Example questions">
       {EXAMPLES.map(example => <button key={example} className="secondary"
         disabled={busy} onClick={() => setQuestion(example)}>{example}</button>)}
     </div>
+    <AgentRunPanel run={result?.agent_run ?? null} />
     <form onSubmit={event => { event.preventDefault(); void onAsk(question); }}>
       <label htmlFor="question">Question</label>
       <textarea id="question" value={question} onChange={event => setQuestion(event.target.value)}

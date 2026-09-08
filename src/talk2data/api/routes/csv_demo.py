@@ -4,7 +4,7 @@ import asyncio
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
 
 from talk2data.domain.chat import DemoChatResponse
 from talk2data.services.csv_workspace import CsvDemoWorkspace
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/v1/demo/csv", tags=["isolated-csv-demo"])
 
 class CsvQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    question: str = Field(min_length=1, max_length=2000)
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=2000)]
     as_of: AwareDatetime
     source_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     definition_snapshot_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")

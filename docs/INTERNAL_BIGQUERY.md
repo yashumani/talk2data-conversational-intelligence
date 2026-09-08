@@ -12,7 +12,9 @@ The private Python API verifies signed identity tokens, resolves server-owned pe
 loads approved semantic and physical contracts, compiles a parameterized SELECT, checks a
 BigQuery dry run, executes a bounded job and validates the evidence before releasing an answer.
 The existing deterministic interpreter, semantic registry, compiler, typed query tool,
-verification and answer services are reused. No model is called in this increment.
+verification and answer services are reused. Rules remain the default. Cycle 4 adds an optional
+`claude` section to the private runtime configuration, independently of CSV; see the
+[Claude runbook](CLAUDE_ORCHESTRATION.md#configure-the-separate-internal-application).
 
 | Module | Responsibility |
 | --- | --- |

@@ -3,7 +3,7 @@
 Cycle 3 supplies the definition lifecycle and its executable CSV demonstration. Cycle 2 is
 complete with unconfigured GCP/BigQuery placeholders (PR #20); real cloud and SSO activation
 remains deferred release gate DG-1. This increment requires no GCP account or provider key.
-The next cycle is Claude and bounded orchestration.
+Cycle 4's [Claude and bounded orchestration](CLAUDE_ORCHESTRATION.md) builds on these snapshots.
 
 ## What can change
 
@@ -164,7 +164,10 @@ The same draft/snapshot limits apply to the current private store; archival/rota
 approved migration before these bounds are reached. Rejected requests do not create saved runs.
 
 Uploads, citations, saved data references and definitions disappear on CSV session clear,
-expiry pruning or process shutdown. They are never uploaded to BigQuery or sent to an LLM.
+expiry pruning or process shutdown. They are never uploaded to BigQuery. With Cycle 4's opt-in
+Claude configuration, questions and approved definition metadata may be sent to the provider;
+CSV rows, results and saved data references are excluded. Successful runs also retain the
+validated interpretation so historical reproduction requires no new model call.
 There is no durable internal query rerun endpoint in this cycle: BigQuery data reproducibility
 also needs retained source snapshots and Cycle 5's durable run records.
 
@@ -175,4 +178,3 @@ Independent Python line/branch and React line/branch/function/statement coverage
 96% without production-module exclusions. Exact measurements and CI runs are recorded on
 the Cycle 3 PR. Browser/visual, live GCP/SSO, actual business-owner and Claude acceptance are
 not implied by these tests.
-

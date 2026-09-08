@@ -77,6 +77,7 @@ export function useWorkspace() {
     if (!session || !state?.source || !asOf) return;
     const fingerprint = state.source.source_fingerprint;
     await perform("Checking definitions and querying CSV", async () => {
+      setState(previous => previous ? { ...previous, last_response: null } : previous);
       const result = await api.ask(session.session_token, question.trim(), asOf, fingerprint, state.definitions?.snapshot_id);
       setState(previous => previous && previous.source?.source_fingerprint === fingerprint
         ? { ...previous, last_response: result } : previous);

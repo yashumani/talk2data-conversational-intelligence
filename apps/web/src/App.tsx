@@ -11,7 +11,7 @@ export function App() {
   return <div className="app">
     <header className="app-header">
       <div><p className="eyebrow">Talk2Data</p><h1>Data workspace</h1></div>
-      <span className="badge">CSV demonstration · rules-based</span>
+      <span className="badge">CSV demonstration · {workspace.state?.interpreter === "claude" ? "Claude assisted" : "rules-based"}</span>
     </header>
     <main>
       <div className="workspace-toolbar">
@@ -24,6 +24,7 @@ export function App() {
         <DataSourcePanel session={workspace.session} source={workspace.state?.source ?? null}
           busy={busy} onStart={workspace.start} onUpload={workspace.upload} onClear={workspace.clear} />
         <ChatPanel ready={Boolean(workspace.state?.source) && workspace.state?.definitions?.status !== "REVOKED"} busy={busy}
+          interpreter={workspace.state?.interpreter ?? "rules"}
           result={workspace.state?.last_response ?? null} asOf={workspace.asOf}
           onDate={workspace.setAsOf} onAsk={workspace.ask} />
         <EvidencePanel state={workspace.state} />

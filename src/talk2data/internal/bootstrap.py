@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from talk2data.api.agent_errors import install_agent_errors
 from talk2data.api.definition_errors import install_definition_errors
 from talk2data.connectors.bigquery import BigQueryConnector
 from talk2data.connectors.registry import ConnectorRegistry
@@ -22,6 +23,8 @@ from talk2data.internal.routes import router
 from talk2data.internal.runtime import InternalQueryRuntime
 from talk2data.services.bigquery_port import BigQueryTransport
 from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
+from talk2data.services.claude_interpreter import ClaudeRuntime
+from talk2data.services.claude_transport import ClaudeTransport
 from talk2data.services.definition_store import DefinitionStore
 from talk2data.services.identity import (
     EntitlementStore,
@@ -35,8 +38,10 @@ def create_internal_app(
     config: InternalRuntimeConfig | None = None,
     *,
     transport_factory: Callable[[BigQuerySettings], BigQueryTransport] = GoogleBigQueryTransport,
+    language_transport: ClaudeTransport | None = None,
 ) -> FastAPI:
     resolved = config or InternalRuntimeConfig.load(InternalSettings().config_file)
+    language = ClaudeRuntime(resolved.claude, language_transport)
     domains = DomainPackRegistry(resolved.domain_pack_directory)
     domains.load()
     catalog = BigQueryCatalog.load(resolved.bigquery_catalog_path)
@@ -71,6 +76,7 @@ def create_internal_app(
         registries,
         resolved.maximum_active_queries,
         DefinitionStore(resolved.governance_database_path),
+        language,
     )
 
     @asynccontextmanager
@@ -144,4 +150,5 @@ def create_internal_app(
     app.include_router(router)
     app.include_router(definitions_router)
     install_definition_errors(app)
+    install_agent_errors(app)
     return app

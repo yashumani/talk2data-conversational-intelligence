@@ -47,6 +47,6 @@ export function DataSourcePanel({ session, source, busy, onStart, onUpload, onCl
     {session && <button className="secondary" disabled={busy} onClick={() => void onClear()}>
       Clear data and end session
     </button>}
-    <p className="small">Files stay in server memory. They are never uploaded to BigQuery or sent to an AI model.</p>
+    <p className="small">CSV rows stay in server memory. They are never uploaded to BigQuery or sent to an AI model.</p>
   </section>;
 }

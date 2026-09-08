@@ -8,7 +8,7 @@ from typing import Annotated, Any, cast
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
 
 from talk2data.domain.chat import DemoChatResponse
 from talk2data.domain.domain_pack import DomainPackRegistry
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/v1/internal", tags=["internal"])
 class InternalQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
     request_id: UUID = Field(default_factory=uuid4)
-    question: str = Field(min_length=1, max_length=2000)
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=2000)]
     as_of: AwareDatetime = Field(default_factory=lambda: datetime.now(UTC))
     definition_snapshot_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
@@ -54,6 +54,11 @@ async def me(access: Identity) -> dict[str, Any]:
         "regions": sorted(access.regions),
         "business_units": sorted(access.business_units),
     }
+
+
+@router.get("/language")
+async def language_status(service: Runtime, access: Identity) -> dict[str, object]:
+    return service.language.describe()
 
 
 @router.get("/metrics")

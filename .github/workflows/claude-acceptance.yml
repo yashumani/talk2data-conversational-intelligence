@@ -1,0 +1,104 @@
+name: Claude live acceptance
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "examples/claude/**"
+      - ".github/workflows/claude-acceptance.yml"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Approved Claude model with JSON schema output support
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claude-acceptance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      ready: ${{ steps.config.outputs.ready }}
+    steps:
+      - name: Check explicit synthetic acceptance configuration
+        id: config
+        env:
+          CLAUDE_ACCEPTANCE_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_ACCEPTANCE_MODEL: ${{ inputs.model || vars.T2D_CLAUDE_MODEL }}
+          CLAUDE_ACCEPTANCE_APPROVED: ${{ vars.T2D_CLAUDE_ACCEPTANCE_APPROVED }}
+          TRUSTED_EVENT: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          ready = bool(
+              os.environ['CLAUDE_ACCEPTANCE_KEY']
+              and os.environ['CLAUDE_ACCEPTANCE_MODEL']
+              and os.environ['CLAUDE_ACCEPTANCE_APPROVED'] == 'true'
+              and os.environ['TRUSTED_EVENT'] == 'true'
+          )
+          status = 'CONFIGURED_AWAITING_ACCEPTANCE' if ready else 'NOT_CONFIGURED'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'ready={str(ready).lower()}\n')
+          Path('claude-configuration.json').write_text(json.dumps({'status': status}) + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f'Claude live acceptance: **{status}**. A skipped live job is not provider validation.\n')
+          print(status)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claude-configuration
+          path: claude-configuration.json
+          if-no-files-found: error
+
+  live:
+    needs: configuration
+    if: needs.configuration.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      T2D_CLAUDE_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CLAUDE_ACCEPTANCE_MODEL: ${{ inputs.model || vars.T2D_CLAUDE_MODEL }}
+      T2D_RUN_LIVE_CLAUDE: "1"
+      T2D_CLAUDE_ACCEPTANCE_CONFIG: ${{ runner.temp }}/claude-acceptance-config.json
+      T2D_CLAUDE_ACCEPTANCE_REPORT: ${{ runner.temp }}/claude-acceptance-report.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Create synthetic-only acceptance configuration
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from talk2data.core.claude_config import ClaudeConfiguration
+          config = ClaudeConfiguration(
+              enabled=True, model=os.environ['CLAUDE_ACCEPTANCE_MODEL'], egress_approved=True,
+              allowed_tenants={'demo-telecom'}, allowed_metric_ids={'MOBILE_ACTIVATIONS'},
+              maximum_concurrent_requests=1,
+          )
+          path = Path(os.environ['T2D_CLAUDE_ACCEPTANCE_CONFIG'])
+          path.write_text(config.model_dump_json(indent=2))
+          path.chmod(0o600)
+          PY
+      - name: Verify real interpretation, exact totals, abstention and saved replay
+        run: python -m pytest tests/test_live_claude.py -q
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: claude-live-acceptance
+          path: ${{ runner.temp }}/claude-acceptance-report.json
+          if-no-files-found: error

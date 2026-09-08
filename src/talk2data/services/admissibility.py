@@ -15,14 +15,14 @@ from talk2data.domain.models import (
     SourceStatus,
     TenantDomainPack,
 )
-from talk2data.services.interpreter import CompositeQuestionInterpreter, normalize_text
+from talk2data.services.interpreter import QuestionInterpreter, normalize_text
 from talk2data.services.policy import PolicyEngine
 
 
 class QuestionAdmissibilityEngine:
     """Compiles a natural-language request into a governed question decision."""
 
-    def __init__(self, interpreter: CompositeQuestionInterpreter, policy: PolicyEngine) -> None:
+    def __init__(self, interpreter: QuestionInterpreter, policy: PolicyEngine) -> None:
         self._interpreter = interpreter
         self._policy = policy
 

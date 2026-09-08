@@ -15,17 +15,18 @@ from talk2data.connectors.csv_demo import CsvDemoConnector
 from talk2data.connectors.errors import ConnectorValidationError
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.csv_config import CsvDemoSettings
-from talk2data.domain.chat import DemoChatRequest, DemoChatResponse
+from talk2data.domain.chat import ChatStatus, DemoChatRequest, DemoChatResponse
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.governance import DefinitionSnapshot
-from talk2data.domain.models import AccessContext, ClassificationLevel
+from talk2data.domain.models import AccessContext, ClassificationLevel, InterpretationResult
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
+from talk2data.services.agent_runtime import AgentFailure, AgentRun
+from talk2data.services.claude_interpreter import BoundQuestionInterpreter, ClaudeRuntime
 from talk2data.services.csv_import import REGIONS, CsvDataset, parse_csv
 from talk2data.services.definition_governance import EDIT, PUBLISH, REVIEW, REVOKE, DefinitionGovernance
 from talk2data.services.definition_store import DefinitionStore, DefinitionUnavailable
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.ephemeral_run import EphemeralRunStore
-from talk2data.services.interpreter import CompositeQuestionInterpreter, HeuristicQuestionInterpreter
 from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION, PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.semantic import SemanticRegistry
@@ -47,6 +48,8 @@ class SavedCsvRun:
     question: str
     as_of: datetime
     snapshot_id: str
+    interpretation: InterpretationResult | None = None
+    model: str | None = None
 
 
 @dataclass
@@ -58,11 +61,13 @@ class DemoWorkspaceSession:
     last_response: DemoChatResponse | None = None
     busy: bool = False
     history: dict[str, SavedCsvRun] = field(default_factory=dict)
+    language_questions: int = 0
 
 
 class CsvDemoWorkspace:
-    def __init__(self, settings: CsvDemoSettings) -> None:
+    def __init__(self, settings: CsvDemoSettings, language: ClaudeRuntime | None = None) -> None:
         self.settings = settings
+        self.language = language or ClaudeRuntime()
         self._sessions: dict[str, DemoWorkspaceSession] = {}
         self._definition_store = DefinitionStore()
         # Always use packaged, public demo semantics. Never the internal tenant registry.
@@ -74,12 +79,6 @@ class CsvDemoWorkspace:
             update={"default_calendar": "GREGORIAN", "default_timezone": "UTC"}, deep=True
         )
         self._policy = PolicyEngine()
-        self._semantics = SemanticRegistry(self._domains, self._policy)
-        self._compiler = BusinessQueryCompiler(self._semantics)
-        self._admissibility = QuestionAdmissibilityEngine(
-            CompositeQuestionInterpreter(HeuristicQuestionInterpreter(), None),
-            self._policy,
-        )
 
     def _prune(self) -> None:
         now = time.monotonic()
@@ -184,7 +183,8 @@ class CsvDemoWorkspace:
                 }
                 for run_id, run in reversed(item.history.items())
             ],
-            "interpreter": "rules",
+            "interpreter": "claude" if self.language.config.enabled else "rules",
+            "language": self.language.describe(),
             "internal_connections_available": False,
             "connections": [
                 {"id": "csv", "status": "AVAILABLE"},
@@ -207,6 +207,7 @@ class CsvDemoWorkspace:
         if source_fingerprint != dataset.fingerprint:
             raise DemoWorkspaceBusy("The CSV changed. Refresh the source before asking again.")
         snapshot = item.definitions.resolve(self._access(item), definition_snapshot_id, require_current=True)
+        item.last_response = None
         return await self._execute(item, dataset, question, as_of, snapshot)
 
     async def rerun(self, item: DemoWorkspaceSession, run_id: str) -> DemoChatResponse:
@@ -214,7 +215,9 @@ class CsvDemoWorkspace:
         if saved is None:
             raise DefinitionUnavailable("The saved run is not available in this demo session.")
         snapshot = item.definitions.resolve(self._access(item), saved.snapshot_id)
-        return await self._execute(item, saved.dataset, saved.question, saved.as_of, snapshot)
+        return await self._execute(
+            item, saved.dataset, saved.question, saved.as_of, snapshot, saved.interpretation, saved.model
+        )
 
     async def _execute(
         self,
@@ -223,8 +226,18 @@ class CsvDemoWorkspace:
         question: str,
         as_of: datetime,
         snapshot: DefinitionSnapshot,
+        replay: InterpretationResult | None = None,
+        replay_model: str | None = None,
     ) -> DemoChatResponse:
         access = self._access(item)
+        if self.language.config.enabled and replay is None:
+            if item.language_questions >= self.settings.maximum_language_questions:
+                raise AgentFailure(
+                    "SESSION_LANGUAGE_BUDGET", "This demo session has reached its Claude question limit.", 429
+                )
+            item.language_questions += 1
+        run = AgentRun(self.language.config.limits)
+        interpreter = BoundQuestionInterpreter(self.language, access, run, replay, replay_model)
         domains = DomainPackRegistry.from_snapshot(snapshot.pack)
         semantics = SemanticRegistry(domains, self._policy)
         registry = ConnectorRegistry()
@@ -240,28 +253,29 @@ class CsvDemoWorkspace:
             )
         service = DemoChatService(
             domain_registry=domains,
-            admissibility_engine=self._admissibility,
+            admissibility_engine=QuestionAdmissibilityEngine(interpreter, self._policy),
             query_compiler=BusinessQueryCompiler(semantics),
             session_store=EphemeralRunStore(),
             connector_registry=registry,
-            ai_model=None,
+            ai_model=self.language.config.model,
             synthetic_data=False,
+            agent_run=run,
         )
         response = await service.answer(
             DemoChatRequest(
                 question=question,
                 access_context=access,
                 as_of=as_of,
-                use_llm=False,
+                use_llm=self.language.config.enabled,
                 include_debug=True,
             )
         )
         # Publication can coexist with a pinned run; revocation cannot release its result.
         item.definitions.resolve(access, snapshot.snapshot_id)
         cite_definitions(response, snapshot)
-        if response.receipt:
+        if response.status == ChatStatus.ANSWERED and response.receipt:
             item.history[str(response.receipt.query_id)] = SavedCsvRun(
-                dataset, question, as_of, snapshot.snapshot_id
+                dataset, question, as_of, snapshot.snapshot_id, run.interpretation, response.ai_model
             )
             while len(item.history) > 4:
                 item.history.pop(next(iter(item.history)))
