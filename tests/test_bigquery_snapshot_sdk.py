@@ -63,7 +63,8 @@ def test_snapshot_sdk_uses_one_tenant_scoped_read_only_query(sdk: Any) -> None:
     client.query.side_effect = [dry, complete]
     transport.validate_view(mapping())
     result = transport.extract(mapping(), 100)
-    assert result.job_id == "extract-job" and result.billed_bytes == 900 and len(result.rows) == 1
+    assert result.job_id == "extract-job" and result.billed_bytes == 900
+    assert len(list(result.rows)) == 1
     sql = client.query.call_args_list[0].args[0]
     assert "WHERE `tenant_id` = @tenant" in sql and "LIMIT @limit" in sql and ";" not in sql
     dry_config = client.query.call_args_list[0].kwargs["job_config"]

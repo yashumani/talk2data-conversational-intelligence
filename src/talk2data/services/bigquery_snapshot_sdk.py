@@ -82,12 +82,11 @@ class GoogleSnapshotTransport:
             timeout=self.settings.api_timeout_seconds,
         )
         iterator = job.result(timeout=self.settings.query_timeout_seconds, retry=None, job_retry=None)
-        rows = [dict(row) for row in iterator]
         if job.state != "DONE" or job.error_result or job.statement_type != "SELECT":
             raise ValueError("The materialization query did not complete as a read-only SELECT.")
         return SnapshotExtract(
             job_id=job.job_id,
-            rows=rows,
+            rows=(dict(row) for row in iterator),
             processed_bytes=job.total_bytes_processed,
             billed_bytes=job.total_bytes_billed,
         )
