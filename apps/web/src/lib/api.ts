@@ -11,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, token?: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, token?: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (token) headers.set("X-Demo-Session", token);
   const response = await fetch(API + path, {

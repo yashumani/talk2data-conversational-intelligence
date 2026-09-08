@@ -10,6 +10,7 @@ on:
       - ".dockerignore"
       - "docker-compose.csv-demo.yml"
       - "scripts/csv_workspace_smoke.py"
+      - "scripts/durable_csv_smoke.py"
       - ".github/workflows/csv-demo-runtime.yml"
   push:
     branches: [main]
@@ -21,6 +22,7 @@ on:
       - ".dockerignore"
       - "docker-compose.csv-demo.yml"
       - "scripts/csv_workspace_smoke.py"
+      - "scripts/durable_csv_smoke.py"
       - ".github/workflows/csv-demo-runtime.yml"
   workflow_dispatch:
 
@@ -42,11 +44,26 @@ jobs:
         run: docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
       - name: Verify the installed UI assets and CSV API flow
         run: python scripts/csv_workspace_smoke.py >csv-smoke-report.json
+      - name: Complete a durable run before restart
+        run: >-
+          python scripts/durable_csv_smoke.py prepare
+          --checkpoint-file "$RUNNER_TEMP/talk2data-durable-checkpoint.json"
+          >durable-csv-prepare-report.json
+      - name: Restart the actual API container
+        run: docker compose -f docker-compose.csv-demo.yml restart api
+      - name: Verify persisted answers and replay after restart
+        run: >-
+          python scripts/durable_csv_smoke.py verify
+          --checkpoint-file "$RUNNER_TEMP/talk2data-durable-checkpoint.json"
+          >durable-csv-restart-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: csv-demo-release-acceptance
-          path: csv-smoke-report.json
+          path: |
+            csv-smoke-report.json
+            durable-csv-prepare-report.json
+            durable-csv-restart-report.json
           if-no-files-found: warn
       - name: Capture diagnostics on failure
         if: failure()
@@ -54,3 +71,6 @@ jobs:
       - name: Stop the demo
         if: always()
         run: docker compose -f docker-compose.csv-demo.yml down --volumes
+      - name: Remove the private acceptance checkpoint
+        if: always()
+        run: rm -f "$RUNNER_TEMP/talk2data-durable-checkpoint.json"

@@ -52,7 +52,8 @@ packaged definitions does not add new CSV metric support.
 A failed save keeps the editor open. A successful operation fetches authoritative server state.
 Concurrent operations are blocked per CSV session; optimistic revisions also reject stale
 draft reviews/publications. If the mutation succeeds but refresh fails, refresh before retrying
-to avoid creating a duplicate draft. Durable mutation idempotency belongs to Cycle 5.
+to avoid creating a duplicate draft. Cycle 5 adds idempotency for question/run submission;
+definition mutations still use optimistic revisions and explicit state refresh after a lost acknowledgment.
 
 ## Services and dependency boundaries
 
@@ -99,8 +100,9 @@ effective publication, so wait for a scheduled head to activate before proposing
 
 Publication and withdrawal events carry monotonic sequence, snapshot ID, actor, time and reason.
 Drafts retain the author, reviewer, submission/review/publication notes and final publication link.
-Events are read through the state API. SSE, durable delivery, search-index consumers and
-conversation replay are Cycle 5 work; no embedding index is needed for correctness here.
+Definition events are read through the state API. Cycle 5 adds persisted run events, SSE and
+conversation replay; definition publication push and search-index consumers remain optional
+future adapters. No embedding index is needed for correctness here.
 
 ## Internal identity and persistence
 
@@ -126,16 +128,18 @@ The existing configuration and ADC mounts remain read-only; do not store this da
 either mount or in the public repository. The supplied Compose file does not provision a
 persistent volume automatically. A private deployment override must provide it before use.
 
-If the path is null/unset, definitions are in memory and lost on restart. Use this only for
-ephemeral validation. A persisted store restores approved publications without overwriting them
+Cycle 5 also accepts `state_database_path` for durable conversations. When the explicit governance
+path is null/unset, it uses that state file for definitions too. If both paths are unset, definitions
+are in memory and lost on restart; use that only for ephemeral validation. A persisted store
+restores approved publications without overwriting them
 with the bootstrap file. If the bootstrap contract changes, startup rejects it and requires an
 approved migration; do not delete history as a workaround. Production backup, migration,
 retention and recovery validation are required in Cycle 6.
 
 Use one instance/worker for this increment's runtime query ownership. The SQLite store exercises
-real concurrent-writer revision protection, but the application has no distributed job ownership
-or durable conversation log yet. Do not deploy this as a horizontally scaled enterprise service
-until the Cycle 5/6 gates pass.
+real concurrent-writer revision protection. Cycle 5 adds a durable conversation/event journal
+and exclusive worker lock, but no distributed job ownership. Do not deploy this as a horizontally
+scaled enterprise service until the production storage and Cycle 6 gates pass.
 
 ## HTTP contracts
 
@@ -149,6 +153,7 @@ prefixed by `/v1/internal` and require verified identity. The private API has no
 | `POST /definitions/drafts/{id}/{submit\|approve\|reject\|publish}` | `expected_revision` and nonblank `note`; transition returns updated draft |
 | `POST /definitions/snapshots/{id}/revoke` | Expected stream revision and reason; returns 204 |
 | `POST /chat` | Optional `definition_snapshot_id`; supplied ID must be current. React always supplies the visible pin |
+| `POST /runs` | Cycle 5 durable admission requires the current definition snapshot; accepted work retains that pin |
 | CSV `POST /history/{run_id}/rerun` | Executes the session's retained source and pin; no client-controlled replacements |
 
 Definition errors use 403 for denied access, 404 for unknown records, 409 for conflicts,
@@ -158,18 +163,22 @@ snapshot: the server then resolves the current publication at request start.
 
 ## Capacity, retention and acceptance
 
-CSV retains at most four successful runs, 64 drafts and 64 snapshots per session. Exceeding a
+CSV retains at most four reproducible successful query inputs, 64 drafts and 64 snapshots per session.
+Cycle 5 separately retains up to 64 conversation run records with their results/events. Exceeding a
 governance limit requires a fresh demo session; it does not silently evict approved history.
 The same draft/snapshot limits apply to the current private store; archival/rotation needs an
 approved migration before these bounds are reached. Rejected requests do not create saved runs.
 
-Uploads, citations, saved data references and definitions disappear on CSV session clear,
-expiry pruning or process shutdown. They are never uploaded to BigQuery. With Cycle 4's opt-in
+Uploads, citations, saved data references and definitions are removed from live state on CSV
+session clear or expiry pruning. Cycle 5 persists them across restart when the isolated state
+file is configured; unset paths retain the memory-only behavior. Clear/expiry is not a
+secure-erasure guarantee for SQLite files or backups. They are never uploaded to BigQuery. With Cycle 4's opt-in
 Claude configuration, questions and approved definition metadata may be sent to the provider;
 CSV rows, results and saved data references are excluded. Successful runs also retain the
 validated interpretation so historical reproduction requires no new model call.
-There is no durable internal query rerun endpoint in this cycle: BigQuery data reproducibility
-also needs retained source snapshots and Cycle 5's durable run records.
+Cycle 5 can retrieve the stored internal run result after restart. That is distinct from
+re-executing a historical BigQuery query against identical warehouse data, which additionally
+requires retained source snapshots and is not claimed by the current history API.
 
 Acceptance includes real SQLite persistence and competing writers, signed-token/two-person
 private API tests, complete CSV draft-to-publication and history/revocation tests, publication

@@ -1,4 +1,5 @@
 import type { DefinitionRecord, DefinitionView, SavedRun } from "./definitions";
+import type { SyncState } from "./runs";
 
 export interface AgentRun {
   status: string;
@@ -50,6 +51,7 @@ export interface ChatResult {
 }
 
 export interface WorkspaceState {
+  sync?: SyncState;
   source: Source | null;
   definition: {
     domain_pack_version: string;

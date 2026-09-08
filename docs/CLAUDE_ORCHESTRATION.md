@@ -37,7 +37,7 @@ an explicit rules-only mode, displayed to the user.
 | `services/csv_workspace.py` | Isolated session/source/definition binding and saved interpretation replay |
 | `internal/runtime.py` | Trusted internal identity and BigQuery binding, per-request specialist run |
 | `api/agent_errors.py` | Sanitized status/code/report response with `Cache-Control: no-store` |
-| `apps/web/src/components/AgentRunPanel.tsx` | Show completed processing stages, provider and usage |
+| `apps/web/src/components/AgentRunPanel.tsx` | Show processing stages, provider and usage; Cycle 5 also streams progress |
 
 Python 3.11+ implements the API and orchestration; React with TypeScript implements the UI.
 HTTPX, already a backend dependency, implements the two required provider operations.
@@ -48,7 +48,7 @@ language adapter. Main files retain application composition rather than provider
 
 1. The server binds identity, selected source and current approved definition snapshot.
    Internal callers cannot supply their own roles or data scope. CSV owns a separate,
-   ephemeral demo identity and connector registry.
+   bounded demo identity and connector registry. Cycle 5 can persist that workspace to its own file.
 2. `AgentRun` starts a deadline and empty usage ledger. Each registered stage may run once,
    in order. No model output chooses a stage or a Python callable.
 3. Before egress, filter the catalog by tenant, permitted ask/read actions, classification,
@@ -160,9 +160,10 @@ deterministic stages again against those retained inputs, checks revocation and 
 saved upload as the current data source. Only successful, verified runs enter history.
 
 The UI clears the prior answer when a new question begins and shows provider failure explicitly.
-The processing panel shows role, status and usage, not chain-of-thought. These are response
-reports; progress streaming, durable events, reconnect, cross-device state and restart recovery
-remain Cycle 5. CSV history remains four runs in an ephemeral session.
+The processing panel shows role, status and usage, not chain-of-thought. Cycle 5 adds streaming
+progress, durable events/results, reconnect and restart recovery in the single-worker storage
+profile. CSV keeps four reproducible query inputs plus bounded conversation results. Persistence
+uses its own optional state file; cross-device sign-in is not supplied by the anonymous demo.
 
 ## Verification and live gate LA-1
 
@@ -208,4 +209,6 @@ python -m pytest tests/test_live_claude.py -q
 ```
 
 No GCP connection is needed for this gate. LA-1 is pending configuration, not user-deferred.
-Cycle 5 begins after the current milestone's acceptance boundary is resolved.
+The user subsequently requested Cycle 5 development while this gate remained open. That request
+authorizes the next implementation milestone, not a waiver of LA-1 or a production release.
+See [durable conversations](DURABLE_CONVERSATIONS.md) for the run/event protocol and storage limits.

@@ -23,7 +23,7 @@ on:
       - "pyproject.toml"
       - ".github/workflows/postgres-integration.yml"
   pull_request:
-    branches: [main, feat/postgresql-reference-connector]
+    branches: [main, feat/postgresql-reference-connector, feat/cycle-4-claude-orchestration]
     paths:
       - "src/talk2data/connectors/**"
       - "src/talk2data/api/routes/connectors.py"

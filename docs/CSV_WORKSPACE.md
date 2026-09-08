@@ -23,7 +23,7 @@ docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 1
 
 Open [the workspace](http://127.0.0.1:8000/workspace/). This builds the React assets and Python
 service into one image and starts one API worker. The demo binds only to the local machine,
-uses temporary in-memory CSV sessions and a temporary synthetic SQLite runtime, and needs
+persists CSV workspace state on its own named volume, uses a separate temporary synthetic SQLite runtime, and needs
 no model service, cloud connection, provider key, or host `.env` file. Do not combine this
 standalone file with an internal deployment override.
 
@@ -38,6 +38,20 @@ July's 24,676 activations, verifies source-bound answers and definition versions
 definition publication, stale-definition rejection, historical reproduction and withdrawal,
 session isolation, invalid uploads, stale-source rejection and missing-day abstention, then
 clears its two temporary sessions. It does not exercise a browser or claim visual acceptance.
+
+Cycle 5 adds a second acceptance check across an actual API restart. Keep its capability
+checkpoint outside the repository and do not share or upload that file:
+
+```bash
+python scripts/durable_csv_smoke.py prepare --checkpoint-file /tmp/talk2data-durable-checkpoint.json
+docker compose -f docker-compose.csv-demo.yml restart api
+python scripts/durable_csv_smoke.py verify --checkpoint-file /tmp/talk2data-durable-checkpoint.json
+```
+
+The verifier waits for readiness, restores the same source/answer/run, resumes stored events,
+checks idempotency and source isolation, then clears its sessions and removes the checkpoint.
+The release workflow runs both checks against the built container. Its artifacts contain only
+sanitized check reports. Restarting the API keeps the volume; the following cleanup removes it.
 
 Stop and remove the demo when finished:
 
@@ -79,6 +93,12 @@ Inspect the business definition, version, result rows, file fingerprint, and rec
 Replace the file with another valid template to invalidate the previous result, then ask again.
 Use **Clear data and end session** when finished.
 
+The conversation panel shows accepted questions, specialist progress, cancellation and saved
+answers. Refresh or **Resume existing run** recovers accepted work without submitting another
+query. A process restart preserves terminal answers when storage is configured and marks
+unfinished work **INTERRUPTED**. Make an explicit new request to try interrupted work again.
+Saved history does not supply automatic model memory; keep each question self-contained.
+
 In **Manage business definitions**, choose a metric or dimension, propose its business meaning,
 owner and aliases, and supply a reason. Save, submit, approve and publish with review notes.
 The demo labels this as a single-user exercise; it cannot approve internal definitions.
@@ -109,17 +129,22 @@ details in Vite environment variables. No browser-side BigQuery client is requir
 | `T2D_CSV_DEMO_ENABLED` | false | Enable only the optional CSV endpoints |
 | `T2D_CSV_DEMO_MAXIMUM_BYTES` | 2000000 | Maximum raw upload size |
 | `T2D_CSV_DEMO_MAXIMUM_ROWS` | 20000 | Maximum accepted data rows |
-| `T2D_CSV_DEMO_MAXIMUM_SESSIONS` | 16 | In-process workspace capacity |
+| `T2D_CSV_DEMO_MAXIMUM_SESSIONS` | 16 | Workspace capacity, including persisted unexpired sessions |
 | `T2D_CSV_DEMO_SESSION_TTL_SECONDS` | 1800 | Fixed demo-session lifetime |
+| `T2D_CSV_DEMO_STATE_DATABASE_PATH` | unset | Optional absolute private SQLite path; unset means memory only |
 | `T2D_WEB_DIRECTORY` | unset | Optional built frontend directory |
 
 These settings do not modify `T2D_DATA_BACKEND`, PostgreSQL settings, or the separate BigQuery
-settings. The CSV workspace uses packaged public definitions and its own ephemeral run store.
+settings. The CSV workspace uses packaged public definitions and its own isolated run store.
 It never queries the ordinary runtime connector registry.
 
-Keep one API worker: uploaded state is intentionally local to that process. State is lost
-on restart. Expired sessions become inaccessible and are pruned during subsequent operations;
-expiry is not a secure-erasure guarantee. Browsers retain only a session capability, not the CSV.
+Keep one API worker per database; a file lock rejects a second worker on the same file.
+The Compose profile sets the state path and mounts `csv-workspace-state` automatically. For a
+local Python server, set an absolute path to enable equivalent persistence; when unset, state
+is still lost on restart. Expired sessions become inaccessible and are pruned during subsequent
+operations; restarting does not extend their original expiry. Expiry/clear is not a secure-erasure
+guarantee. Browsers keep the capability and any pending question/request binding in session
+storage, not the uploaded CSV. See [the persistence runbook](DURABLE_CONVERSATIONS.md).
 Keep the server on loopback unless an approved demo ingress supplies HTTPS, limits, and access control.
 
 ## CSV format
@@ -156,7 +181,8 @@ Live Ollama/PostgreSQL tests require their separately documented service configu
 Python line and branch coverage must each reach 96%. Frontend lines, statements, functions,
 and branches must each reach 96%. React flow tests run in an in-memory renderer and check
 session restore/expiry, uploads, question submission, error recovery, evidence matching,
-refresh, clearing, and overlapping-operation prevention. They do not provide browser or visual QA.
+refresh, clearing, overlapping-operation prevention, lost acknowledgments, SSE parsing,
+idempotent recovery, cancellation and saved history. They do not provide browser or visual QA.
 Real BigQuery/Claude, browser end-to-end, load and enterprise identity acceptance are not proved
 by these local checks. The separate Claude benchmark and its LA-1 gate are documented in the
 [provider runbook](CLAUDE_ORCHESTRATION.md#verification-and-live-gate-la-1).
@@ -176,9 +202,12 @@ by these local checks. The separate Claude benchmark and its LA-1 gate are docum
   abstains and does not query another source.
 - **INVALID:** Unsupported metric, dimension, scope, or result size. Narrow the question or
   use the supported template.
-- **429:** The configured Claude concurrency or session question budget is exhausted.
+- **429:** The configured run concurrency, conversation capacity or Claude/session budget is exhausted.
 - **502/503/504:** Invalid/unavailable/timed-out provider or exhausted execution budget; no
   alternate model/data connection or previous answer is substituted. Refine or retry explicitly.
 
 HTTP retries are not redirected to other data connections. If an upload succeeds but the
 following refresh fails, use **Refresh state** to recover the accepted backend state.
+For durable runs, use **Resume existing run** after a lost acknowledgment or stream failure;
+this reuses the original request identity. An old definition/source revision conflict requires
+a state refresh and an explicit new question rather than silently rebinding the accepted run.

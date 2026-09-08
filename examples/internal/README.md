@@ -19,7 +19,9 @@ For working data now, use the separate optional CSV import in the React workspac
 `docs/CSV_WORKSPACE.md`. CSV data stays in its isolated workspace and is never loaded into
 BigQuery. Configure each connection separately when its environment is available.
 
-The optional `governance_database_path` is null in the placeholder. A private deployment
-must supply an absolute path and a service-owned writable volume to retain definition
-publications across restarts; see `docs/DEFINITION_GOVERNANCE.md`. CSV definitions remain
-ephemeral and isolated regardless of the private store setting.
+The optional `governance_database_path` and `state_database_path` are null in the placeholder.
+A private deployment must supply an absolute state path and a service-owned writable volume
+to retain conversations/results/events across restarts. Definitions use the explicit governance
+path, otherwise the state path. Both unset means memory only. Keep one worker per local file;
+see `docs/DURABLE_CONVERSATIONS.md` and `docs/DEFINITION_GOVERNANCE.md`. CSV persistence uses
+its own separate configuration and is unaffected by these private store settings.

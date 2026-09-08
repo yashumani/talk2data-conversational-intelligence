@@ -12,14 +12,17 @@ from fastapi.responses import JSONResponse
 
 from talk2data.api.agent_errors import install_agent_errors
 from talk2data.api.definition_errors import install_definition_errors
+from talk2data.api.run_routes import install_run_errors
 from talk2data.connectors.bigquery import BigQueryConnector
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.internal_config import InternalRuntimeConfig, InternalSettings
 from talk2data.domain.bigquery_mapping import BigQueryCatalog
 from talk2data.domain.domain_pack import DomainPackRegistry
+from talk2data.domain.runs import digest
 from talk2data.internal.definitions import router as definitions_router
 from talk2data.internal.routes import router
+from talk2data.internal.runs import router as runs_router
 from talk2data.internal.runtime import InternalQueryRuntime
 from talk2data.services.bigquery_port import BigQueryTransport
 from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
@@ -32,6 +35,7 @@ from talk2data.services.identity import (
     IdentityUnavailable,
     IdentityVerifier,
 )
+from talk2data.services.run_store import RunStore
 
 
 def create_internal_app(
@@ -45,6 +49,7 @@ def create_internal_app(
     domains = DomainPackRegistry(resolved.domain_pack_directory)
     domains.load()
     catalog = BigQueryCatalog.load(resolved.bigquery_catalog_path)
+    run_store = RunStore(resolved.state_database_path)
     registries: dict[str, ConnectorRegistry] = {}
     connectors = []
     transports = []
@@ -75,8 +80,15 @@ def create_internal_app(
         domains,
         registries,
         resolved.maximum_active_queries,
-        DefinitionStore(resolved.governance_database_path),
+        DefinitionStore(resolved.governance_database_path or resolved.state_database_path),
         language,
+        run_store,
+        digest(
+            {
+                "catalog": catalog.model_dump(mode="json"),
+                "bigquery": resolved.bigquery.model_dump(mode="json"),
+            }
+        ),
     )
 
     @asynccontextmanager
@@ -148,7 +160,9 @@ def create_internal_app(
         return {"status": "ready", "profile": "internal"}
 
     app.include_router(router)
+    app.include_router(runs_router)
     app.include_router(definitions_router)
     install_definition_errors(app)
     install_agent_errors(app)
+    install_run_errors(app)
     return app

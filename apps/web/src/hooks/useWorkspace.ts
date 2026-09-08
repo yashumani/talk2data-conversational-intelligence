@@ -3,8 +3,10 @@ import { api, ApiError } from "../lib/api";
 import type { ChatResult, DemoSession, WorkspaceState } from "../lib/contracts";
 import type { DefinitionDraft, DefinitionEdit, ReviewAction } from "../lib/definitions";
 import { checkFile, suggestedAnchor } from "../lib/workspace";
+import { runApi, terminal, type RunRequest, type RunSnapshot } from "../lib/runs";
 
 const SESSION_KEY = "talk2data.csv-demo-session.v1";
+const PENDING_KEY = "talk2data.csv-pending-run.v1";
 
 export function useWorkspace() {
   const [session, setSession] = useState<DemoSession | null>(null);
@@ -14,6 +16,44 @@ export function useWorkspace() {
   const [asOf, setAsOf] = useState("");
   const inFlight = useRef(false);
   const [historyResult, setHistoryResult] = useState<ChatResult | null>(null);
+  const [currentRun, setCurrentRun] = useState<RunSnapshot | null>(null);
+  const [savedRun, setSavedRun] = useState<RunSnapshot | null>(null);
+  const [pending, setPending] = useState(false);
+  const watcher = useRef<AbortController | null>(null);
+
+  function forgetPending() { sessionStorage.removeItem(PENDING_KEY); setPending(false); }
+
+  async function track(token: string, run: RunSnapshot) {
+    watcher.current?.abort();
+    const controller = new AbortController();
+    watcher.current = controller;
+    const final = await runApi.watch(token, run, controller.signal, setCurrentRun);
+    forgetPending();
+    setState(await api.state(token));
+    if (final.status !== "COMPLETED") setError(final.message);
+  }
+
+  async function restoreRun(token: string, snapshot: WorkspaceState) {
+    const saved = sessionStorage.getItem(PENDING_KEY);
+    if (saved) {
+      let value: { token: string; request: RunRequest } | null = null;
+      try { value = JSON.parse(saved); } catch { forgetPending(); }
+      if (value?.token === token && value.request) {
+        setPending(true);
+        try { await track(token, await runApi.submit(token, value.request)); }
+        catch (failure) {
+          if (failure instanceof ApiError && failure.status < 500 && failure.status !== 429) forgetPending();
+          throw failure;
+        }
+        return;
+      }
+      forgetPending();
+    }
+    const latest = snapshot.sync?.conversation.latest_run_id;
+    if (latest) await track(token, await runApi.get(token, latest));
+  }
+
+  useEffect(() => () => watcher.current?.abort(), []);
 
   async function perform(label: string, operation: () => Promise<void>) {
     if (inFlight.current) return false;
@@ -27,7 +67,9 @@ export function useWorkspace() {
         setSession(null);
         setState(null);
         setHistoryResult(null);
+        forgetPending(); setCurrentRun(null); setSavedRun(null);
       }
+      if (failure instanceof DOMException && failure.name === "AbortError") return false;
       setError(failure instanceof Error ? failure.message : "Something went wrong. Please retry.");
       return false;
     } finally { inFlight.current = false; setBusy(""); }
@@ -56,6 +98,7 @@ export function useWorkspace() {
       setSession(restored);
       setState(snapshot);
       if (snapshot.source) setAsOf(suggestedAnchor(snapshot.source));
+      if (snapshot.sync?.enabled) await restoreRun(restored.session_token, snapshot);
     });
   }, []);
 
@@ -78,6 +121,22 @@ export function useWorkspace() {
     const fingerprint = state.source.source_fingerprint;
     await perform("Checking definitions and querying CSV", async () => {
       setState(previous => previous ? { ...previous, last_response: null } : previous);
+      if (state.sync?.enabled && state.definitions) {
+        const request: RunRequest = {
+          client_request_id: crypto.randomUUID(), conversation_id: state.sync.conversation.conversation_id,
+          expected_revision: state.sync.conversation.revision, question: question.trim(),
+          as_of: asOf + "T12:00:00Z", source_fingerprint: fingerprint,
+          definition_snapshot_id: state.definitions.snapshot_id,
+        };
+        sessionStorage.setItem(PENDING_KEY, JSON.stringify({ token: session.session_token, request }));
+        setPending(true); setSavedRun(null);
+        try { await track(session.session_token, await runApi.submit(session.session_token, request)); }
+        catch (failure) {
+          if (failure instanceof ApiError && failure.status < 500 && failure.status !== 429) forgetPending();
+          throw failure;
+        }
+        return;
+      }
       const result = await api.ask(session.session_token, question.trim(), asOf, fingerprint, state.definitions?.snapshot_id);
       setState(previous => previous && previous.source?.source_fingerprint === fingerprint
         ? { ...previous, last_response: result } : previous);
@@ -93,6 +152,7 @@ export function useWorkspace() {
       setHistoryResult(null);
       if (snapshot.source && snapshot.source.source_fingerprint !== state?.source?.source_fingerprint)
         setAsOf(suggestedAnchor(snapshot.source));
+      if (snapshot.sync?.enabled) await restoreRun(session.session_token, snapshot);
     });
   }
 
@@ -105,6 +165,7 @@ export function useWorkspace() {
       setState(null);
       setAsOf("");
       setHistoryResult(null);
+      forgetPending(); setCurrentRun(null); setSavedRun(null);
     });
   }
 
@@ -142,6 +203,28 @@ export function useWorkspace() {
     });
   }
 
+  async function cancelRun() {
+    if (!session || !currentRun || terminal(currentRun.status)) return;
+    try {
+      const result = await runApi.cancel(session.session_token, currentRun.run_id);
+      setCurrentRun(result);
+      if (terminal(result.status) && !inFlight.current) {
+        forgetPending();
+        setState(await api.state(session.session_token));
+      }
+    }
+    catch (failure) { setError(failure instanceof Error ? failure.message : "Cancellation could not be confirmed."); }
+  }
+
+  async function viewRun(runId: string) {
+    if (!session) return;
+    await perform("Loading a saved run", async () => {
+      setSavedRun(null);
+      setSavedRun(await runApi.get(session.session_token, runId));
+    });
+  }
+
   return { session, state, busy, error, asOf, setAsOf, start, upload, ask, refresh, clear,
-    createDraft, reviewDraft, revokeDefinition, rerun, historyResult };
+    createDraft, reviewDraft, revokeDefinition, rerun, historyResult,
+    currentRun, savedRun, pending, cancelRun, viewRun };
 }

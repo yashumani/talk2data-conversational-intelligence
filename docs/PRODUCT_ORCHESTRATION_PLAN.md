@@ -24,7 +24,10 @@ an independent working data connection, never a BigQuery upload or automatic fal
 Cycle 3 implements live definition governance and CSV reproducibility, documented in
 [the governance runbook](DEFINITION_GOVERNANCE.md). Cycle 4 implements the isolated Claude
 adapter and bounded specialists; real-provider acceptance LA-1 remains open until configured
-and passed. Durable conversations and events remain Cycle 5.
+and passed. Cycle 5 implements durable conversations, ordered run events, reconnect/replay,
+idempotency and cancellation. The user requested this next development milestone while LA-1
+remained open; this does not waive live acceptance or merge the unaccepted provider milestone.
+See [durable conversations and operating limits](DURABLE_CONVERSATIONS.md).
 The current increment is not an enterprise production release.
 
 No existing repository is archived, renamed, merged wholesale, or made private by this work.
@@ -41,12 +44,12 @@ private location before integration.
 | React + Python | React/TypeScript in `apps/web`; FastAPI remains in `src/talk2data` | CopilotKit integration after the server run/event protocol is stable |
 | Thin main files | `main.py` exports ASGI application; `main.tsx` mounts UI; `App.tsx` composes panels | Keep future business logic out of these entry points |
 | Independent data connections | CSV has its own configuration/workspace; BigQuery now has a separate internal API, adapter, private mappings and identity binding; existing adapters retained | Execute restricted-principal GCP acceptance with approved private configuration |
-| CSV upload | Bounded UTF-8 template, isolated ephemeral sessions, source hash, replace/clear/state endpoints | Governed mapping wizard for additional schemas and metric families |
+| CSV upload | Bounded UTF-8 template, isolated sessions, source hash, replace/clear/state endpoints; optional durable file with fixed expiry | Governed mapping wizard for additional schemas and metric families |
 | Business definitions | Metric/dimension metadata, named owners, draft/review/approval, atomic snapshots/events, effective dates, revocation and citations; CSV review UI | Business-owned production contracts and benchmark approval; governed formula/mapping migrations; search index adapter if needed |
 | Question-to-answer logic | Reuses admissibility, Business Query IR, deterministic execution, result checks, and receipt-backed composition | Wider question benchmark, fiscal-calendar correctness, ratio/time-grain coverage |
-| Frontend/backend synchronization | Backend source fingerprint, explicit state refresh, stale-source rejection, latest completed result | Durable runs, incremental events, reconnect/replay, idempotency, cancellation, cross-device history |
+| Frontend/backend synchronization | Persisted conversations/runs, ordered SSE, source/definition binding, idempotency, cancellation, reconnect and saved results; React CSV UI | Production distributed workers/state, authenticated internal UI and cross-device experience |
 | Claude API | Opt-in adapter, strict schema, approved definition projection, model/secret config, token/deadline limits, sanitized failures; CSV rows/results excluded | Real-provider acceptance LA-1 and approved internal egress; wider business-owned evaluation |
-| Multiple agents | Five ordered specialist roles, fixed tools, cancellation and usage limits; Claude assists semantic resolution | Durable checkpoints/events in Cycle 5; approved context retrieval when connected |
+| Multiple agents | Five ordered specialist roles, fixed tools, cancellation and usage limits; Claude assists semantic resolution; Cycle 5 journals progress and terminal results | Approved context retrieval when connected; production distributed job ownership |
 | Enterprise operation | Signed identity and server-owned tenant/scope grants implemented in the private API; separate container; CSV disabled by default | Live SSO/IAM/private ingress acceptance, audit retention, load tests, SLOs and recovery |
 
 The accepted baseline has working synthetic SQLite and PostgreSQL reference adapters.
@@ -62,6 +65,7 @@ No real BigQuery connection or company schema has been verified yet.
 | `apps/web/src/components` | Focused UI components | Direct warehouse access or authorization decisions |
 | `apps/web/src/hooks/useWorkspace.ts` | User operations, busy/error state, state synchronization | Business metric formulas |
 | `apps/web/src/lib/api.ts` | Same-origin HTTP requests and error handling | Cloud project IDs, service-account keys, Claude keys |
+| `apps/web/src/lib/runs.ts` | Typed durable run requests, SSE parser and bounded recovery | New query submission on every reconnect |
 | `src/talk2data/main.py` | Stable ASGI import and application export | Connection construction or query logic |
 | `src/talk2data/bootstrap.py` | Server dependency composition and lifecycle | SQL generation or data interpretation |
 | `src/talk2data/api/routes` | Validate HTTP contracts and call services | Connection-specific execution code |
@@ -100,11 +104,12 @@ question binds a fresh connector registry containing only CSV adapters. An unava
 metric, missing date, permission mismatch, invalid filter, or oversized result ends in an
 explicit rejection or abstention. It never invokes the existing runtime registry.
 
-Uploads and questions are not persisted to disk by the CSV workspace. One current answer and
-the latest four successful runs, including their original CSV references and definition snapshots,
-are retained in process memory. Sessions have a fixed lifetime, with expired entries pruned on subsequent
-operations. Expiry is an access limit, not an immediate secure-erasure guarantee. Clear removes
-the session's references; process shutdown removes all demo state. Single-worker use is required.
+CSV storage is independently configurable. An unset state path keeps memory-only behavior;
+the packaged demo now mounts its own persistent volume. The state file stores the accepted
+CSV, definitions, up to 64 durable conversation runs/events and four reproducible successful
+query inputs. Sessions keep their original fixed expiry across restart and are pruned during
+subsequent operations. Expiry/clear removes live references, not necessarily SQLite/WAL/backup
+bytes. One worker per local state file is required and enforced by an exclusive file lock.
 
 ### Internal BigQuery — implemented, live acceptance pending
 
@@ -211,13 +216,15 @@ The shared definition store atomically commits each immutable pack snapshot and 
 publication event with an optimistic revision check. Every request reads the store and builds
 its compiler from a pinned copy; metric semantic hashes also include relevant dimension records.
 No stale semantic object or embedding cache is used. Publication and withdrawal are visible
-through state refresh and API reads; push delivery/replay belongs to Cycle 5.
+through state refresh and API reads. Cycle 5 streams run progress and supports durable replay;
+global definition push delivery remains an optional future adapter.
 
 The CSV UI offers an explicitly labeled single-user review exercise. The private API verifies
 identity and requires distinct author/reviewer subjects with server-owned actions and complete
 publication clearance. Exact definition citations accompany queries in both profiles. CSV retains
-four old runs and their data for reproduction within the current session. Internal definition
-history can persist to a private SQLite file; durable internal query history belongs to Cycle 5.
+four old query inputs and their data for reproduction within the current session. Cycle 5 adds
+durable conversation/run results for both profiles and optional persistence of the CSV workspace.
+Retrieving a stored internal result is not a claim of historical BigQuery source reproducibility.
 See [the implementation and acceptance contract](DEFINITION_GOVERNANCE.md).
 
 ## 7. Bounded multi-agent orchestration
@@ -256,7 +263,8 @@ flowchart TD
 Cycle 4 implements the semantic resolver, query planner, executor, verifier and composer as
 ordered specialist roles backed by the existing services. Claude assists only interpretation
 when enabled; the other roles are deterministic. The context researcher remains unconnected.
-Stage reports describe executed operations, not model reasoning or durable progress events.
+Stage reports describe executed operations, not model reasoning. Cycle 5 persists these reports
+as bounded progress events while the run executes.
 See [the implementation runbook](CLAUDE_ORCHESTRATION.md).
 
 ## 8. Claude integration strategy
@@ -296,7 +304,7 @@ Foundation protocol:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `POST /v1/demo/csv/sessions` | Create bounded ephemeral demo capability |
+| `POST /v1/demo/csv/sessions` | Create a bounded demo capability and its conversation |
 | `POST /v1/demo/csv/upload` | Validate raw CSV atomically, replace source, invalidate the last answer |
 | `GET /v1/demo/csv/state` | Fetch selected source, approved metric definition, latest result |
 | `POST /v1/demo/csv/chat` | Ask against a required source fingerprint and explicit date anchor |
@@ -309,20 +317,28 @@ results. Refresh restores the backend's latest complete snapshot. A receipt is s
 its file hash matches the selected source. Session expiry clears local state and requires an
 explicit new session. There is no cross-source retry.
 
-Enterprise protocol, to implement:
+Cycle 5 implements the shared run protocol in separate CSV and internal profiles:
 
-- `POST /runs` accepts a client request ID, conversation ID, question, and selected logical
-  connection. The server derives principal/scope and returns a durable run ID.
-- `GET /runs/{id}` returns the current snapshot; event streaming is not the only recovery path.
-- SSE streams ordered, persisted events with run ID, sequence, event type, timestamp, and
-  typed payload. Resume uses the last acknowledged sequence and deduplicates replays.
-- Events include interpretation, clarification, tool start/end, query job state, result-ready,
-  answer-ready, failure, and cancellation. Show progress events, not hidden model reasoning.
-- Cancellation is best effort until a terminal state is confirmed; interrupted jobs must not
-  publish later answers into a newer conversation revision.
-- Idempotent submissions and a transactional outbox prevent duplicate query jobs and lost updates.
-- Cache keys include tenant, principal/scope, source binding/version, semantic snapshot, plan
-  hash, and source freshness. Permission or definition changes invalidate affected caches.
+- `POST /runs` accepts a client request ID, conversation ID/revision, question, date anchor,
+  definition snapshot and CSV source fingerprint where applicable. The server derives
+  principal/scope and the internal physical connection; it returns a persisted run ID.
+- Conversation endpoints list owned history. `GET /runs/{id}` reauthorizes and returns the
+  current snapshot; event streaming is not the only recovery path.
+- SSE streams ordered persisted status and specialist/usage events. Resume validates the run
+  and last acknowledged sequence; React deduplicates replay and rejects source/version changes.
+  Events omit question bodies and result rows. Final answers require the authorized snapshot GET.
+- Snapshot updates and their events commit in one SQLite transaction. Repeating an identical
+  accepted request returns its original run; reusing the ID with another payload is rejected.
+- Cancellation persists its request before signaling execution and cannot release a later
+  answer over a terminal state. Process recovery marks uncertain work interrupted without
+  automatically redispatching a potentially charged cloud/model call.
+- Reads, dispatch, result release and every streamed event enforce current authorization and
+  definition revocation. Responses prohibit caching; there is no new shared result cache.
+
+The detailed contract, failure behavior and storage bounds are in
+[the Cycle 5 runbook](DURABLE_CONVERSATIONS.md). The reference store is a single-worker SQLite
+implementation. Production Cloud SQL state, distributed job ownership and release operations
+remain Cycle 6 work; idempotency does not claim exactly-once execution under arbitrary cloud failure.
 
 CopilotKit may be integrated at the UI adapter layer after these contracts are stable. It must
 not become the owner of authorization, business definitions, or warehouse credentials.
@@ -387,13 +403,15 @@ approved storage boundary while the canonical repository is public.
 | 2. Internal identity and BigQuery — complete with placeholders | Separate identity/BigQuery implementation, private configuration templates, dry runs, budgets, cancellation and receipts | User accepts tested implementation and unconfigured connection placeholders; optional CSV works independently. Live cloud acceptance moves to DG-1 | Real GCP/SSO configuration required only before internal activation and final release |
 | 3. Live semantic governance — complete in PR #21 | Metric/dimension metadata, draft/review/approve lifecycle, effective snapshots, atomic publication events, fresh request resolution, definition UI | New queries use active publications; CSV historical runs reproduce with pinned data/definitions; conflicts and revocation fail closed; 96% quality gates and packaged acceptance | Synthetic CSV proves mechanics; business owners approve production contracts before activation |
 | 4. Claude and bounded orchestration — implemented, LA-1 open | Isolated provider adapter, five fixed specialist roles, execution budgets, injection controls, UI reports and saved interpretation replay | Contract/quality/package checks pass; all nine synthetic live-acceptance cases must pass with an actual approved Claude model | Configure provider secret, approved model and synthetic-egress approval; LA-1 is not deferred |
-| 5. Durable collaboration and sync | Conversation persistence, run/event store, SSE replay, idempotent jobs, cancellation, artifacts, optional CopilotKit adapter | Refresh/reconnect/retry cannot duplicate jobs or mix results across tenant/source/version; terminal states survive restart | Internal application database and job platform |
+| 5. Durable conversations and sync — implemented in the reference profile | Persisted conversations/results/receipts, transactional run/event journal, SSE replay, idempotency, cancellation and React history; CopilotKit remains optional | Scope/source/version isolation, duplicate suppression, interrupted-state recovery, >95% coverage and real packaged API restart checks | Builds on PR #22 without waiving LA-1; one worker per explicit local state database |
 | 6. Enterprise release | IaC, CI/CD promotion, observability, retention, security review, load/cost testing, recovery, operations runbooks | Named security/data/platform/product owners sign off; SLO, RPO/RTO, and budget tests pass | Milestones 2–5 complete |
 
-These six milestones are the six delivery cycles. Execute one milestone at a time and close
-its current accepted gate before starting the next. The user explicitly revised Cycle 2 to
+These six milestones are the six delivery cycles. Execute one milestone at a time. The user explicitly revised Cycle 2 to
 accept connection placeholders and defer real cloud validation; this authorizes Cycle 3 using
-CSV imports. They are a scope plan, not a promise of six
+CSV imports. The user later requested Cycle 5 development while Cycle 4's real-provider LA-1
+was open. That authorizes this development sequence but does not close or defer LA-1; the
+dependent implementation remains reviewable without an automatic merge. Cycle 6 has not started.
+The cycles are a scope plan, not a promise of six
 fixed-duration sessions: access to GCP, identity, business owners and the approved Claude
 endpoint determines when the dependent gates can actually pass. A completed UI is not
 evidence that backend permissions or metric correctness are ready.
@@ -476,9 +494,9 @@ that does not support an agreed row belongs in a separate proposal, not this rel
 | R2 | Optional CSV data connection, independent of BigQuery | `test_csv_demo.py`: exact totals, source isolation, invalid input, gaps, capacity, expiry, stale fingerprints, replace/clear; React upload and evidence flows | Demo acceptance passes in its own deployment; internal credentials and data cannot enter the demo process |
 | R3 | Claude API | `test_claude_provider.py` and `test_claude_workflows.py`: schema, egress, timeout, rate-limit, budget, grounding, injection and source isolation; opt-in real benchmark supplied | Real-provider LA-1 artifact passes all nine cases; approve internal egress and broader business evaluation |
 | R4 | GCP BigQuery remains an internal separate connection | Separate internal API/adapter/configuration; signed-token, scope/classification, SQL, SDK budget/cancellation/receipt tests; opt-in live benchmark | Live read-only queries, approved views, byte caps, location, cancellation and IAM pass with restricted GCP principals; pending private environment |
-| R5 | Live context means business definitions of each metric and dimension | `test_definition_governance.py`, `test_definition_workflows.py`, React definition flows and HTTP smoke: lifecycle, owners, effective dates, immutable citations, atomic publication, fresh resolution, conflicts/revocation and CSV historical reproduction | Production business-owner approval and benchmark; durable internal run reproduction integrated with Cycle 5; formula/mapping changes use coordinated migrations |
-| R6 | Multiple agents working together | `test_agent_runtime.py`, Claude/CSV/internal flows: five registered roles, order, deadlines, usage caps, cancellation, verified composition and saved replay | Persist budgets/terminal states in Cycle 5; retain scope/source boundaries; causal claims require connected evidence |
-| R7 | Frontend/backend data sync and context | React flow/API tests: restore, upload, source-bound ask, refresh, expiry, error recovery, clear, old-answer removal; backend stale-source rejection | Durable conversations and semantic/source versions; event replay, reconnect, idempotency, cancellation, restart recovery and cross-session isolation pass |
+| R5 | Live context means business definitions of each metric and dimension | Definition/governance tests and HTTP smoke: owners, lifecycle, effective dates, immutable citations, fresh resolution, conflicts/revocation and CSV reproduction; Cycle 5 retains pins across restart | Production business-owner approval and benchmark; historical cloud data needs source snapshots; formula/mapping changes use coordinated migrations |
+| R6 | Multiple agents working together | Agent and durable workflow tests: five fixed roles, order, deadlines, persisted usage/stages/terminal states, cancellation, verified composition and saved replay | Production job ownership and recovery; retain scope/source boundaries; causal claims require connected evidence |
+| R7 | Frontend/backend data sync and context | Durable store/internal/CSV/SSE tests, React run/flow tests and real HTTP restart check: idempotency, lost acknowledgment, sequence replay, source/scope isolation, cancellation and interrupted recovery | The same contracts pass on production storage/workers with signed internal UI, load/recovery and browser acceptance |
 | R8 | Validated answers aligned to business meaning | Known-sum CSV checks; interpreter grounding regression; complete-period coverage; receipt lineage/hash/row count; bounds, duplicate keys and comparison arithmetic tests | Business-owned question benchmark passes agreed correctness/abstention thresholds across initial metric scope, fiscal calendars, joins, ratios, dimensions and access scopes |
 | R9 | Enterprise product quality, more than 95% coverage | Independent 96% Python line/branch and React line/branch/function/statement gates; retained real PostgreSQL and Ollama jobs | SSO, trusted tenant identity, private ingress, secrets, audit/retention, load/cost/SLO and recovery gates pass; browser accessibility acceptance and release approval recorded |
 
@@ -511,10 +529,13 @@ them through the approved secret and workload-identity workflow when the integra
 Cycle 1 is accepted through PRs #18 and #19. Cycle 2 is accepted through PR #20 on the user's
 revised placeholder boundary. Cycle 3 is delivered through [PR #21](https://github.com/yashumani/talk2data-conversational-intelligence/pull/21): versioned metric/dimension definition metadata,
 approval, publication and reproducibility using the separate CSV data connection. Its accepted
-main baseline is `8c328bd74ef52e89623679b3cc5e5de0f8d070ea`. The current increment is Cycle 4:
-the Claude adapter and bounded specialist orchestration, documented in
-[CLAUDE_ORCHESTRATION.md](CLAUDE_ORCHESTRATION.md). Record exact source checks, measured coverage,
-packaged acceptance and live-provider evidence on its PR. Cycle 5 has not started.
+main baseline is `8c328bd74ef52e89623679b3cc5e5de0f8d070ea`. Cycle 4 is implemented in
+[PR #22](https://github.com/yashumani/talk2data-conversational-intelligence/pull/22), with LA-1 still open.
+The current development increment is Cycle 5, documented in
+[DURABLE_CONVERSATIONS.md](DURABLE_CONVERSATIONS.md). It builds on Cycle 4 head
+`179ac4d185312d299d98c2229fdca28fffc4b9b6` as a dependent review branch, preserving that open gate.
+Record the exact tested commit, independent coverage, required CI and packaged restart evidence
+on the Cycle 5 PR. Cycle 6 is the next planned milestone and has not started.
 
 ### Open acceptance gate LA-1 — real Claude
 

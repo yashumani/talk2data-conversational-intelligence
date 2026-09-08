@@ -52,6 +52,6 @@ export function ChatPanel({ ready, busy, result, asOf, onDate, onAsk, interprete
           {result.answer?.caveats.map(caveat => <p className="small" key={caveat}>{caveat}</p>)}
         </>}
     </div>
-    <p className="small">Ask self-contained questions. This demonstration retains the latest result, not conversational memory.</p>
+    <p className="small">Ask self-contained questions with the metric, grouping and period you need. Saved history keeps each question's original meaning.</p>
   </section>;
 }

@@ -58,8 +58,24 @@ Saved CSV answers reuse their validated interpretation without another model cal
 
 See the [Claude configuration and orchestration runbook](docs/CLAUDE_ORCHESTRATION.md).
 Local contract validation is implemented; the real-provider acceptance gate **LA-1 remains
-open until the configured live benchmark passes**. Durable conversation/event synchronization
-is Cycle 5.
+open until the configured live benchmark passes**.
+
+### Durable conversations and synchronization — Cycle 5
+
+The React CSV workspace now saves conversation history, shows specialist progress, resumes
+interrupted event connections and supports cancellation. Idempotent requests prevent lost
+acknowledgments from creating duplicate runs. The separate internal API exposes the same run
+contract under signed identity and server-owned source bindings.
+
+The packaged CSV demonstration persists sources, definitions, completed answers and events
+across container restarts on its own volume. Unfinished work becomes explicitly interrupted
+and is never automatically queried again. Local Python configuration remains memory-only
+unless a state database path is supplied. Keep one API worker per database.
+
+See [durable conversations and restart acceptance](docs/DURABLE_CONVERSATIONS.md) for the
+architecture, API, recovery rules and storage limits. This milestone proceeds at the user's
+request while LA-1 remains open. Production distributed storage/workers, recovery operations,
+private activation and enterprise release acceptance remain outstanding.
 
 ### Existing application
 
@@ -298,7 +314,9 @@ A separate GitHub Actions workflow starts a real PostgreSQL service and runs the
 chat and receipt path. The full Docker/Ollama pipeline is also smoke-tested on GitHub-hosted runners.
 The canonical [product plan](docs/PRODUCT_ORCHESTRATION_PLAN.md#13-verification-and-benchmark-strategy)
 maps the original requirements to tests and enterprise release criteria. Passing coverage
-does not prove real Claude/GCP acceptance, production semantic approval, durable runs or enterprise readiness.
+does not prove real Claude/GCP acceptance, production semantic approval or enterprise readiness.
+Durable runs additionally require the transactional, scope/replay and actual restart acceptance
+checks described in the Cycle 5 runbook.
 
 ## Documentation
 
