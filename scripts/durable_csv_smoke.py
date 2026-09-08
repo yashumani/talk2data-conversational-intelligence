@@ -13,9 +13,10 @@ import json
 import os
 import time
 from collections import defaultdict
+from http.client import HTTPException
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
@@ -70,7 +71,7 @@ class Acceptance:
             try:
                 self.request("/health/ready")
                 return
-            except (URLError, TimeoutError, RuntimeError):
+            except (HTTPException, OSError, RuntimeError):
                 time.sleep(0.25)
         raise RuntimeError("The API did not become ready after restart.")
 
