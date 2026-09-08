@@ -1,8 +1,8 @@
 # Repository activation and final verification guide
 
-Reviewed on 2026-09-08 against development candidate
-`5605393130f0ae294548801bf3d0de6df276cc48` on
-`feat/cycle-6-operations-readiness` before this documentation-only addition.
+Reviewed on 2026-09-08 against BigQuery-first redesign candidate
+`9cead56216812b6a8b2ef23a3d733a8330a9b012` on
+`feat/cycle-6-operations-readiness`.
 
 This is the single activation runbook for the repository. It does not treat implemented code,
 passing synthetic tests, a configured cloud resource or an approved production release as the
@@ -40,7 +40,7 @@ accept a caller-selected source or a CSV fingerprint.
 
 ## Repository-wide scan performed
 
-The review enumerated all **315 published files**, including hidden repository configuration.
+The review enumerated all **328 published files**, including hidden repository configuration.
 Every file was included in automated readability/format parsing or a subsystem-specific check;
 production paths also received static analysis, type checking, tests or targeted trust-boundary
 inspection. This is broader than sampling files, but it is not a claim that automated tools can
@@ -48,13 +48,13 @@ prove every business definition or cloud policy correct.
 
 | Area | Review performed | Result |
 | --- | --- | --- |
-| All 315 files | UTF-8, NUL, maximum-size, trailing-whitespace and symlink scan | Passed; no issue found |
+| All 328 files | UTF-8, NUL, maximum-size, trailing-whitespace and symlink scan | Passed; no issue found |
 | Structured files | All JSON, YAML and TOML parsed | Passed |
 | Documentation | Local Markdown link targets checked | Passed; no broken local target |
-| Python | Ruff, formatting, strict mypy over 109 source files, compile-all | Passed |
-| Python tests without PostgreSQL | 810 collected; 783 passed, 27 skipped | All runnable tests passed |
-| Python local coverage without PostgreSQL | 93.81% combined | Expectedly below 96%; shared-state tests were unavailable locally |
-| Python CI with PostgreSQL 16 | 804 passed, 6 opt-in live checks skipped; 99.17% lines and 97.02% branches | Passed on reviewed source |
+| Python | Ruff, formatting, strict mypy over 116 source files, compile-all | Passed |
+| Python tests without PostgreSQL | 834 collected; 807 passed, 27 skipped | All runnable tests passed |
+| Python local coverage without PostgreSQL | 92.89% combined | Expectedly below 96%; shared-state tests were unavailable locally |
+| Python CI with PostgreSQL 16 | 828 passed, 6 opt-in live checks skipped; 98.46% combined coverage | Passed on exact reviewed source across Python 3.11/3.12/3.13 |
 | React | 99 tests, TypeScript, CSV build and internal build | Passed |
 | React coverage | 100% statements/lines/functions; 98.42% branches | Passed |
 | Node dependencies | `npm audit --audit-level=high` | No vulnerability reported |
