@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "apps/web/**"
+      - "src/talk2data/operations/**"
       - ".github/workflows/web-ci.yml"
   push:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "src/talk2data/operations/**"
       - ".github/workflows/web-ci.yml"
 
 permissions:

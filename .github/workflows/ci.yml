@@ -29,9 +29,23 @@ jobs:
       - run: mypy src
       - run: pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=96
       - run: python scripts/check_coverage.py
+      - name: Verify incomplete evidence blocks a production release
+        run: |
+          if python -m talk2data.operations.release \
+            --candidate examples/release/candidate.example.json \
+            --manifest examples/release/evidence.example.json \
+            --evidence-directory examples/release >release-readiness-report.json; then
+            echo "The empty example evidence must never authorize a release."
+            exit 1
+          else
+            test "$?" -eq 1
+          fi
+          python -c 'import json; r=json.load(open("release-readiness-report.json")); assert r["status"] == "BLOCKED" and not r["deployment_authorized"]'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: python-coverage-${{ matrix.python-version }}
-          path: coverage.json
+          path: |
+            coverage.json
+            release-readiness-report.json
           if-no-files-found: error

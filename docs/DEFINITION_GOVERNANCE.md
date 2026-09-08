@@ -134,7 +134,10 @@ are in memory and lost on restart; use that only for ephemeral validation. A per
 restores approved publications without overwriting them
 with the bootstrap file. If the bootstrap contract changes, startup rejects it and requires an
 approved migration; do not delete history as a workaround. Production backup, migration,
-retention and recovery validation are required in Cycle 6.
+retention and recovery validation are required in Cycle 6. Milestone 6.1 supplies an offline
+bundle tool for the current reference files, including a separate governance database when
+configured; see [the operational runbook](RELEASE_OPERATIONS.md). Restored publications must be
+reconciled with subsequent withdrawals before private ingress is reopened.
 
 Use one instance/worker for this increment's runtime query ownership. The SQLite store exercises
 real concurrent-writer revision protection. Cycle 5 adds a durable conversation/event journal

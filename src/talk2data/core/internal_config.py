@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.claude_config import ClaudeConfiguration
+from talk2data.operations.http import HttpOperations
 
 
 class IdentitySettings(BaseModel):
@@ -64,6 +65,7 @@ class InternalRuntimeConfig(BaseModel):
     governance_database_path: Path | None = None
     state_database_path: Path | None = None
     claude: ClaudeConfiguration = Field(default_factory=ClaudeConfiguration)
+    http_operations: HttpOperations = Field(default_factory=HttpOperations)
 
     @field_validator("governance_database_path", "state_database_path")
     @classmethod

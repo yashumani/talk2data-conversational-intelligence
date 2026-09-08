@@ -24,6 +24,7 @@ from talk2data.internal.definitions import router as definitions_router
 from talk2data.internal.routes import router
 from talk2data.internal.runs import router as runs_router
 from talk2data.internal.runtime import InternalQueryRuntime
+from talk2data.operations.http import OperationalHttp
 from talk2data.services.bigquery_port import BigQueryTransport
 from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
 from talk2data.services.claude_interpreter import ClaudeRuntime
@@ -165,4 +166,5 @@ def create_internal_app(
     install_definition_errors(app)
     install_agent_errors(app)
     install_run_errors(app)
+    app.add_middleware(OperationalHttp, settings=resolved.http_operations)
     return app

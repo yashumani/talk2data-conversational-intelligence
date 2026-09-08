@@ -4,7 +4,8 @@ Updated: 2026-09-08. This milestone implements persisted conversation/run record
 progress events, safe retries, cancellation, restart recovery, and the React CSV conversation
 experience. It builds on Cycle 4's bounded specialists. The user's request to proceed authorizes
 this development while **LA-1 remains open**; it does not waive or pass real Claude acceptance.
-GCP/SSO activation remains separately deferred under DG-1. Cycle 6 has not started.
+GCP/SSO activation remains separately deferred under DG-1. Cycle 6.1 now adds the operational
+recovery and release evidence controls described in [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md).
 
 ## Delivered behavior and operating boundary
 
@@ -251,7 +252,8 @@ The internal Compose example deliberately leaves storage mounting to private con
 
 Storage has a schema version; an unsupported version fails startup without resetting history.
 Deployment migration must preserve the journal, definition snapshots and profile boundaries.
-No automatic destructive migration, backup system or external artifact bucket is introduced.
+Cycle 6.1 supplies verified offline backup/restore for this reference store; no automatic
+destructive migration, managed backup platform or external artifact bucket is introduced.
 The retained answer artifacts are structured results, citations, usage reports and receipts
 inside the run snapshot. They are not a production object-storage integration.
 
@@ -266,7 +268,8 @@ Expired CSV workspaces become inaccessible immediately when checked and are prun
 subsequent operations when inactive. Clear removes their live database records and application
 references. SQLite free pages, WAL files, storage snapshots and backups may retain bytes; this
 is not a secure-erasure guarantee. Internal history has explicit deletion and capacity limits,
-but no scheduled enterprise retention policy yet. Restarting cannot reset CSV session capacity
+and Cycle 6.1 adds offline retention preview/apply with audit, but no scheduled enterprise
+retention policy yet. Restarting cannot reset CSV session capacity
 or extend an old capability's expiry.
 
 ## Acceptance and remaining release gates

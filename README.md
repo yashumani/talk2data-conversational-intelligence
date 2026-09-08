@@ -77,6 +77,18 @@ architecture, API, recovery rules and storage limits. This milestone proceeds at
 request while LA-1 remains open. Production distributed storage/workers, recovery operations,
 private activation and enterprise release acceptance remain outstanding.
 
+### Enterprise release operations — Cycle 6.1
+
+The first milestone of Cycle 6 adds verified offline backup/restore, previewed internal retention
+with transactional audit, bounded internal HTTP requests and telemetry that omits request content.
+A release evidence checker rejects missing, stale, mismatched or unverified receipts; skipped
+Claude tests and deferred GCP connections cannot qualify as live acceptance.
+
+See [release operations and the remaining milestones](docs/RELEASE_OPERATIONS.md). The package
+acceptance restores a synthetic workspace into a separate database and verifies its original
+answers over HTTP. Cycle 6 remains in progress: production shared state, distributed workers,
+private deployment and final enterprise acceptance are not implemented or approved by this milestone.
+
 ### Existing application
 
 Public GitHub control center:
