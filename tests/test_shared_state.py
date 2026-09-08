@@ -337,10 +337,23 @@ async def test_worker_executes_once_replays_and_cancels_across_instances(databas
         calls.append(job.run.run_id)
         observer(AgentRunReport())
         await gate.wait()
-        return DemoChatResponse(status="OUT_OF_DOMAIN", message="No answer", session_id=uuid4(),
-            decision=QuestionDecision(tenant_id="demo-telecom", user_id="analyst", verdict="OUT_OF_DOMAIN",
-                recognized_intent="UNKNOWN", authorization_status="ALLOWED", data_status="NOT_REQUIRED",
-                user_message="No answer", next_action="Ask a business question", domain_pack_version="1", interpreter_mode="RULES"))
+        return DemoChatResponse(
+            status="OUT_OF_DOMAIN",
+            message="No answer",
+            session_id=uuid4(),
+            decision=QuestionDecision(
+                tenant_id="demo-telecom",
+                user_id="analyst",
+                verdict="OUT_OF_DOMAIN",
+                recognized_intent="UNKNOWN",
+                authorization_status="ALLOWED",
+                data_status="NOT_REQUIRED",
+                user_message="No answer",
+                next_action="Ask a business question",
+                domain_pack_version="1",
+                interpreter_mode="RULES",
+            ),
+        )
 
     worker = DistributedWorker(store, "binding", operation, authorize)
     owner, scope, run = submit(store)
