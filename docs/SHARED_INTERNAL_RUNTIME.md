@@ -1,5 +1,9 @@
 # Shared internal runtime: Cycle 6.2
 
+> Optional scale-out profile: this document applies only when multiple API/worker replicas and
+> shared PostgreSQL state are required. Direct BigQuery + SQLite and Parquet + SQLite do not need
+> Cloud Run or Cloud SQL; see `BIGQUERY_PARQUET_RUNTIME.md`.
+
 Updated 2026-09-08. The internal application now has an explicit PostgreSQL state adapter,
 independent API and worker processes, and a separately built React workspace. The CSV demo
 continues using its own SQLite store and capability sessions. Neither profile can select the

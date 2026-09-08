@@ -8,6 +8,8 @@ import pytest
 
 from talk2data.bootstrap import _is_sensitive_validation_location
 from talk2data.core.claude_config import ClaudeConfiguration
+from talk2data.core.internal_config import InternalRuntimeConfig
+from talk2data.core.parquet_config import ParquetSnapshotSettings
 from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 from talk2data.main import create_app
 from talk2data.services.secrets import EnvironmentSecretResolver
@@ -70,3 +72,21 @@ def test_private_deployment_injects_the_secret_consumed_by_the_claude_adapter(mo
         EnvironmentSecretResolver().resolve(configured_reference).get_secret_value()
         == "synthetic-deployment-secret"
     )
+
+
+def test_internal_analytics_modes_require_only_their_runtime_dependency(tmp_path):
+    from tests.internal_support import private_config
+
+    direct = private_config(tmp_path)
+    assert direct.analytics_mode == "bigquery" and direct.bigquery is not None
+    local = direct.model_copy(
+        update={
+            "analytics_mode": "parquet",
+            "bigquery": None,
+            "parquet": ParquetSnapshotSettings(directory=tmp_path / "snapshots"),
+        }
+    )
+    local = InternalRuntimeConfig.model_validate(local.model_dump(mode="python"))
+    assert local.bigquery is None and local.parquet is not None
+    with pytest.raises(ValueError, match="BigQuery settings"):
+        InternalRuntimeConfig.model_validate(direct.model_dump(mode="python") | {"bigquery": None})

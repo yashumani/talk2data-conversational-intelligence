@@ -1,19 +1,24 @@
 {
-  "analytics_mode": "bigquery",
+  "analytics_mode": "parquet",
   "bigquery": {
     "api_timeout_seconds": 10,
     "billing_project": "example-project",
     "location": "US",
-    "maximum_bytes_billed": 1000000,
+    "maximum_bytes_billed": 1000000000,
     "maximum_rows": 100,
-    "query_timeout_seconds": 60
+    "query_timeout_seconds": 120
   },
-  "parquet": null,
-  "bigquery_catalog_path": "/run/talk2data/catalog.json",
-  "domain_pack_directory": "/run/talk2data/domains",
-  "entitlements_path": "/run/talk2data/entitlements.json",
-  "governance_database_path": null,
-  "state_database_path": null,
+  "parquet": {
+    "directory": "/private/talk2data/snapshots",
+    "maximum_age_seconds": 86400,
+    "maximum_rows": 5000000,
+    "query_timeout_seconds": 30
+  },
+  "bigquery_catalog_path": "/private/talk2data/catalog.json",
+  "domain_pack_directory": "/private/talk2data/domains",
+  "entitlements_path": "/private/talk2data/entitlements.json",
+  "governance_database_path": "/private/talk2data/governance.db",
+  "state_database_path": "/private/talk2data/state.db",
   "identity": {
     "algorithm": "RS256",
     "audience": "talk2data-internal",

@@ -21,10 +21,12 @@ dependencies = [
 
 [project.optional-dependencies]
 internal = [
+  "duckdb>=1.4,<2",
   "google-cloud-bigquery>=3.44,<4",
   "PyJWT[crypto]>=2.13,<3",
 ]
 dev = [
+  "duckdb>=1.4,<2",
   "google-cloud-bigquery>=3.44,<4",
   "PyJWT[crypto]>=2.13,<3",
   "mypy>=1.14,<2",

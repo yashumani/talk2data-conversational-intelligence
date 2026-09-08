@@ -19,9 +19,10 @@ gate DG-1 is deferred, and production recovery, load, browser/accessibility, bus
 acceptance evidence has not been supplied.
 
 No source-code defect was found in this review. The remaining blockers are release integration,
-private configuration, live environment proof and accountable approval. Two operational details
-must not be missed: the enterprise image must be built from `Dockerfile.internal`, and the Cloud
-SQL schema and initial grants must be bootstrapped before the API and worker can become ready.
+private configuration, live environment proof and accountable approval. Cloud Run and Cloud SQL
+are not prerequisites for the enterprise analytical runtime; they are an optional scale-out
+profile. The minimal internal runtime uses direct BigQuery plus local SQLite, or an explicitly
+refreshed BigQuery-to-Parquet snapshot plus local SQLite. See `BIGQUERY_PARQUET_RUNTIME.md`.
 
 ## Activation profiles
 
@@ -29,7 +30,9 @@ SQL schema and initial grants must be bootstrapped before the API and worker can
 | --- | --- | --- | --- | --- |
 | CSV demonstration | Product demo and evaluation | Strict Mobile Activations CSV | Anonymous capability-scoped session | Runnable and locally reverified |
 | Public reference runtime | Existing synthetic/local reference APIs | SQLite or reference PostgreSQL | Request access context | Implemented; not the enterprise BigQuery deployment |
-| Private internal runtime | Enterprise product | Server-owned approved BigQuery mapping | Signed IAP JWT plus PostgreSQL entitlements | Implemented; private activation pending |
+| Private internal — direct | Small-team enterprise product | Approved BigQuery mapping | Organizational OIDC; file or PostgreSQL entitlements | Implemented; private activation pending |
+| Private internal — Parquet | Fast/read-mostly enterprise product | Hash-pinned snapshot from approved BigQuery view | Organizational OIDC; file or PostgreSQL entitlements | Implemented; private activation pending |
+| Private internal — managed | Multi-replica enterprise product | Direct BigQuery | Signed IAP JWT plus PostgreSQL entitlements | Optional Cloud Run/Cloud SQL profile; activation pending |
 
 Never combine the CSV Compose profile with the private internal deployment. CSV configuration,
 state and files do not select or initialize BigQuery. The internal request contract does not
@@ -216,29 +219,40 @@ For internal production, place this block in both private runtime files after LA
 Do not copy the fragment as a complete runtime file. Merge it into reviewed private copies of
 `shared-api.example.json` and `shared-worker.example.json`.
 
-## Phase 4 — prepare the enterprise inputs
+## Phase 4 — choose the smallest enterprise profile
 
-Obtain named owners for platform, networking, identity, security, BigQuery data, business
+Choose direct BigQuery + SQLite when users need fresh warehouse answers and one approved host is
+sufficient. Choose Parquet + SQLite when refresh can be scheduled or run manually and local query
+speed/cost is more important than live freshness. These profiles require no Cloud Run, VPC or
+Cloud SQL provisioning. Follow `BIGQUERY_PARQUET_RUNTIME.md`.
+
+Choose the managed scale-out profile only for multiple API/worker replicas, centralized grants
+and definitions, distributed job fencing, managed ingress and managed database recovery. Phases
+5–9 below apply only to that profile; they are not required merely to authorize BigQuery.
+
+## Phase 4A — prepare the enterprise inputs
+
+Obtain named owners for identity, security, BigQuery data, business
 definitions, operations and product acceptance. Record these approved values before provisioning:
 
-- GCP project ID/number, region and billing account;
-- existing VPC network and subnet IDs, private services access range and egress/NAT policy;
-- Artifact Registry repository;
-- approved GCS Terraform backend and state access policy;
-- IAP audience and explicit organizational users/groups;
+- organizational OIDC audience and permitted users/groups;
 - approved BigQuery billing project, location, authorized view and dependencies;
-- API and worker workload principals and least-privilege BigQuery grants;
-- Cloud SQL database administrator and non-admin runtime database role;
+- a least-privilege BigQuery principal for direct runtime and/or snapshot refresh;
 - Claude secret, approved model and egress policy;
 - business-owned domain packs, catalog mapping and entitlement bootstrap;
 - latency, concurrency, availability, cost, retention, RPO and RTO targets.
+
+For the optional managed profile, additionally obtain platform/networking owners, project and
+region, VPC/subnet/egress policy, Artifact Registry, Terraform backend, IAP audience, workload
+principals, and Cloud SQL administrator/runtime roles.
 
 Create private files outside the repository:
 
 | File | Required content |
 | --- | --- |
-| API `runtime.json` | `process_role: api`, signed IAP settings, `/app/internal-web`, BigQuery limits, shared state and exact deployment revision |
-| Worker `runtime.json` | Same trusted contracts, `process_role: worker`, `web_directory: null` |
+| Local `runtime.json` | `analytics_mode: bigquery` or `parquet`, organizational OIDC, local SQLite paths and no `shared_state` |
+| Managed API `runtime.json` | `process_role: api`, signed IAP settings, `/app/internal-web`, BigQuery limits, shared state and exact deployment revision |
+| Managed worker `runtime.json` | Same trusted contracts, `process_role: worker`, `web_directory: null` |
 | `domains/*.yaml` | Approved effective metric and dimension definitions |
 | `catalog.json` | Exact approved `project.dataset.view`, allowed dependencies and physical columns |
 | `entitlements.json` | Exact IAP subject-to-tenant/action/row/classification grants |
@@ -256,7 +270,7 @@ Validate these invariants before upload:
 - example projects, identities, results and zero digests have all been replaced;
 - private files and secrets are never committed or included in public artifacts.
 
-## Phase 5 — prepare GCP
+## Phase 5 — prepare optional managed GCP infrastructure
 
 Authenticate an approved operator and set explicit working variables. Do not put secret values in
 shell variables or command history.
@@ -477,7 +491,7 @@ merges code, grants cloud authority or moves production traffic.
 | --- | --- | --- |
 | PRs #22–#24 are draft and stacked | Final cycles are not on `main` | Review, retarget and merge in order |
 | LA-1 live job is skipped | Claude is not provider-accepted | Configure and pass the nine-case live gate |
-| DG-1 is deferred | BigQuery, IAP and GCP are not live-proven | Complete private deployment and restricted-principal acceptance |
+| DG-1 is deferred | BigQuery and organizational identity are not live-proven; managed GCP is also unproven if selected | Complete restricted-principal acceptance for the selected profile |
 | Internal image has no publication workflow | Public image workflow is the wrong artifact for Terraform | Add a protected pipeline or perform a controlled `Dockerfile.internal` build/push |
 | SQL migration/grant bootstrap is outside Terraform | First application revision cannot initialize an empty database | Use the documented staged bootstrap before full rollout |
 | Repository is public | Private contracts or evidence would be exposed if committed | Keep private material in Secret Manager/protected evidence storage |
@@ -501,8 +515,8 @@ The repository is fully active only when every box below is true for one exact c
 - [ ] LA-1 passes the real Claude nine-case benchmark.
 - [ ] The internal image is built from `Dockerfile.internal`, scanned, pushed and pinned by digest.
 - [ ] Private runtime, domain, catalog, entitlements and secrets are reviewed and pinned by version.
-- [ ] Cloud SQL schema and grants are bootstrapped; API and workers share healthy fenced state.
-- [ ] BigQuery/IAP/GCP gate DG-1 passes with real least-privilege identities and denial probes.
+- [ ] Selected state mode passes restart/recovery: local SQLite for one process, or Cloud SQL for managed scale-out.
+- [ ] BigQuery/OIDC gate DG-1 passes with real least-privilege identities and denial probes; IAP/GCP infrastructure evidence is required only for the managed profile.
 - [ ] Load/cost/SLO, failover, backup/restore, retention and RPO/RTO evidence is accepted.
 - [ ] Browser, mobile, keyboard, screen-reader and supported-device acceptance passes.
 - [ ] Business owners approve definitions and benchmark answers.

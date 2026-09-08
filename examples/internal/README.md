@@ -6,6 +6,7 @@ activation and validation are deferred to DG-1 in the product plan.
 | Template | Fill in privately before activation |
 | --- | --- |
 | `runtime.example.json` | Approved billing project, BigQuery location, byte limits, IdP trust and private file paths |
+| `runtime.parquet.example.json` | Optional BigQuery-to-Parquet refresh plus local fast-query profile; no Cloud Run or Cloud SQL required |
 | `catalog.example.json` | Approved views/dependencies and metric/dimension physical bindings |
 | `entitlements.example.json` | Verified subjects and server-owned tenant, action, row and classification permissions |
 | `domain.synthetic.yaml` | Business-owned metric and dimension definitions; supplied data is synthetic only |
@@ -25,3 +26,7 @@ to retain conversations/results/events across restarts. Definitions use the expl
 path, otherwise the state path. Both unset means memory only. Keep one worker per local file;
 see `docs/DURABLE_CONVERSATIONS.md` and `docs/DEFINITION_GOVERNANCE.md`. CSV persistence uses
 its own separate configuration and is unaffected by these private store settings.
+
+Cloud Run and Cloud SQL are optional scale-out services, not activation prerequisites. See
+`docs/BIGQUERY_PARQUET_RUNTIME.md` for direct BigQuery + SQLite and materialized Parquet + SQLite
+profiles that can run on an approved workstation or existing internal host.

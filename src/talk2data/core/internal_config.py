@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.claude_config import ClaudeConfiguration
+from talk2data.core.parquet_config import ParquetSnapshotSettings
 from talk2data.core.state_config import SharedStateSettings
 from talk2data.operations.http import HttpOperations
 
@@ -58,7 +59,9 @@ class IdentitySettings(BaseModel):
 class InternalRuntimeConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     identity: IdentitySettings
-    bigquery: BigQuerySettings
+    analytics_mode: Literal["bigquery", "parquet"] = "bigquery"
+    bigquery: BigQuerySettings | None = None
+    parquet: ParquetSnapshotSettings | None = None
     entitlements_path: Path
     domain_pack_directory: Path
     bigquery_catalog_path: Path
@@ -74,6 +77,10 @@ class InternalRuntimeConfig(BaseModel):
 
     @model_validator(mode="after")
     def isolated_state(self) -> Self:
+        if self.analytics_mode == "bigquery" and self.bigquery is None:
+            raise ValueError("Direct BigQuery mode requires BigQuery settings.")
+        if self.analytics_mode == "parquet" and self.parquet is None:
+            raise ValueError("Parquet mode requires private snapshot settings.")
         if self.shared_state is not None and self.deployment_revision is None:
             raise ValueError("Shared execution requires an explicit reviewed deployment revision.")
         if self.shared_state is not None and (

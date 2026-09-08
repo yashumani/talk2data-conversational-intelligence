@@ -347,13 +347,14 @@ release operations; idempotency does not claim exactly-once execution under arbi
 CopilotKit may be integrated at the UI adapter layer after these contracts are stable. It must
 not become the owner of authorization, business definitions, or warehouse credentials.
 
-## 10. GCP deployment and security design
+## 10. Optional managed GCP deployment and security design
 
-Use separate demo and internal deployment identities, configuration, ingress policies, and
-data stores. For the internal product, begin with Cloud Run for API/orchestration services,
-Cloud SQL PostgreSQL for application state and semantic governance, approved object storage
-for retained artifacts, and an event/job mechanism appropriate to durable execution.
-Choose regional placement and connectivity with the organization's platform team.
+Use separate demo and internal identities, configuration, ingress policies, and data stores.
+Direct BigQuery + SQLite and Parquet + SQLite are the minimal internal profiles and require no
+Cloud Run or Cloud SQL. When multi-replica scale-out is justified, add Cloud Run for
+API/orchestration services, Cloud SQL PostgreSQL for application state and semantic governance,
+approved object storage for retained artifacts, and an event/job mechanism appropriate to
+durable execution. Choose regional placement and connectivity with the platform team.
 
 Production gates:
 

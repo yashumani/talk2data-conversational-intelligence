@@ -1,4 +1,4 @@
-# Reference deployment. No identifiers or credentials are inferred from CSV or application code.
+# Optional managed scale-out deployment. BigQuery and Parquet profiles do not require this root.
 resource "google_compute_global_address" "state_range" {
   name          = "${var.name}-state-range"
   purpose       = "VPC_PEERING"
@@ -88,7 +88,7 @@ resource "google_cloud_run_v2_service" "runtime" {
     max_instance_request_concurrency = 16
     timeout                          = "300s"
     scaling {
-      min_instance_count = 1
+      min_instance_count = var.minimum_instance_count
       max_instance_count = each.key == "api" ? var.api_max_instances : var.worker_max_instances
     }
     vpc_access {

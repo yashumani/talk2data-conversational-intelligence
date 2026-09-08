@@ -1,5 +1,10 @@
 # Cycle 2: trusted identity and internal BigQuery
 
+Cloud Run and Cloud SQL are optional. The governed BigQuery connector can run on an approved
+workstation or existing internal host with local SQLite state. For read-mostly operation, the
+separate materialization command can create a hash-pinned Parquet snapshot and the API can query
+it without BigQuery credentials at runtime. See `BIGQUERY_PARQUET_RUNTIME.md`.
+
 Status: **Cycle 2 complete on the user-approved placeholder boundary.** Live GCP/SSO activation
 and acceptance are deferred to release gate DG-1; they have not passed. The
 accepted Cycle 1 baseline is `ba198541dc14821dc497217e97cf67db20234d5c` (PRs #18 and #19).

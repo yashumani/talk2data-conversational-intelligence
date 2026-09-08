@@ -14,6 +14,9 @@ cycle status and remaining live acceptance inputs. The [final review](docs/FINAL
 records corrections, verification and the boundaries of the handoff.
 Use the [repository activation guide](docs/REPOSITORY_ACTIVATION_GUIDE.md) for the complete
 merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release procedure.
+For a BigQuery-first deployment that does not require Cloud Run or Cloud SQL, including the
+optional governed Parquet acceleration path, see the
+[BigQuery/Parquet runtime guide](docs/BIGQUERY_PARQUET_RUNTIME.md).
 
 ### New modular CSV workspace
 
@@ -35,12 +38,16 @@ See the [CSV workspace runbook](docs/CSV_WORKSPACE.md) and the
 The CSV increment supports a strict Mobile Activations template. Use only synthetic or
 explicitly approved demonstration data.
 
-### Internal identity and BigQuery — Cycle 2
+### Internal identity, BigQuery and optional Parquet — Cycle 2
 
 The separate private API now implements signed identity verification, server-owned tenant and
 data permissions, approved BigQuery mappings, parameterized read-only queries, cost limits,
 cancellation and cloud job receipts. It has its own container and configuration; CSV remains
 independent. See the [internal BigQuery runbook](docs/INTERNAL_BIGQUERY.md).
+Direct BigQuery can use local SQLite application state. An explicit operator command can also
+materialize approved read-only results into hash-pinned Parquet for fast local queries; this mode
+does not initialize BigQuery at API runtime. Cloud Run and Cloud SQL remain optional scale-out
+components.
 
 Cycle 2 is complete on the approved connection-placeholder boundary. GCP/SSO activation and
 live acceptance are deferred; CSV imports are the working optional data connection. See the

@@ -53,3 +53,12 @@ variable "worker_max_instances" {
   type    = number
   default = 4
 }
+variable "minimum_instance_count" {
+  type        = number
+  default     = 0
+  description = "Optional warm instances; zero permits Cloud Run to scale down when idle."
+  validation {
+    condition     = var.minimum_instance_count >= 0 && var.minimum_instance_count <= 1
+    error_message = "Use zero for scale-to-zero or one only when an approved SLA requires warmth."
+  }
+}

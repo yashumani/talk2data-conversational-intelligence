@@ -15,6 +15,7 @@ from talk2data.api.definition_errors import install_definition_errors
 from talk2data.api.run_routes import install_run_errors
 from talk2data.api.web_assets import install_web_assets
 from talk2data.connectors.bigquery import BigQueryConnector
+from talk2data.connectors.parquet_snapshot import ParquetSnapshotConnector
 from talk2data.connectors.registry import ConnectorRegistry
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.internal_config import InternalRuntimeConfig, InternalSettings
@@ -62,8 +63,8 @@ def create_internal_app(
         database.check()
     run_store = PostgresRunStore(database) if database is not None else RunStore(resolved.state_database_path)
     registries: dict[str, ConnectorRegistry] = {}
-    connectors = []
-    transports = []
+    connectors: list[BigQueryConnector | ParquetSnapshotConnector] = []
+    transports: list[BigQueryTransport] = []
     # Validate every configuration binding before creating any ADC-backed cloud clients.
     for mapping in catalog.mappings:
         mapping.validate_domain(domains.get(mapping.tenant_id))
@@ -79,9 +80,18 @@ def create_internal_app(
         if available != mapped:
             raise ValueError("Every available internal metric requires an exact approved BigQuery binding.")
     for mapping in catalog.mappings:
-        transport = transport_factory(resolved.bigquery)
-        transports.append(transport)
-        connector = BigQueryConnector(mapping, resolved.bigquery, transport)
+        if resolved.analytics_mode == "bigquery":
+            if resolved.bigquery is None:  # Protected by configuration validation.
+                raise ValueError("Direct BigQuery mode requires BigQuery settings.")
+            transport = transport_factory(resolved.bigquery)
+            transports.append(transport)
+            connector: BigQueryConnector | ParquetSnapshotConnector = BigQueryConnector(
+                mapping, resolved.bigquery, transport
+            )
+        else:
+            if resolved.parquet is None:  # Protected by configuration validation.
+                raise ValueError("Parquet mode requires snapshot settings.")
+            connector = ParquetSnapshotConnector(mapping, resolved.parquet)
         connectors.append(connector)
         registries.setdefault(mapping.tenant_id, ConnectorRegistry()).register(connector)
     entitlements: Entitlements = (
@@ -105,7 +115,9 @@ def create_internal_app(
         digest(
             {
                 "catalog": catalog.model_dump(mode="json"),
-                "bigquery": resolved.bigquery.model_dump(mode="json"),
+                "analytics_mode": resolved.analytics_mode,
+                "bigquery": resolved.bigquery.model_dump(mode="json") if resolved.bigquery else None,
+                "parquet": resolved.parquet.model_dump(mode="json") if resolved.parquet else None,
                 "language": resolved.claude.model_dump(mode="json"),
                 "identity": resolved.identity.model_dump(mode="json"),
                 "deployment_revision": resolved.deployment_revision,
