@@ -28,7 +28,11 @@ and passed. Cycle 5 implements durable conversations, ordered run events, reconn
 idempotency and cancellation. The user requested this next development milestone while LA-1
 remained open; this does not waive live acceptance or merge the unaccepted provider milestone.
 See [durable conversations and operating limits](DURABLE_CONVERSATIONS.md).
-The current increment is not an enterprise production release.
+The user has now authorized combining the remaining Cycle 5/6 items into one completion effort.
+Cycle 6 adds shared PostgreSQL state/governance/grants, fenced independent workers, a signed
+internal workspace, private infrastructure and trusted review provenance. See
+[PROJECT_COMPLETION.md](PROJECT_COMPLETION.md) for the fixed development stopping point and
+open environment-owned acceptance gates. The current candidate is not an enterprise production release.
 
 No existing repository is archived, renamed, merged wholesale, or made private by this work.
 No existing UI redesign PR is overwritten. The repository is public: only generic code and
@@ -47,10 +51,10 @@ private location before integration.
 | CSV upload | Bounded UTF-8 template, isolated sessions, source hash, replace/clear/state endpoints; optional durable file with fixed expiry | Governed mapping wizard for additional schemas and metric families |
 | Business definitions | Metric/dimension metadata, named owners, draft/review/approval, atomic snapshots/events, effective dates, revocation and citations; CSV review UI | Business-owned production contracts and benchmark approval; governed formula/mapping migrations; search index adapter if needed |
 | Question-to-answer logic | Reuses admissibility, Business Query IR, deterministic execution, result checks, and receipt-backed composition | Wider question benchmark, fiscal-calendar correctness, ratio/time-grain coverage |
-| Frontend/backend synchronization | Persisted conversations/runs, ordered SSE, source/definition binding, idempotency, cancellation, reconnect and saved results; React CSV UI | Production distributed workers/state, authenticated internal UI and cross-device experience |
+| Frontend/backend synchronization | Persisted conversations/runs, ordered SSE, source/definition binding, idempotency, cancellation, reconnect and saved results; React CSV UI | Shared PostgreSQL state/workers and signed internal UI are implemented in Cycle 6; live SSO acceptance remains |
 | Claude API | Opt-in adapter, strict schema, approved definition projection, model/secret config, token/deadline limits, sanitized failures; CSV rows/results excluded | Real-provider acceptance LA-1 and approved internal egress; wider business-owned evaluation |
-| Multiple agents | Five ordered specialist roles, fixed tools, cancellation and usage limits; Claude assists semantic resolution; Cycle 5 journals progress and terminal results | Approved context retrieval when connected; production distributed job ownership |
-| Enterprise operation | Signed identity and server-owned grants; separate container; Cycle 6.1 offline backup/restore, controlled retention/audit, request limits, safe telemetry and release evidence checks | Production shared state/jobs, private deployment, live SSO/IAM/ingress, protected promotion, load/cost/SLO and owner acceptance |
+| Multiple agents | Five ordered specialist roles, fixed tools, cancellation and usage limits; Claude assists semantic resolution; Cycle 5 journals progress and terminal results | Distributed job ownership is implemented in Cycle 6; approved context retrieval remains connection-dependent |
+| Enterprise operation | Signed identity and server-owned grants; separate container; Cycle 6.1 offline backup/restore, controlled retention/audit, request limits, safe telemetry and release evidence checks | Shared state/jobs, internal UI, private IaC and review provenance implemented; live SSO/IAM/ingress, production rollout, load/cost/SLO and owner acceptance remain |
 
 The accepted baseline has working synthetic SQLite and PostgreSQL reference adapters.
 Cycle 2 adds a BigQuery implementation with recording-port and official-SDK contract tests.
@@ -337,8 +341,8 @@ Cycle 5 implements the shared run protocol in separate CSV and internal profiles
 
 The detailed contract, failure behavior and storage bounds are in
 [the Cycle 5 runbook](DURABLE_CONVERSATIONS.md). The reference store is a single-worker SQLite
-implementation. Production Cloud SQL state, distributed job ownership and release operations
-remain Cycle 6 work; idempotency does not claim exactly-once execution under arbitrary cloud failure.
+implementation. Cycle 6 adds the separate shared PostgreSQL profile, distributed ownership and
+release operations; idempotency does not claim exactly-once execution under arbitrary cloud failure.
 
 CopilotKit may be integrated at the UI adapter layer after these contracts are stable. It must
 not become the owner of authorization, business definitions, or warehouse credentials.
@@ -404,14 +408,15 @@ approved storage boundary while the canonical repository is public.
 | 3. Live semantic governance — complete in PR #21 | Metric/dimension metadata, draft/review/approve lifecycle, effective snapshots, atomic publication events, fresh request resolution, definition UI | New queries use active publications; CSV historical runs reproduce with pinned data/definitions; conflicts and revocation fail closed; 96% quality gates and packaged acceptance | Synthetic CSV proves mechanics; business owners approve production contracts before activation |
 | 4. Claude and bounded orchestration — implemented, LA-1 open | Isolated provider adapter, five fixed specialist roles, execution budgets, injection controls, UI reports and saved interpretation replay | Contract/quality/package checks pass; all nine synthetic live-acceptance cases must pass with an actual approved Claude model | Configure provider secret, approved model and synthetic-egress approval; LA-1 is not deferred |
 | 5. Durable conversations and sync — implemented in the reference profile | Persisted conversations/results/receipts, transactional run/event journal, SSE replay, idempotency, cancellation and React history; CopilotKit remains optional | Scope/source/version isolation, duplicate suppression, interrupted-state recovery, >95% coverage and real packaged API restart checks | Builds on PR #22 without waiving LA-1; one worker per explicit local state database |
-| 6. Enterprise release — in progress, milestone 6.1 | Operational recovery/readiness first; production state/jobs/infrastructure next; final activation/approval last | Named security/data/platform/product owners sign off; live SLO, RPO/RTO, cost, identity and release gates pass | Prior implementation retained; LA-1 remains open and DG-1 deferred; no automatic merge or deployment |
+| 6. Enterprise release — consolidated candidate | Reference recovery, shared state/jobs, signed internal UI, private infrastructure and trusted release review | Named security/data/platform/product owners sign off; live SLO, RPO/RTO, cost, identity and release gates pass | Prior implementation retained; LA-1 remains open and DG-1 deferred; no automatic merge or deployment |
 
-These six milestones are the six delivery cycles. Execute one milestone at a time. The user explicitly revised Cycle 2 to
+These six milestones are the six delivery cycles. The user initially requested one milestone at
+a time and has now authorized combining the outstanding Cycle 5/6 completion items. Cycle 2 was revised to
 accept connection placeholders and defer real cloud validation; this authorizes Cycle 3 using
 CSV imports. The user later requested Cycle 5 development while Cycle 4's real-provider LA-1
 was open. That authorizes this development sequence but does not close or defer LA-1; the
-dependent implementation remains reviewable without an automatic merge. Cycle 6 now starts with
-milestone 6.1 under the user's one-milestone-at-a-time instruction. Its sub-milestones are below;
+dependent implementation remains reviewable without an automatic merge. The combined completion
+boundary is documented in PROJECT_COMPLETION.md. Its sub-milestones are below;
 no production requirement is waived or moved out of the sixth cycle.
 The cycles are a scope plan, not a promise of six
 fixed-duration sessions: access to GCP, identity, business owners and the approved Claude
@@ -423,8 +428,8 @@ evidence that backend permissions or metric correctness are ready.
 | Sub-milestone | Work | Completion boundary |
 | --- | --- | --- |
 | 6.1 Operational recovery and release readiness | Verified offline backup/restore, exact-state retention preview/apply/audit, internal HTTP bounds and content-free telemetry, candidate-bound evidence files | Implemented in the current increment; >95% coverage, existing regressions and actual packaged restore acceptance must pass |
-| 6.2 Production state, jobs and infrastructure | Cloud SQL/PostgreSQL application-state and governance adapters, distributed worker ownership/fencing/cancellation, private infrastructure, authenticated internal UI | Not implemented; retain the reference profile's single-worker restriction |
-| 6.3 Enterprise acceptance and promotion | Trusted evidence provenance, authorized reviewers, private rollout, live Claude/GCP/SSO, browser/accessibility, business benchmark, load/cost/SLO, retention/backup policy and disaster recovery | Open; explicit release/deployment approval requires the reviewed complete evidence |
+| 6.2 Production state, jobs and infrastructure | Cloud SQL/PostgreSQL application-state and governance adapters, distributed worker ownership/fencing/cancellation, private infrastructure, authenticated internal UI | Implemented with actual PostgreSQL acceptance and private infrastructure validation; live activation pending |
+| 6.3 Enterprise acceptance and promotion | Trusted evidence provenance, authorized reviewers, private rollout, live Claude/GCP/SSO, browser/accessibility, business benchmark, load/cost/SLO, retention/backup policy and disaster recovery | Evidence and authenticated review tooling implemented; actual live/owner acceptance and private rollout remain open |
 
 The detailed procedures and limits are in [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md).
 An evidence evaluator result never automatically deploys or substitutes for actual live checks.
@@ -511,7 +516,7 @@ that does not support an agreed row belongs in a separate proposal, not this rel
 | R6 | Multiple agents working together | Agent and durable workflow tests: five fixed roles, order, deadlines, persisted usage/stages/terminal states, cancellation, verified composition and saved replay | Production job ownership and recovery; retain scope/source boundaries; causal claims require connected evidence |
 | R7 | Frontend/backend data sync and context | Durable store/internal/CSV/SSE tests, React run/flow tests and real HTTP restart check: idempotency, lost acknowledgment, sequence replay, source/scope isolation, cancellation and interrupted recovery | The same contracts pass on production storage/workers with signed internal UI, load/recovery and browser acceptance |
 | R8 | Validated answers aligned to business meaning | Known-sum CSV checks; interpreter grounding regression; complete-period coverage; receipt lineage/hash/row count; bounds, duplicate keys and comparison arithmetic tests | Business-owned question benchmark passes agreed correctness/abstention thresholds across initial metric scope, fiscal calendars, joins, ratios, dimensions and access scopes |
-| R9 | Enterprise product quality, more than 95% coverage | Independent 96% coverage gates; PostgreSQL/Ollama regressions; Cycle 6.1 recovery, retention rollback, HTTP privacy/limits and verified receipt-file tests; real packaged restore check | Production state/jobs, SSO/ingress/secrets, provenance/approval, live recovery/load/cost/SLO, retention policy and browser acceptance pass |
+| R9 | Enterprise product quality, more than 95% coverage | Independent 96% coverage gates; PostgreSQL/Ollama regressions; Cycle 6.1 recovery, retention rollback, HTTP privacy/limits and verified receipt-file tests; real packaged restore check | Shared state/jobs and provenance tooling implemented; real SSO/ingress/secrets, approvals, live recovery/load/cost/SLO, retention policy and browser acceptance must pass |
 
 ### Completion and stopping rules
 
@@ -544,14 +549,15 @@ revised placeholder boundary. Cycle 3 is delivered through [PR #21](https://gith
 approval, publication and reproducibility using the separate CSV data connection. Its accepted
 main baseline is `8c328bd74ef52e89623679b3cc5e5de0f8d070ea`. Cycle 4 is implemented in
 [PR #22](https://github.com/yashumani/talk2data-conversational-intelligence/pull/22), with LA-1 still open.
-The current development increment is Cycle 5, documented in
-[DURABLE_CONVERSATIONS.md](DURABLE_CONVERSATIONS.md). It builds on Cycle 4 head
-`179ac4d185312d299d98c2229fdca28fffc4b9b6` as a dependent review branch, preserving that open gate.
-Record the exact tested commit, independent coverage, required CI and packaged restart evidence
-on the Cycle 5 PR. Cycle 6 is now in progress, with operational recovery/readiness milestone 6.1
-documented in [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md). Its dependent review builds on
-Cycle 5 commit `6a89559e601d2e4b6cfcbced8e041765b0d0d274`. Stop after the 6.1 acceptance gates
-and review handoff; 6.2 and 6.3 remain explicitly unfinished.
+Cycle 5 is implemented and tested in [PR #23](https://github.com/yashumani/talk2data-conversational-intelligence/pull/23),
+but formal acceptance remains dependent on LA-1. The user authorized consolidating the remaining
+work in [PR #24](https://github.com/yashumani/talk2data-conversational-intelligence/pull/24).
+It includes 6.1 operational recovery, 6.2 shared state/workers/internal UI/private infrastructure,
+and 6.3 evidence/provenance/owner-review tooling. Read
+[SHARED_INTERNAL_RUNTIME.md](SHARED_INTERNAL_RUNTIME.md) and
+[PROJECT_COMPLETION.md](PROJECT_COMPLETION.md). Stop adding features after the documented code,
+coverage, actual PostgreSQL, package and infrastructure checks pass. Complete the outstanding
+live provider, deferred GCP and private environment/owner acceptance before production release.
 
 ### Open acceptance gate LA-1 — real Claude
 

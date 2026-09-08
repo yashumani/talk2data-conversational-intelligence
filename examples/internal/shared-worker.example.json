@@ -1,0 +1,41 @@
+{
+  "bigquery": {
+    "api_timeout_seconds": 10,
+    "billing_project": "example-project",
+    "location": "US",
+    "maximum_bytes_billed": 1000000,
+    "maximum_rows": 100,
+    "query_timeout_seconds": 60
+  },
+  "bigquery_catalog_path": "/catalog/catalog.json",
+  "domain_pack_directory": "/domains",
+  "entitlements_path": "/grants/entitlements.json",
+  "governance_database_path": null,
+  "state_database_path": null,
+  "identity": {
+    "algorithm": "ES256",
+    "audience": "REPLACE_WITH_VERIFIED_IAP_AUDIENCE",
+    "issuer": "https://cloud.google.com/iap",
+    "jwks_url": "https://www.gstatic.com/iap/verify/public_key-jwk",
+    "maximum_token_lifetime_seconds": 600,
+    "token_header": "x-goog-iap-jwt-assertion"
+  },
+  "maximum_active_queries": 4,
+  "http_operations": {
+    "maximum_body_bytes": 65536,
+    "body_timeout_seconds": 5,
+    "maximum_inflight": 16
+  },
+  "shared_state": {
+    "dsn_secret_ref": "env://T2D_STATE_DSN",
+    "lease_seconds": 30,
+    "heartbeat_seconds": 2,
+    "poll_seconds": 0.5,
+    "maximum_pending": 128,
+    "maximum_running": 16,
+    "maximum_running_per_tenant": 4
+  },
+  "deployment_revision": "0000000000000000000000000000000000000000",
+  "process_role": "worker",
+  "web_directory": null
+}

@@ -33,9 +33,9 @@ verification and answer services are reused. Rules remain the default. Cycle 4 a
 
 The public `main.py` does not import or initialize the BigQuery SDK. Its container installs
 the base package; the private container installs the `internal` extra. The private API mounts
-no CSV, legacy demo, connector-configuration, documentation or React asset endpoints.
-The existing React workspace remains the CSV demo. An authenticated internal React experience
-will consume the durable run protocol in Cycle 5; this increment supplies its trusted API boundary.
+no CSV, legacy demo, connector-configuration or API-documentation endpoints. Cycle 6 adds
+an opt-in, separately built internal React workspace behind signed IAP. Its durable protocol
+and shared state deployment are documented in [SHARED_INTERNAL_RUNTIME.md](SHARED_INTERNAL_RUNTIME.md).
 
 ## Identity and authorization
 
@@ -143,11 +143,11 @@ hashes and resolved/comparison periods remain available. `source_snapshot` is th
 source-owned update timestamp observed; it is not a BigQuery time-travel snapshot or a durable
 copy of the source. Reproducible historical reruns require future source-retention controls.
 
-Stable cloud job IDs identify a compiled query and authorization scope. A repeated HTTP request
-after completion is not idempotent in this increment and may create another job. Durable request
-deduplication, run recovery, event streaming, audit retention and conversation history belong to
-Cycle 5 and Cycle 6. Run one worker/instance during this acceptance phase so request ownership,
-capacity and cancellation share the same in-memory registry.
+Stable cloud job IDs identify a compiled query and authorization scope. The legacy synchronous
+API does not provide durable request deduplication. Cycle 5 adds the durable run API and
+Cycle 6 requires it for shared execution; `/chat` is rejected in the PostgreSQL profile.
+Reference SQLite requires one worker; the shared profile coordinates worker claims, capacity,
+cancellation and replay through PostgreSQL. See the shared runtime guide for activation.
 
 ## Private configuration and runtime
 

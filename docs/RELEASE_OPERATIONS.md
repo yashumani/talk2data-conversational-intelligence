@@ -1,17 +1,18 @@
-# Cycle 6.1: operational recovery and release evidence
+# Cycle 6: operational recovery and release evidence
 
-Updated: 2026-09-08. Cycle 6 is the enterprise release cycle. Following the user's instruction
-to work **one milestone at a time**, this increment completes its first milestone: recoverability,
-controlled retention, bounded internal HTTP handling and enforceable release evidence checks.
-It does not complete the enterprise release or introduce a production database/worker platform.
+Updated: 2026-09-08. The user has now authorized a combined completion effort across the
+outstanding Cycle 5/6 items. This document retains the Cycle 6.1 reference recovery procedures.
+The shared PostgreSQL/worker/internal UI implementation is documented in
+[SHARED_INTERNAL_RUNTIME.md](SHARED_INTERNAL_RUNTIME.md); trusted review provenance and the
+remaining live acceptance ledger are in [PROJECT_COMPLETION.md](PROJECT_COMPLETION.md).
 
 ## Delivery sequence and definition of done
 
 | Milestone | Scope | Acceptance and status |
 | --- | --- | --- |
 | 6.1 Operational recovery and readiness | Offline validated backups/restores, retention preview/CAS/audit, safe request telemetry and evidence evaluator | Implemented here; whole-package tests, >95% independent coverage and actual container restore acceptance are required |
-| 6.2 Production state, jobs and deployment | Cloud SQL/PostgreSQL application state and governance, distributed job ownership/fencing/cancellation, approved infrastructure and authenticated internal UI | Not implemented; retain the single-worker reference restriction until these contracts are tested |
-| 6.3 Final enterprise acceptance | Private activation, protected promotion, live provider/cloud checks, business/security/platform owner approval, browser/accessibility, load/cost/SLO and disaster recovery | Open; no production promotion or enterprise-ready claim |
+| 6.2 Production state, jobs and deployment | Cloud SQL/PostgreSQL application state and governance, distributed job ownership/fencing/cancellation, approved infrastructure and authenticated internal UI | Implemented and tested with actual PostgreSQL; private activation remains pending; SQLite stays single-worker |
+| 6.3 Final enterprise acceptance | Private activation, protected promotion, live provider/cloud checks, business/security/platform owner approval, browser/accessibility, load/cost/SLO and disaster recovery | Evidence/review automation implemented; actual private rollout, owner approvals and live acceptance remain open |
 
 These are sub-milestones of the original sixth cycle, not extra delivery cycles or waivers.
 Cycle 4's **LA-1 remains open**, with real Claude acceptance unconfigured. **DG-1 remains deferred**
@@ -154,7 +155,8 @@ No cloud sink, alerting destination, dashboard or SLO has been activated by this
 
 Telemetry is best effort and cannot replace the transactional run/governance journal or
 retention audit. A failed telemetry sink does not change an already delivered application
-response. Counters/limits are process-local; multi-instance coordination remains milestone 6.2.
+response. HTTP counters remain process-local. The shared profile additionally coordinates queued/active runs
+and per-tenant execution capacity through PostgreSQL.
 
 ## Release evidence contract
 
@@ -169,8 +171,8 @@ missing/oversized files, digest changes, malformed receipts and mismatched metad
 The receipt is the JSON evidence record excluding `artifact_digest` and `evidence_reference`.
 Native test reports and review provenance should be retained alongside the canonical receipts.
 The checker validates receipt integrity and agreement; it does **not** authenticate a reviewer's
-identity or prove a human-supplied claim is true. Protected promotion must independently verify
-the producing workflow, artifact provenance and authorized owner approvals in milestone 6.3.
+identity or prove a human-supplied claim is true. `operations/promotion.py` now independently verifies authenticated workflow/artifact provenance
+and distinct authorized owner approvals, as detailed in the completion ledger.
 
 | Gate | Required acceptance method |
 | --- | --- |
@@ -218,7 +220,7 @@ load or cost certification. Named owners must set those targets and validate the
 state/job deployment. Cloud SQL's managed [backup and recovery](https://docs.cloud.google.com/sql/docs/postgres/backup-recovery/backups)
 capabilities will require a separate tested adapter/procedure; this SQLite CLI is not that adapter.
 
-Stop this increment once its code, independent 96% coverage gates, existing regressions and
-actual container restore acceptance pass and a reviewable PR records the evidence. The next
-implementation milestone is **6.2**, not an enterprise launch. No existing production deployment
-or private data is changed during this synthetic acceptance.
+Stop the combined development increment once its code, independent 96% coverage gates, shared
+PostgreSQL acceptance, existing regressions, UI/container builds and infrastructure validation
+pass and PR #24 records the evidence. The remaining live gates and private rollout stay explicit.
+No existing production deployment or private data is changed during synthetic acceptance.

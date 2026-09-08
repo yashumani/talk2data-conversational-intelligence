@@ -70,14 +70,14 @@ contract under signed identity and server-owned source bindings.
 The packaged CSV demonstration persists sources, definitions, completed answers and events
 across container restarts on its own volume. Unfinished work becomes explicitly interrupted
 and is never automatically queried again. Local Python configuration remains memory-only
-unless a state database path is supplied. Keep one API worker per database.
+unless a state database path is supplied. Keep one API worker per SQLite database.
 
 See [durable conversations and restart acceptance](docs/DURABLE_CONVERSATIONS.md) for the
 architecture, API, recovery rules and storage limits. This milestone proceeds at the user's
-request while LA-1 remains open. Production distributed storage/workers, recovery operations,
-private activation and enterprise release acceptance remain outstanding.
+request while LA-1 remains open. Cycle 6 adds the shared internal runtime described below;
+private activation and enterprise acceptance remain outstanding.
 
-### Enterprise release operations — Cycle 6.1
+### Enterprise completion candidate — Cycle 6
 
 The first milestone of Cycle 6 adds verified offline backup/restore, previewed internal retention
 with transactional audit, bounded internal HTTP requests and telemetry that omits request content.
@@ -86,8 +86,16 @@ Claude tests and deferred GCP connections cannot qualify as live acceptance.
 
 See [release operations and the remaining milestones](docs/RELEASE_OPERATIONS.md). The package
 acceptance restores a synthetic workspace into a separate database and verifies its original
-answers over HTTP. Cycle 6 remains in progress: production shared state, distributed workers,
-private deployment and final enterprise acceptance are not implemented or approved by this milestone.
+answers over HTTP. The consolidated candidate also adds shared PostgreSQL conversations,
+definitions and grants, independently running workers with fenced completion, an isolated
+signed internal React workspace, and private Cloud SQL/Cloud Run infrastructure.
+
+The [shared internal runtime guide](docs/SHARED_INTERNAL_RUNTIME.md) explains setup, transaction
+boundaries and operating limits. The [completion ledger](docs/PROJECT_COMPLETION.md) separates
+implemented capabilities from pending live acceptance. Trusted release checks bind workflow
+artifacts and three distinct owner approvals to the exact source, image and configuration.
+**LA-1 remains open; DG-1 remains user-deferred. This is a development candidate, not a
+production release.** No private cloud deployment or automatic merge has been performed.
 
 ### Existing application
 

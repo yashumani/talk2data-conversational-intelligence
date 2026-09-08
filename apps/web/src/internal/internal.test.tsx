@@ -64,6 +64,19 @@ it("recovers the exact request after a lost acknowledgement", async () => {
   expect(hook.pending).toBe(false);
 });
 
+it("allows correction after a definitive rejection while preserving ambiguous retries", async () => {
+  await mount(); await action(() => hook.create());
+  for (const status of [409, 422]) {
+    vi.mocked(internalApi.submit).mockRejectedValueOnce(new ApiError(status, "Refresh the current definitions"));
+    await action(() => hook.ask("mobile activations", "2026-08-01"));
+    expect(hook.pending).toBe(false); expect(stored.has(pendingKey)).toBe(false);
+  }
+  vi.mocked(internalApi.submit).mockRejectedValueOnce(new ApiError(429, "At capacity"));
+  await action(() => hook.ask("mobile activations", "2026-08-01"));
+  expect(hook.pending).toBe(true); expect(stored.has(pendingKey)).toBe(true);
+  await action(() => hook.refresh()); expect(hook.run?.status).toBe("COMPLETED");
+});
+
 it("restores a pending request after reload and rejects changed authority", async () => {
   stored.set(pendingKey, JSON.stringify({ scope: "scope", binding: "binding", request }));
   await mount(); expect(internalApi.submit).toHaveBeenCalledWith(request);

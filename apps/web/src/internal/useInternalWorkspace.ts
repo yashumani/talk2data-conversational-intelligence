@@ -29,13 +29,19 @@ export function useInternalWorkspace() {
         controller.current?.abort(); setState(null); setHistory(null); setRun(null);
         pendingRequest.current = null; sessionStorage.removeItem(pendingKey); setPending(false);
       }
+      if (failure instanceof ApiError && [400, 409, 422].includes(failure.status)) {
+        // A definitive rejection can be corrected; a lost acknowledgement or busy server retains its ID.
+        pendingRequest.current = null; sessionStorage.removeItem(pendingKey); setPending(false);
+      }
       setError(failure instanceof Error ? failure.message : "The workspace could not complete this request.");
     } finally { lock.current = false; if (alive.current) setBusy(false); }
   }
 
   async function follow(value: InternalRun, workspace: Workspace) {
-    if (value.source_binding !== workspace.identity.source_binding)
+    if (value.source_binding !== workspace.identity.source_binding) {
+      setRun(null);
       throw new ApiError(409, "The approved data connection changed. Refresh the workspace.");
+    }
     controller.current?.abort();
     const active = new AbortController(); controller.current = active;
     const result = await internalApi.watch(value, active.signal, value => { if (alive.current && !active.signal.aborted) setRun(value); });
