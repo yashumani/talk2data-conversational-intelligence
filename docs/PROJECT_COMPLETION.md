@@ -32,10 +32,15 @@ Once these conditions pass, stop adding implementation features. The remaining w
 the activation/acceptance ledger below. No optional orchestration framework, new data connector,
 CSV schema expansion or broader model memory is required to close this agreed development scope.
 
-The current Python acceptance run passes **800 tests** with **99.17% line coverage** and
+The current Python acceptance run passes **804 tests** with **99.17% line coverage** and
 **97.02% branch coverage**; six external-service checks remain explicitly opt-in. React passes
-**95 tests** with independent coverage floors enforced. The final PR records the exact commit,
+**99 tests** with independent coverage floors enforced. The final PR records the exact commit,
 coverage fractions, all required workflow links and the unchanged LA-1/DG-1 dispositions.
+
+The user-requested final review corrected stale-result handling, conversation capacity recovery,
+grouped internal evidence, malformed pending requests, provider secret injection and lease expiry
+during database lock waits. See [FINAL_REVIEW.md](FINAL_REVIEW.md) for findings and verification,
+and [HANDOFF.md](HANDOFF.md) for startup instructions and the concrete remaining acceptance inputs.
 
 ## Remaining enterprise acceptance
 

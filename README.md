@@ -9,6 +9,10 @@ result, and release only receipt-backed claims.
 
 ## Use the application
 
+Start with the [product handoff](docs/HANDOFF.md) for the reviewed candidate, runnable CSV demo,
+cycle status and remaining live acceptance inputs. The [final review](docs/FINAL_REVIEW.md)
+records corrections, verification and the boundaries of the handoff.
+
 ### New modular CSV workspace
 
 An optional React/TypeScript workspace now supports isolated CSV demonstrations with the

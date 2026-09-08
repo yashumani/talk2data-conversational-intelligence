@@ -94,6 +94,9 @@ is withdrawn. Changing descriptive text does not authorize an unreviewed calcula
 2. Fill the separate API and worker runtime templates. Pin the same source, identity, Claude,
    state limits and deployment revision. Set `process_role` to `api` or `worker` respectively.
    Use a secret environment reference such as `env://T2D_STATE_DSN`; no DSN value belongs in Git.
+   The private deployment injects the Claude secret as `T2D_CLAUDE_API_KEY`, matching
+   `env://T2D_CLAUDE_API_KEY` in the provider configuration. The GitHub acceptance workflow uses
+   the repository secret named `ANTHROPIC_API_KEY` and maps it to that runtime environment name.
 3. Use verified TLS (`sslmode=verify-full`, approved server CA) or the authenticated Cloud SQL
    proxy Unix socket. Insecure transport is accepted only for explicitly enabled loopback tests.
 4. With the operator connection, apply the explicit migration and publish initial grants:
@@ -123,6 +126,9 @@ saved in browser session storage before POST to recover an acknowledgement lost 
 is scoped to the signed identity, access hash and connection binding. This includes question
 text and needs the organization's browser retention policy. Access loss clears visible results
 and pending state. Reconnecting reads the existing run; it does not create a new query.
+Grouped answers expose their receipt rows and pinned metric/dimension definitions. Saved answers
+identify earlier publications. The selected conversation can be removed after an explicit UI
+confirmation to free bounded capacity; active work must first reach a terminal state.
 
 ## Cloud deployment boundary
 
