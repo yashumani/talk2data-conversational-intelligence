@@ -38,10 +38,10 @@ export function useInternalWorkspace() {
       throw new ApiError(409, "The approved data connection changed. Refresh the workspace.");
     controller.current?.abort();
     const active = new AbortController(); controller.current = active;
-    const result = await internalApi.watch(value, active.signal, value => { if (alive.current) setRun(value); });
-    if (alive.current) {
-      setRun(result);
-      setHistory(await internalApi.history(result.request.conversation_id));
+    const result = await internalApi.watch(value, active.signal, value => { if (alive.current && !active.signal.aborted) setRun(value); });
+    if (alive.current && !active.signal.aborted) {
+      const latest = await internalApi.history(result.request.conversation_id);
+      if (alive.current && !active.signal.aborted) { setRun(result); setHistory(latest); }
     }
   }
 

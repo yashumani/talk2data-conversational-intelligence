@@ -25,6 +25,7 @@ from talk2data.domain.governance import GovernanceState
 from talk2data.domain.models import QuestionDecision
 from talk2data.domain.runs import RunError, RunRequest, now, principal
 from talk2data.internal.bootstrap import create_internal_app
+from talk2data.internal.worker import create_worker
 from talk2data.operations.shared_state import main
 from talk2data.services.definition_store import DefinitionConflict, DefinitionUnavailable
 from talk2data.services.distributed_runs import DistributedCoordinator, DistributedWorker
@@ -169,6 +170,32 @@ def test_atomic_idempotency_between_instances(database: PostgresDatabase) -> Non
     second.close()
 
 
+def test_independent_processes_claim_once_and_crash_is_not_retried(database: PostgresDatabase) -> None:
+    import subprocess
+    import sys
+
+    store = PostgresRunStore(database)
+    owner, scope, run = submit(store)
+    program = (
+        "from talk2data.core.state_config import SharedStateSettings; "
+        "from talk2data.services.postgres_database import PostgresDatabase; "
+        "from talk2data.services.postgres_runs import PostgresRunStore; "
+        "db=PostgresDatabase(SharedStateSettings(dsn_secret_ref='env://T2D_TEST_SHARED_DSN',"
+        "allow_insecure_loopback=True)); "
+        "job=PostgresRunStore(db).claim('binding'); print(job.run.run_id if job else 'none'); db.close()"
+    )
+    workers = [
+        subprocess.Popen([sys.executable, "-c", program], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for _ in range(2)
+    ]
+    outputs = [worker.communicate(timeout=15)[0].decode().strip() for worker in workers]
+    assert all(worker.returncode == 0 for worker in workers)
+    assert sorted(outputs) == sorted([str(run.run_id), "none"])
+    expire(database, run.run_id)
+    assert store.claim("binding") is None
+    assert store.read(owner, scope, run.run_id).status == "INTERRUPTED"
+
+
 def test_admission_limits_and_request_conflicts(database: PostgresDatabase) -> None:
     store = PostgresRunStore(database)
     owner, scope, payload, grant = request(store)
@@ -278,17 +305,18 @@ def test_event_failure_rolls_back_admission(database: PostgresDatabase) -> None:
 def test_definitions_and_authorization_are_shared(database: PostgresDatabase, tmp_path: Path) -> None:
     config = private_config(tmp_path)
     cloud = RecordingCloud()
-    config = config.model_copy(update={"shared_state": database.settings})
+    config = config.model_copy(update={"shared_state": database.settings, "deployment_revision": "a" * 40})
     app = create_internal_app(config, transport_factory=lambda _: cloud)
     governance = app.state.runtime.definitions["demo-telecom"]
     first = PostgresDefinitionStore(database)
     state = first.read("internal:demo-telecom")
     first.seed("internal:demo-telecom", state)
     assert first.read("internal:demo-telecom") == state
-    first.save("internal:demo-telecom", state, 0)
+    expected = state.revision
+    first.save("internal:demo-telecom", state, expected)
     with pytest.raises(DefinitionConflict):
-        first.save("internal:demo-telecom", state, 0)
-    assert governance._state().revision == 1
+        first.save("internal:demo-telecom", state, expected)
+    assert governance._state().revision == expected + 1
     for raw in ("bad", GovernanceState(tenant_id="demo-telecom", snapshots=[]).model_dump_json()):
         with database.transaction() as db:
             db.execute("UPDATE t2d_definitions SET payload=%s", (raw,))
@@ -404,7 +432,9 @@ def test_shared_api_and_worker_use_signed_authority(
     from cryptography.hazmat.primitives.asymmetric import rsa
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    config = private_config(tmp_path).model_copy(update={"shared_state": database.settings})
+    config = private_config(tmp_path).model_copy(
+        update={"shared_state": database.settings, "deployment_revision": "a" * 40}
+    )
     grants = EntitlementFile.model_validate_json(config.entitlements_path.read_bytes())
     auth = PostgresEntitlementStore(database, config.identity.issuer)
     auth.publish(grants, 0)
@@ -455,7 +485,9 @@ def test_shared_api_and_worker_use_signed_authority(
 
 
 def test_migration_and_authorization_cli(database: PostgresDatabase, tmp_path: Path, capsys: Any) -> None:
-    config = private_config(tmp_path).model_copy(update={"shared_state": database.settings})
+    config = private_config(tmp_path).model_copy(
+        update={"shared_state": database.settings, "deployment_revision": "a" * 40}
+    )
     path = tmp_path / "runtime.json"
     path.write_text(config.model_dump_json())
     assert main(["migrate", "--config", str(path)]) == 0
@@ -500,3 +532,121 @@ def test_shared_configuration_and_safe_failures(tmp_path: Path, monkeypatch: pyt
     path = tmp_path / "config.json"
     path.write_text(config.model_dump_json())
     assert main(["check", "--config", str(path)]) == 1
+
+
+async def test_worker_shutdown_fences_undispatched_claim(database: PostgresDatabase) -> None:
+    store = PostgresRunStore(database)
+    owner, scope, run = submit(store)
+
+    async def authorize(_: ClaimedRun) -> None:
+        pass
+
+    async def operation(job: ClaimedRun, observer: Any) -> DemoChatResponse:
+        await asyncio.Event().wait()
+        raise AssertionError("Not released")
+
+    worker = DistributedWorker(store, "binding", operation, authorize, maximum_active=1)
+    await worker.tick()
+    await worker.close()
+    assert store.read(owner, scope, run.run_id).status == "INTERRUPTED"
+    assert not worker.jobs and not worker.tasks
+
+
+async def test_worker_poll_failure_is_visible_and_recovers(
+    database: PostgresDatabase, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = PostgresRunStore(database)
+    store.settings = store.settings.model_copy(update={"poll_seconds": 0.01})
+
+    async def authorize(_: ClaimedRun) -> None:
+        pass
+
+    async def operation(job: ClaimedRun, observer: Any) -> DemoChatResponse:
+        raise AssertionError("Not dispatched")
+
+    def unavailable(_: str) -> Any:
+        raise RunError("Unavailable", 503)
+
+    monkeypatch.setattr(store, "claim", unavailable)
+    worker = DistributedWorker(store, "binding", operation, authorize)
+    worker.start()
+    await asyncio.sleep(0.03)
+    assert not worker.healthy
+    monkeypatch.setattr(store, "claim", lambda _: None)
+    await asyncio.sleep(0.03)
+    assert worker.healthy
+    await worker.close()
+
+
+def test_worker_authorization_binding_and_definition_budget(
+    database: PostgresDatabase, tmp_path: Path
+) -> None:
+    config = private_config(tmp_path).model_copy(
+        update={"shared_state": database.settings, "deployment_revision": "a" * 40}
+    )
+    app = create_internal_app(config, transport_factory=lambda _: RecordingCloud())
+    runtime = app.state.runtime
+    auth = PostgresEntitlementStore(database, config.identity.issuer)
+    auth.publish(EntitlementFile.model_validate_json(config.entitlements_path.read_bytes()), 0)
+    worker = create_worker(runtime, auth)
+    store = PostgresRunStore(database)
+    owner, scope, payload, grant = request(store)
+    payload.definition_snapshot_id = (
+        runtime.definitions[grant.access.tenant_id].resolve(grant.access).snapshot_id
+    )
+    store.enqueue(owner, scope, payload, runtime.source_binding, grant)
+    job = store.claim(runtime.source_binding)
+    assert job is not None
+    asyncio.run(worker.authorize(job))
+    bad = replace(job, grant=grant.model_copy(update={"expires_at": now() - timedelta(seconds=1)}))
+    with pytest.raises(RunError):
+        asyncio.run(worker.authorize(bad))
+    with pytest.raises(ValueError):
+        create_worker(SimpleNamespace(run_store=None), auth)
+    with database.transaction() as db:
+        modified = store._read(db, job.run.run_id)
+        modified.sequence = 60
+        db.execute(
+            "UPDATE t2d_runs SET payload=%s WHERE id=%s", (modified.model_dump_json(), modified.run_id)
+        )
+    with pytest.raises(RunError, match="event budget"):
+        store.progress(job, AgentRunReport())
+
+
+def test_internal_assets_require_signed_iap_and_csrf_header(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from talk2data.core.internal_config import IdentitySettings
+
+    config = private_config(tmp_path)
+    assets = tmp_path / "web"
+    assets.mkdir()
+    (assets / "index.html").write_text("<h1>Internal workspace</h1>")
+    identity = IdentitySettings(
+        issuer="https://cloud.google.com/iap",
+        audience="approved-audience",
+        jwks_url="https://www.gstatic.com/iap/verify/public_key-jwk",
+        algorithm="ES256",
+        token_header="x-goog-iap-jwt-assertion",
+        maximum_token_lifetime_seconds=600,
+    )
+    config = type(config).model_validate(
+        {**config.model_dump(), "identity": identity, "web_directory": assets}
+    )
+    app = create_internal_app(config, transport_factory=lambda _: RecordingCloud())
+
+    async def verified(_: str) -> Any:
+        return access()
+
+    monkeypatch.setattr(app.state.verifier, "verify", verified)
+    headers = {"x-goog-iap-jwt-assertion": "verified-only-test"}
+    with TestClient(app) as client:
+        assert client.get("/workspace/").status_code == 401
+        response = client.get("/workspace/", headers=headers)
+        assert response.status_code == 200 and "Internal workspace" in response.text
+        assert response.headers["X-Frame-Options"] == "DENY"
+        assert client.post("/v1/internal/conversations", headers=headers).status_code == 403
+        assert (
+            client.post("/v1/internal/conversations", headers={**headers, "X-T2D-Request": "1"}).status_code
+            == 201
+        )

@@ -1,0 +1,17 @@
+name: Private infrastructure contract
+on:
+  pull_request:
+    paths: ["infra/gcp/**", ".github/workflows/private-infrastructure.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.5"
+      - run: terraform -chdir=infra/gcp init -backend=false -input=false
+      - run: terraform -chdir=infra/gcp validate

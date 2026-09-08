@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from importlib.resources import files
@@ -25,9 +26,15 @@ class PostgresDatabase:
         except psycopg.Error:
             raise ValueError("Shared state connection configuration is invalid.") from None
         host = str(config.get("host", ""))
-        local = settings.allow_insecure_loopback and host in {"127.0.0.1", "localhost", "::1"}
+        local = (
+            settings.allow_insecure_loopback
+            and host in {"127.0.0.1", "localhost", "::1"}
+            and not config.get("hostaddr")
+        )
         # Cloud SQL's authenticated connector supplies a private Unix socket.
-        socket = host.startswith("/cloudsql/") and "," not in host
+        socket = bool(re.fullmatch(r"/cloudsql/[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]+", host)) and not config.get(
+            "hostaddr"
+        )
         if not local and not socket and config.get("sslmode") != "verify-full":
             raise ValueError("Shared state requires verified TLS or an authenticated Cloud SQL socket.")
         self._lock = RLock()

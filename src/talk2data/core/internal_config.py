@@ -68,11 +68,14 @@ class InternalRuntimeConfig(BaseModel):
     claude: ClaudeConfiguration = Field(default_factory=ClaudeConfiguration)
     http_operations: HttpOperations = Field(default_factory=HttpOperations)
     shared_state: SharedStateSettings | None = None
+    deployment_revision: str | None = Field(default=None, pattern=r"^[a-f0-9]{40}$")
     process_role: Literal["api", "worker"] = "api"
     web_directory: Path | None = None
 
     @model_validator(mode="after")
     def isolated_state(self) -> Self:
+        if self.shared_state is not None and self.deployment_revision is None:
+            raise ValueError("Shared execution requires an explicit reviewed deployment revision.")
         if self.shared_state is not None and (
             self.state_database_path is not None or self.governance_database_path is not None
         ):

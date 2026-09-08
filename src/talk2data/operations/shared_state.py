@@ -9,6 +9,7 @@ from talk2data.services.definition_store import DefinitionConflict
 from talk2data.services.identity import EntitlementFile, IdentityUnavailable
 from talk2data.services.postgres_database import PostgresDatabase
 from talk2data.services.postgres_governance import PostgresEntitlementStore
+from talk2data.services.secrets import SecretResolutionError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -34,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
             PostgresEntitlementStore(database, config.identity.issuer).publish(grants, args.expected_revision)
         print('{"status":"completed"}')
         return 0
-    except (OSError, ValueError, RunError, DefinitionConflict, IdentityUnavailable):
+    except (OSError, ValueError, RunError, DefinitionConflict, IdentityUnavailable, SecretResolutionError):
         print(
             '{"status":"failed","message":"Shared state operation rejected; inspect private configuration."}'
         )

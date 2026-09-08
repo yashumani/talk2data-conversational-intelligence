@@ -20,7 +20,7 @@ from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.internal_config import InternalRuntimeConfig, InternalSettings
 from talk2data.domain.bigquery_mapping import BigQueryCatalog
 from talk2data.domain.domain_pack import DomainPackRegistry
-from talk2data.domain.runs import digest
+from talk2data.domain.runs import RunError, digest
 from talk2data.internal.definitions import router as definitions_router
 from talk2data.internal.routes import router
 from talk2data.internal.runs import router as runs_router
@@ -108,6 +108,7 @@ def create_internal_app(
                 "bigquery": resolved.bigquery.model_dump(mode="json"),
                 "language": resolved.claude.model_dump(mode="json"),
                 "identity": resolved.identity.model_dump(mode="json"),
+                "deployment_revision": resolved.deployment_revision,
                 "shared_state": resolved.shared_state.model_dump(mode="json")
                 if resolved.shared_state
                 else None,
@@ -192,6 +193,8 @@ def create_internal_app(
             response = JSONResponse(
                 {"detail": "Identity verification is temporarily unavailable."}, status_code=503
             )
+        except RunError:
+            response = JSONResponse({"detail": "Shared state is temporarily unavailable."}, status_code=503)
         response.headers["Cache-Control"] = "no-store"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
