@@ -13,7 +13,9 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstrai
 from talk2data.domain.chat import DemoChatResponse
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import AccessContext
+from talk2data.domain.runs import principal
 from talk2data.internal.runtime import InternalQueryBusy, InternalQueryRuntime
+from talk2data.services.distributed_runs import DistributedCoordinator
 from talk2data.services.identity import IdentityVerifier
 from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION, PolicyEngine
 from talk2data.services.semantic import SemanticAccessDeniedError, SemanticRegistry
@@ -47,12 +49,14 @@ Runtime = Annotated[InternalQueryRuntime, Depends(runtime)]
 
 
 @router.get("/me")
-async def me(access: Identity) -> dict[str, Any]:
+async def me(access: Identity, service: Runtime) -> dict[str, Any]:
     return {
         "tenant_id": access.tenant_id,
         "user_id": access.user_id,
         "regions": sorted(access.regions),
         "business_units": sorted(access.business_units),
+        "scope_id": principal("internal", access)[1],
+        "source_binding": service.source_binding,
     }
 
 
@@ -81,6 +85,8 @@ async def metrics(service: Runtime, access: Identity) -> list[dict[str, Any]]:
 async def chat(
     payload: InternalQuestion, request: Request, service: Runtime, access: Identity
 ) -> InternalAnswer:
+    if isinstance(service.runs, DistributedCoordinator):
+        raise HTTPException(409, "Use durable runs for the shared internal runtime.")
     if not {ASK_ACTION, READ_DATA_ACTION} <= access.permitted_actions:
         raise HTTPException(403, "Question and data access must both be authorized.")
     try:

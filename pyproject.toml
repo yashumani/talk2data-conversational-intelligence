@@ -42,6 +42,7 @@ where = ["src"]
 talk2data = [
   "resources/domain_packs/*.yaml",
   "resources/physical_mappings/*.yaml",
+  "resources/migrations/*.sql",
 ]
 
 [tool.pytest.ini_options]

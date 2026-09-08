@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.claude_config import ClaudeConfiguration
+from talk2data.core.state_config import SharedStateSettings
 from talk2data.operations.http import HttpOperations
 
 
@@ -66,6 +67,23 @@ class InternalRuntimeConfig(BaseModel):
     state_database_path: Path | None = None
     claude: ClaudeConfiguration = Field(default_factory=ClaudeConfiguration)
     http_operations: HttpOperations = Field(default_factory=HttpOperations)
+    shared_state: SharedStateSettings | None = None
+    process_role: Literal["api", "worker"] = "api"
+    web_directory: Path | None = None
+
+    @model_validator(mode="after")
+    def isolated_state(self) -> Self:
+        if self.shared_state is not None and (
+            self.state_database_path is not None or self.governance_database_path is not None
+        ):
+            raise ValueError("Shared state cannot be combined with reference SQLite paths.")
+        if self.process_role == "worker" and (self.shared_state is None or self.web_directory is not None):
+            raise ValueError("The worker requires shared state and cannot serve a workspace.")
+        if self.web_directory is not None and (
+            not self.web_directory.is_absolute() or self.identity.token_header != "x-goog-iap-jwt-assertion"
+        ):
+            raise ValueError("The internal browser workspace requires signed IAP and an absolute asset path.")
+        return self
 
     @field_validator("governance_database_path", "state_database_path")
     @classmethod

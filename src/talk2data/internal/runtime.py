@@ -16,13 +16,16 @@ from talk2data.services.claude_interpreter import BoundQuestionInterpreter, Clau
 from talk2data.services.definition_governance import DefinitionGovernance
 from talk2data.services.definition_store import DefinitionStore
 from talk2data.services.demo_chat import DemoChatService
+from talk2data.services.distributed_runs import DistributedCoordinator
 from talk2data.services.ephemeral_run import EphemeralRunStore
 from talk2data.services.policy import PolicyEngine
+from talk2data.services.postgres_runs import PostgresRunStore
 from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.run_coordinator import Observer, RunCoordinator
 from talk2data.services.run_store import RunStore
 from talk2data.services.semantic import SemanticRegistry
 from talk2data.services.semantic_context import cite_definitions
+from talk2data.services.state_ports import DefinitionJournal
 
 
 class InternalQueryBusy(RuntimeError):
@@ -35,15 +38,19 @@ class InternalQueryRuntime:
         domains: DomainPackRegistry,
         registries: dict[str, ConnectorRegistry],
         maximum_active: int,
-        definition_store: DefinitionStore | None = None,
+        definition_store: DefinitionJournal | None = None,
         language: ClaudeRuntime | None = None,
-        run_store: RunStore | None = None,
+        run_store: RunStore | PostgresRunStore | None = None,
         source_binding: str = "unconfigured",
     ) -> None:
         self.domains, self.registries, self.maximum_active = domains, registries, maximum_active
         self.language = language or ClaudeRuntime()
         self.run_store = run_store or RunStore()
-        self.runs = RunCoordinator(self.run_store, maximum_active)
+        self.runs = (
+            DistributedCoordinator(self.run_store)
+            if isinstance(self.run_store, PostgresRunStore)
+            else RunCoordinator(self.run_store, maximum_active)
+        )
         self.source_binding = source_binding
         self.definition_store = definition_store or DefinitionStore()
         self.definitions = {

@@ -11,6 +11,20 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      state-postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: state_acceptance
+          POSTGRES_USER: talk2data
+          POSTGRES_PASSWORD: synthetic-state-test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U talk2data -d state_acceptance"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      T2D_RUN_STATE_TESTS: "1"
+      T2D_TEST_STATE_DSN: postgresql://talk2data:synthetic-state-test@127.0.0.1:5432/state_acceptance
     strategy:
       fail-fast: false
       matrix:
