@@ -111,3 +111,4 @@ above. There is no additional feature-development cycle proposed.
 | Conversation, retry and replay contracts | [DURABLE_CONVERSATIONS.md](DURABLE_CONVERSATIONS.md) |
 | Backup, retention, evidence and release operations | [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md) |
 | Complete CSV and enterprise activation sequence | [REPOSITORY_ACTIVATION_GUIDE.md](REPOSITORY_ACTIVATION_GUIDE.md) |
+| Locked installation, action pins and remaining build boundaries | [BUILD_REPRODUCIBILITY.md](BUILD_REPRODUCIBILITY.md) |

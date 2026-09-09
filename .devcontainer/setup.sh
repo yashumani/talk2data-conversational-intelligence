@@ -4,8 +4,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 mkdir -p .talk2data
 
-python -m pip install --upgrade pip
-python -m pip install -e '.[dev]'
+python scripts/dependencies.py install dev
 
 docker version >/dev/null
 docker compose version >/dev/null

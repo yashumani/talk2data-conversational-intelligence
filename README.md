@@ -218,10 +218,13 @@ ollama serve
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e '.[dev]'
+python scripts/dependencies.py install dev
 cp .env.example .env
 ```
+
+The installer verifies committed dependency hashes before installing. Use a clean virtual
+environment; see [dependency maintenance](docs/BUILD_REPRODUCIBILITY.md) for supported profiles,
+updates and the remaining image/infrastructure reproducibility boundaries.
 
 ### 3. Start FastAPI
 

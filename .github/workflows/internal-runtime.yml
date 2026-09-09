@@ -6,6 +6,8 @@ on:
       - "src/**"
       - "apps/web/**"
       - "pyproject.toml"
+      - "requirements/**"
+      - "scripts/dependencies.py"
       - "Dockerfile.internal"
       - ".dockerignore"
       - "docker-compose.internal.yml"
@@ -16,6 +18,8 @@ on:
       - "src/**"
       - "apps/web/**"
       - "pyproject.toml"
+      - "requirements/**"
+      - "scripts/dependencies.py"
       - "Dockerfile.internal"
       - ".dockerignore"
       - "docker-compose.internal.yml"
@@ -30,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Validate the separate internal profile
         env:
           T2D_PRIVATE_CONFIG_DIRECTORY: /tmp/validation-only-config

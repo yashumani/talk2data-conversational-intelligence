@@ -79,8 +79,7 @@ coverage gate. Start PostgreSQL and pass the same explicit test environment used
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e '.[dev]'
+python scripts/dependencies.py install dev
 
 docker run --name t2d-state-review --rm -d \
   -e POSTGRES_DB=state_acceptance \
@@ -97,6 +96,7 @@ ruff check .
 ruff format --check .
 mypy src
 python scripts/validate_workflows.py
+python scripts/dependencies.py check
 
 cd apps/web
 npm ci --ignore-scripts

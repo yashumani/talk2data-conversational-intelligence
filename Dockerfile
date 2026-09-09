@@ -15,11 +15,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY pyproject.toml README.md ./
+COPY requirements ./requirements
+COPY scripts/dependencies.py ./scripts/dependencies.py
 COPY src ./src
 COPY --from=workspace /web/dist ./web
 
-RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir .
+RUN PIP_NO_CACHE_DIR=1 python scripts/dependencies.py install runtime
 
 RUN useradd --create-home --uid 10001 talk2data \
     && mkdir -p /app/.talk2data /app/workspace-state \

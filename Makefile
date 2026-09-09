@@ -1,7 +1,7 @@
 .PHONY: install run test lint format typecheck check
 
 install:
-	python -m pip install -e '.[dev]'
+	python scripts/dependencies.py install dev
 
 run:
 	uvicorn talk2data.main:app --reload
@@ -22,3 +22,5 @@ typecheck:
 	mypy src
 
 check: lint typecheck test
+	python scripts/dependencies.py check
+	python scripts/validate_workflows.py
