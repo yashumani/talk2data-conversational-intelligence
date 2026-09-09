@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from talk2data.core.bigquery_config import BigQuerySettings
+from talk2data.core.claude_config import ClaudeConfiguration
 
 
 class IdentitySettings(BaseModel):
@@ -61,6 +62,7 @@ class InternalRuntimeConfig(BaseModel):
     bigquery_catalog_path: Path
     maximum_active_queries: int = Field(default=8, ge=1, le=32)
     governance_database_path: Path | None = None
+    claude: ClaudeConfiguration = Field(default_factory=ClaudeConfiguration)
 
     @field_validator("governance_database_path")
     @classmethod

@@ -4,6 +4,7 @@ import json
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Protocol
 
 import httpx
 
@@ -18,6 +19,12 @@ from talk2data.domain.models import (
 
 class InterpretationError(RuntimeError):
     """Raised when a language interpretation provider cannot return a valid proposal."""
+
+
+class QuestionInterpreter(Protocol):
+    async def interpret(
+        self, question: str, pack: TenantDomainPack, *, use_llm: bool
+    ) -> InterpretationResult: ...
 
 
 def normalize_text(value: str) -> str:

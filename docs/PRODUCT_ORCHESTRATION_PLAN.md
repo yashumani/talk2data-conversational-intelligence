@@ -1,6 +1,6 @@
 # Talk2Data: consolidated product and orchestration plan
 
-Updated: 2026-09-07. Accepted Cycle 1 baseline: main commit
+Updated: 2026-09-08. Accepted Cycle 1 baseline: main commit
 `ba198541dc14821dc497217e97cf67db20234d5c`. Accepted Cycle 2 baseline:
 `67dba4f65887ed5ea8f572eb8972f98ac1797053` (PR #20). Cycle 2 implementation and private
 acceptance procedure: [Internal identity and BigQuery](INTERNAL_BIGQUERY.md).
@@ -22,7 +22,9 @@ governed BigQuery adapter. **Cycle 2 is complete on the user's revised placehold
 live GCP/SSO activation and validation remain deferred release gate DG-1. CSV imports remain
 an independent working data connection, never a BigQuery upload or automatic fallback.
 Cycle 3 implements live definition governance and CSV reproducibility, documented in
-[the governance runbook](DEFINITION_GOVERNANCE.md). Claude and durable multi-agent orchestration remain later cycles.
+[the governance runbook](DEFINITION_GOVERNANCE.md). Cycle 4 implements the isolated Claude
+adapter and bounded specialists; real-provider acceptance LA-1 remains open until configured
+and passed. Durable conversations and events remain Cycle 5.
 The current increment is not an enterprise production release.
 
 No existing repository is archived, renamed, merged wholesale, or made private by this work.
@@ -43,8 +45,8 @@ private location before integration.
 | Business definitions | Metric/dimension metadata, named owners, draft/review/approval, atomic snapshots/events, effective dates, revocation and citations; CSV review UI | Business-owned production contracts and benchmark approval; governed formula/mapping migrations; search index adapter if needed |
 | Question-to-answer logic | Reuses admissibility, Business Query IR, deterministic execution, result checks, and receipt-backed composition | Wider question benchmark, fiscal-calendar correctness, ratio/time-grain coverage |
 | Frontend/backend synchronization | Backend source fingerprint, explicit state refresh, stale-source rejection, latest completed result | Durable runs, incremental events, reconnect/replay, idempotency, cancellation, cross-device history |
-| Claude API | Target architecture only; CSV never sends a file or question to a model | Provider adapter, schema validation, model configuration, budgets, approved data-egress policy |
-| Multiple agents | Responsibility and state-machine design below; not autonomous agents in this branch | Bounded orchestration, specialist tools, evaluations, permission enforcement, durable checkpoints |
+| Claude API | Opt-in adapter, strict schema, approved definition projection, model/secret config, token/deadline limits, sanitized failures; CSV rows/results excluded | Real-provider acceptance LA-1 and approved internal egress; wider business-owned evaluation |
+| Multiple agents | Five ordered specialist roles, fixed tools, cancellation and usage limits; Claude assists semantic resolution | Durable checkpoints/events in Cycle 5; approved context retrieval when connected |
 | Enterprise operation | Signed identity and server-owned tenant/scope grants implemented in the private API; separate container; CSV disabled by default | Live SSO/IAM/private ingress acceptance, audit retention, load tests, SLOs and recovery |
 
 The accepted baseline has working synthetic SQLite and PostgreSQL reference adapters.
@@ -251,29 +253,34 @@ flowchart TD
   Verify --> Reject["Withhold invalid answer"]
 ```
 
-The initial implementation reuses deterministic admissibility, planning, query execution,
-verification, and answer composition. It does not claim that Claude, Hermes, or multiple
-autonomous agents ran a CSV question.
+Cycle 4 implements the semantic resolver, query planner, executor, verifier and composer as
+ordered specialist roles backed by the existing services. Claude assists only interpretation
+when enabled; the other roles are deterministic. The context researcher remains unconnected.
+Stage reports describe executed operations, not model reasoning or durable progress events.
+See [the implementation runbook](CLAUDE_ORCHESTRATION.md).
 
 ## 8. Claude integration strategy
 
-Create a provider-neutral interpretation port and a separate Claude adapter under a provider
-module. Preserve existing local interpreters as explicit options; do not route internal data
-to another provider automatically after a failure.
+Cycle 4 supplies an interpretation port and separate Claude interpreter, transport and configuration
+modules. Existing local interpreters remain explicit options; provider failure never routes
+internal data to another provider automatically.
 
-Select an approved Claude model and endpoint through server configuration. The provider
+Select an approved Claude model through private server configuration. This adapter's endpoint
+is fixed to the direct Anthropic API; a hosted endpoint requires a separate adapter. The provider
 adapter owns API authentication, timeouts, output schema validation, token limits, bounded
 retries, and sanitized errors. The orchestrator owns task budgets and allowed tools.
 
-Use Claude tool calls as typed requests for server capabilities, not direct permission to
-query a warehouse. The tool runner verifies authorization and arguments before execution,
-then returns a bounded result. This follows the separation described in
-[Claude's tool-use documentation](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview).
+Claude returns a strict JSON proposal containing approved IDs, intent and clarification state.
+It cannot select tools or emit executable SQL. The server verifies grounding and dispatches
+fixed typed tools after policy checks. Raw JSON-schema requests follow
+[Claude's structured-output contract](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).
 
 Before internal activation, approve which data classes can leave the GCP boundary, whether
 the deployment uses the direct Claude API or an approved hosted endpoint, and whether row
 values may be included at all. Prefer sending the minimum authorized semantic context and
-aggregated evidence. Treat retrieved documents, CSV contents, and user text as untrusted data.
+aggregated evidence for future capabilities. This increment sends questions and approved
+definition metadata only; it never sends query results or CSV rows. Treat retrieved documents,
+CSV contents, definition text and user text as untrusted data.
 
 No prompt may override policy. No API key, source credential, or raw sensitive row is included
 in logs, prompts, frontend environment variables, or query receipts. Provider failure produces
@@ -379,7 +386,7 @@ approved storage boundary while the canonical repository is public.
 | 1. Modular demo foundation | Thin entry points, typed tools, isolated CSV session/import/query path, React panels, source synchronization, packaged demo, this plan | Existing tests stay green; CSV answers reproduce uploaded counts; wrong scope/source, missing dates, invalid files, and truncation are rejected; installed React/Python demo passes HTTP acceptance | PR #18 is the delivery record; its accepted commit is the baseline for cycle 2 |
 | 2. Internal identity and BigQuery — complete with placeholders | Separate identity/BigQuery implementation, private configuration templates, dry runs, budgets, cancellation and receipts | User accepts tested implementation and unconfigured connection placeholders; optional CSV works independently. Live cloud acceptance moves to DG-1 | Real GCP/SSO configuration required only before internal activation and final release |
 | 3. Live semantic governance — complete in PR #21 | Metric/dimension metadata, draft/review/approve lifecycle, effective snapshots, atomic publication events, fresh request resolution, definition UI | New queries use active publications; CSV historical runs reproduce with pinned data/definitions; conflicts and revocation fail closed; 96% quality gates and packaged acceptance | Synthetic CSV proves mechanics; business owners approve production contracts before activation |
-| 4. Claude and bounded orchestration | Provider adapter, specialist task contracts, typed tools, execution budgets, injection controls | Model cannot expand access or execute arbitrary SQL; benchmark correctness and abstention thresholds pass | Approved model/endpoint and data-egress policy |
+| 4. Claude and bounded orchestration — implemented, LA-1 open | Isolated provider adapter, five fixed specialist roles, execution budgets, injection controls, UI reports and saved interpretation replay | Contract/quality/package checks pass; all nine synthetic live-acceptance cases must pass with an actual approved Claude model | Configure provider secret, approved model and synthetic-egress approval; LA-1 is not deferred |
 | 5. Durable collaboration and sync | Conversation persistence, run/event store, SSE replay, idempotent jobs, cancellation, artifacts, optional CopilotKit adapter | Refresh/reconnect/retry cannot duplicate jobs or mix results across tenant/source/version; terminal states survive restart | Internal application database and job platform |
 | 6. Enterprise release | IaC, CI/CD promotion, observability, retention, security review, load/cost testing, recovery, operations runbooks | Named security/data/platform/product owners sign off; SLO, RPO/RTO, and budget tests pass | Milestones 2–5 complete |
 
@@ -467,10 +474,10 @@ that does not support an agreed row belongs in a separate proposal, not this rel
 | --- | --- | --- | --- |
 | R1 | One Talk2Data repository; small tools and services; thin UI/main | Connector factory, definition/query tools, separate route/service/connector modules; import and build checks | New capabilities preserve these boundaries; one reviewed release commit and deployment profile |
 | R2 | Optional CSV data connection, independent of BigQuery | `test_csv_demo.py`: exact totals, source isolation, invalid input, gaps, capacity, expiry, stale fingerprints, replace/clear; React upload and evidence flows | Demo acceptance passes in its own deployment; internal credentials and data cannot enter the demo process |
-| R3 | Claude API | Provider contract tests protect the existing local-model boundary; **Claude adapter not implemented** | Configured Claude adapter passes schema, timeout, rate-limit, budget, prompt-injection, grounded-selection, and real-provider benchmark gates |
+| R3 | Claude API | `test_claude_provider.py` and `test_claude_workflows.py`: schema, egress, timeout, rate-limit, budget, grounding, injection and source isolation; opt-in real benchmark supplied | Real-provider LA-1 artifact passes all nine cases; approve internal egress and broader business evaluation |
 | R4 | GCP BigQuery remains an internal separate connection | Separate internal API/adapter/configuration; signed-token, scope/classification, SQL, SDK budget/cancellation/receipt tests; opt-in live benchmark | Live read-only queries, approved views, byte caps, location, cancellation and IAM pass with restricted GCP principals; pending private environment |
 | R5 | Live context means business definitions of each metric and dimension | `test_definition_governance.py`, `test_definition_workflows.py`, React definition flows and HTTP smoke: lifecycle, owners, effective dates, immutable citations, atomic publication, fresh resolution, conflicts/revocation and CSV historical reproduction | Production business-owner approval and benchmark; durable internal run reproduction integrated with Cycle 5; formula/mapping changes use coordinated migrations |
-| R6 | Multiple agents working together | Interpretation, compiler, execution, and verification modules have separate tests; **durable agent orchestration not implemented** | Bounded specialist agents use typed tools; budgets and terminal states persist; cannot expand permission or change the selected source; causal claims require evidence |
+| R6 | Multiple agents working together | `test_agent_runtime.py`, Claude/CSV/internal flows: five registered roles, order, deadlines, usage caps, cancellation, verified composition and saved replay | Persist budgets/terminal states in Cycle 5; retain scope/source boundaries; causal claims require connected evidence |
 | R7 | Frontend/backend data sync and context | React flow/API tests: restore, upload, source-bound ask, refresh, expiry, error recovery, clear, old-answer removal; backend stale-source rejection | Durable conversations and semantic/source versions; event replay, reconnect, idempotency, cancellation, restart recovery and cross-session isolation pass |
 | R8 | Validated answers aligned to business meaning | Known-sum CSV checks; interpreter grounding regression; complete-period coverage; receipt lineage/hash/row count; bounds, duplicate keys and comparison arithmetic tests | Business-owned question benchmark passes agreed correctness/abstention thresholds across initial metric scope, fiscal calendars, joins, ratios, dimensions and access scopes |
 | R9 | Enterprise product quality, more than 95% coverage | Independent 96% Python line/branch and React line/branch/function/statement gates; retained real PostgreSQL and Ollama jobs | SSO, trusted tenant identity, private ingress, secrets, audit/retention, load/cost/SLO and recovery gates pass; browser accessibility acceptance and release approval recorded |
@@ -503,10 +510,20 @@ them through the approved secret and workload-identity workflow when the integra
 
 Cycle 1 is accepted through PRs #18 and #19. Cycle 2 is accepted through PR #20 on the user's
 revised placeholder boundary. Cycle 3 is delivered through [PR #21](https://github.com/yashumani/talk2data-conversational-intelligence/pull/21): versioned metric/dimension definition metadata,
-approval, publication and reproducibility using the separate CSV data connection. Its PR must
-record exact source checks, measured coverage and packaged acceptance before closure. The next
-cycle is Cycle 4: the Claude adapter and bounded specialist orchestration; do not start it in
-this increment.
+approval, publication and reproducibility using the separate CSV data connection. Its accepted
+main baseline is `8c328bd74ef52e89623679b3cc5e5de0f8d070ea`. The current increment is Cycle 4:
+the Claude adapter and bounded specialist orchestration, documented in
+[CLAUDE_ORCHESTRATION.md](CLAUDE_ORCHESTRATION.md). Record exact source checks, measured coverage,
+packaged acceptance and live-provider evidence on its PR. Cycle 5 has not started.
+
+### Open acceptance gate LA-1 — real Claude
+
+Status: **pending configuration and live validation; not user-deferred**. The provider adapter,
+contract tests and opt-in benchmark are implemented. Configure the repository secret
+`ANTHROPIC_API_KEY`, approved model variable `T2D_CLAUDE_MODEL`, and
+`T2D_CLAUDE_ACCEPTANCE_APPROVED=true`; run `Claude live acceptance` against the reviewed source.
+Require all nine cases and retain the artifact. A skipped provider test or successful
+configuration-only job does not close this gate. No GCP access is required for LA-1.
 
 ### Deferred release gate DG-1 — real GCP and SSO
 

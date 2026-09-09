@@ -5,9 +5,10 @@ import { DefinitionPanel } from "./components/DefinitionPanel";
 import { DefinitionReview } from "./components/DefinitionReview";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { EvidencePanel } from "./components/EvidencePanel";
+import { AgentRunPanel } from "./components/AgentRunPanel";
 import { useWorkspace } from "./hooks/useWorkspace";
 import { api, ApiError } from "./lib/api";
-import type { ChatResult, DemoSession, Source, WorkspaceState } from "./lib/contracts";
+import type { AgentRun, ChatResult, DemoSession, Source, WorkspaceState } from "./lib/contracts";
 import type { DefinitionDraft, DefinitionEdit, DefinitionView, DraftStatus } from "./lib/definitions";
 
 const metric = { id: "MOBILE_ACTIVATIONS", name: "Mobile Activations", definition: "Completed new connections",
@@ -195,4 +196,36 @@ it("wires the definition and history panels into the application and disables re
   await change("definition-reason", "Correct withdrawn publication");
   await run(() => renderer.root.findByProps({ id: "definition-form" }).props.onSubmit({ preventDefault: vi.fn() }));
   expect(api.createDraft).toHaveBeenCalled();
+});
+
+it("distinguishes configured Claude, governed stages and saved interpretation replay", async () => {
+  const trace: AgentRun = { status: "ANSWERED", provider: "claude", model: "claude-contract-test",
+    replayed_interpretation: false, steps: [{ role: "SEMANTIC_RESOLVER", sequence: 1, status: "SUCCEEDED" }],
+    usage: { model_calls: 1, input_tokens: 1000, output_tokens: 80, usage_complete: true } };
+  stored.set(key, JSON.stringify(session));
+  vi.mocked(api.state).mockResolvedValue({ ...loaded, interpreter: "claude", last_response: { ...result, agent_run: trace } });
+  await mount(<App />);
+  expect(rendered()).toContain("Claude assisted");
+  expect(rendered()).toContain("Your question and approved definition metadata are sent to Claude");
+  expect(rendered()).toContain("Understand the question");
+  expect(rendered()).not.toContain("unsuccessful attempt may be missing");
+  await run(() => renderer.update(<AgentRunPanel run={{ ...trace, replayed_interpretation: true,
+    steps: [{ role: "FUTURE_STAGE", sequence: 1, status: "SUCCEEDED" }],
+    usage: { ...trace.usage, model_calls: 0, usage_complete: false } }} />));
+  expect(rendered()).toContain("Saved interpretation reused");
+  expect(rendered()).toContain("FUTURE_STAGE"); expect(rendered()).toContain("unsuccessful attempt may be missing");
+  await run(() => renderer.update(<AgentRunPanel run={{ ...trace, provider: "rules", model: null }} />));
+  expect(rendered()).toContain("Rules"); expect(rendered()).not.toContain("Recorded tokens");
+  await run(() => renderer.update(<HistoryPanel runs={[saved]} result={{ ...result, agent_run: trace }} busy={false} onRerun={async () => {}} />));
+  expect(rendered()).toContain("How this answer was prepared");
+});
+
+it("removes an earlier answer while a new provider request fails", async () => {
+  stored.set(key, JSON.stringify(session));
+  vi.mocked(api.state).mockResolvedValue({ ...loaded, interpreter: "claude", last_response: result });
+  await mount();
+  vi.mocked(api.ask).mockRejectedValue(new ApiError(503, "Claude unavailable"));
+  await run(() => hook.ask("Mobile activations last month?"));
+  expect(hook.state?.last_response).toBeNull();
+  expect(hook.error).toBe("Claude unavailable");
 });

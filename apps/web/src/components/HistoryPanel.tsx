@@ -1,5 +1,6 @@
 import type { ChatResult } from "../lib/contracts";
 import type { SavedRun } from "../lib/definitions";
+import { AgentRunPanel } from "./AgentRunPanel";
 
 export function HistoryPanel({ runs, result, busy, onRerun }: {
   runs: SavedRun[]; result: ChatResult | null; busy: boolean; onRerun: (runId: string) => Promise<void>;
@@ -17,6 +18,7 @@ export function HistoryPanel({ runs, result, busy, onRerun }: {
       <p className="small">Uses the saved CSV and definitions. Your current CSV selection is preserved.</p>
       <p>{result.answer?.text ?? result.message}</p>
       {result.semantic_context && <p className="small">{result.semantic_context.metric.name} · Definition version {result.semantic_context.metric.definition_version}</p>}
+      <AgentRunPanel run={result.agent_run ?? null} />
     </div>}
   </section>;
 }

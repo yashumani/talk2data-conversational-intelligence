@@ -1,7 +1,10 @@
 # Run the isolated React + CSV demonstration
 
-This is an optional, single-worker demonstration. It does not connect BigQuery, Claude,
-or internal data. Existing `/demo` behavior and existing backend selection remain available.
+This is an optional, single-worker demonstration. It does not connect BigQuery or internal data.
+It defaults to rules-only; Claude interpretation can be enabled through its own private configuration
+as described in [the Cycle 4 runbook](CLAUDE_ORCHESTRATION.md). CSV rows and query results remain local;
+opt-in Claude receives questions and approved definition metadata. Existing `/demo` behavior and
+existing backend selection remain available.
 See the [product orchestration plan](PRODUCT_ORCHESTRATION_PLAN.md) for the full release scope.
 
 ## Requirements
@@ -154,8 +157,9 @@ Python line and branch coverage must each reach 96%. Frontend lines, statements,
 and branches must each reach 96%. React flow tests run in an in-memory renderer and check
 session restore/expiry, uploads, question submission, error recovery, evidence matching,
 refresh, clearing, and overlapping-operation prevention. They do not provide browser or visual QA.
-BigQuery, Claude, browser end-to-end, load, and enterprise identity tests are not covered by
-these local foundation checks.
+Real BigQuery/Claude, browser end-to-end, load and enterprise identity acceptance are not proved
+by these local checks. The separate Claude benchmark and its LA-1 gate are documented in the
+[provider runbook](CLAUDE_ORCHESTRATION.md#verification-and-live-gate-la-1).
 
 ## Expected errors
 
@@ -172,6 +176,9 @@ these local foundation checks.
   abstains and does not query another source.
 - **INVALID:** Unsupported metric, dimension, scope, or result size. Narrow the question or
   use the supported template.
+- **429:** The configured Claude concurrency or session question budget is exhausted.
+- **502/503/504:** Invalid/unavailable/timed-out provider or exhausted execution budget; no
+  alternate model/data connection or previous answer is substituted. Refine or retry explicitly.
 
 HTTP retries are not redirected to other data connections. If an upload succeeds but the
 following refresh fails, use **Refresh state** to recover the accepted backend state.

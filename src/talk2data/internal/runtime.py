@@ -11,11 +11,12 @@ from talk2data.domain.chat import DemoChatRequest, DemoChatResponse
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import AccessContext
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
+from talk2data.services.agent_runtime import AgentRun
+from talk2data.services.claude_interpreter import BoundQuestionInterpreter, ClaudeRuntime
 from talk2data.services.definition_governance import DefinitionGovernance
 from talk2data.services.definition_store import DefinitionStore
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.ephemeral_run import EphemeralRunStore
-from talk2data.services.interpreter import CompositeQuestionInterpreter, HeuristicQuestionInterpreter
 from talk2data.services.policy import PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.semantic import SemanticRegistry
@@ -33,20 +34,15 @@ class InternalQueryRuntime:
         registries: dict[str, ConnectorRegistry],
         maximum_active: int,
         definition_store: DefinitionStore | None = None,
+        language: ClaudeRuntime | None = None,
     ) -> None:
         self.domains, self.registries, self.maximum_active = domains, registries, maximum_active
+        self.language = language or ClaudeRuntime()
         self.definition_store = definition_store or DefinitionStore()
         self.definitions = {
             tenant: DefinitionGovernance(self.definition_store, f"internal:{tenant}", domains.get(tenant))
             for tenant in domains.list_tenants()
         }
-        policy = PolicyEngine()
-        self.semantics = SemanticRegistry(domains, policy)
-        self.compiler = BusinessQueryCompiler(self.semantics)
-        self.admissibility = QuestionAdmissibilityEngine(
-            CompositeQuestionInterpreter(HeuristicQuestionInterpreter(), None),
-            policy,
-        )
         self.active: dict[tuple[str, str, UUID], asyncio.Task[DemoChatResponse]] = {}
 
     async def answer(
@@ -67,14 +63,17 @@ class InternalQueryRuntime:
         snapshot = definitions.resolve(access, definition_snapshot_id, require_current=True)
         domains = DomainPackRegistry.from_snapshot(snapshot.pack)
         compiler = BusinessQueryCompiler(SemanticRegistry(domains, PolicyEngine()))
+        run = AgentRun(self.language.config.limits)
+        interpreter = BoundQuestionInterpreter(self.language, access, run)
         service = DemoChatService(
             domain_registry=domains,
-            admissibility_engine=self.admissibility,
+            admissibility_engine=QuestionAdmissibilityEngine(interpreter, PolicyEngine()),
             query_compiler=compiler,
             session_store=EphemeralRunStore(),
             connector_registry=self.registries[access.tenant_id],
-            ai_model=None,
+            ai_model=self.language.config.model,
             synthetic_data=False,
+            agent_run=run,
         )
         task = asyncio.create_task(
             service.answer(
@@ -82,7 +81,7 @@ class InternalQueryRuntime:
                     question=question,
                     access_context=access,
                     as_of=as_of,
-                    use_llm=False,
+                    use_llm=self.language.config.enabled,
                     include_debug=True,
                 )
             )

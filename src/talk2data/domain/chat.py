@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
+from talk2data.domain.agents import AgentRunReport
 from talk2data.domain.governance import SemanticCitation
 from talk2data.domain.models import (
     BusinessQueryIR,
@@ -126,4 +127,5 @@ class DemoChatResponse(BaseModel):
     synthetic_data: bool = True
     context_used: bool = False
     semantic_context: SemanticCitation | None = None
+    agent_run: AgentRunReport | None = None
     warnings: list[str] = Field(default_factory=list)

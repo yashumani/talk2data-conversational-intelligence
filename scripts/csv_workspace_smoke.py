@@ -88,6 +88,23 @@ def run(base_url: str) -> dict[str, Any]:
         check(receipt["source_kind"] == "csv_demo", "Receipt identifies the CSV connector")
         check(receipt["source_fingerprint"] == fingerprint, "Receipt is bound to the selected source")
         check(answer["ai_model"] is None, "CSV answers require no model service")
+        trace = answer["agent_run"]
+        check(
+            [step["role"] for step in trace["steps"]]
+            == [
+                "SEMANTIC_RESOLVER",
+                "QUERY_PLANNER",
+                "QUERY_EXECUTOR",
+                "RESULT_VERIFIER",
+                "ANSWER_COMPOSER",
+            ]
+            and all(step["status"] == "SUCCEEDED" for step in trace["steps"]),
+            "Five specialist stages complete in the required order",
+        )
+        check(
+            trace["provider"] == "rules" and trace["usage"]["model_calls"] == 0,
+            "Default CSV processing does not call a language provider",
+        )
         restored = json.loads(request(API + "/state", token=token))
         check(restored["last_response"] == answer, "Backend state restores the latest result")
         check(
@@ -177,6 +194,11 @@ def run(base_url: str) -> dict[str, Any]:
         check(
             historical["receipt"]["result_rows"] == receipt["result_rows"],
             "Old run reproduces its original CSV",
+        )
+        check(
+            historical["agent_run"]["replayed_interpretation"]
+            and historical["agent_run"]["usage"]["model_calls"] == 0,
+            "Historical reproduction reuses its saved interpretation without model calls",
         )
         check(
             json.loads(request(API + "/state", token=token))["source"] == replacement,

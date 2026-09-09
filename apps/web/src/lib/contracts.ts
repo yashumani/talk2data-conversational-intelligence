@@ -1,5 +1,14 @@
 import type { DefinitionRecord, DefinitionView, SavedRun } from "./definitions";
 
+export interface AgentRun {
+  status: string;
+  provider: "rules" | "claude";
+  model: string | null;
+  replayed_interpretation: boolean;
+  steps: { role: string; status: string; sequence: number }[];
+  usage: { model_calls: number; input_tokens: number; output_tokens: number; usage_complete: boolean };
+}
+
 export interface Source {
   source_kind: "csv_demo";
   metric_ids: string[];
@@ -12,6 +21,7 @@ export interface Source {
 }
 
 export interface ChatResult {
+  agent_run?: AgentRun | null;
   status: string;
   message: string;
   session_id: string;
@@ -54,7 +64,8 @@ export interface WorkspaceState {
     };
   };
   last_response: ChatResult | null;
-  interpreter: "rules";
+  interpreter: "rules" | "claude";
+  language?: { provider: "rules" | "claude"; status: string; sends_questions: boolean; sends_csv_rows: false };
   internal_connections_available: false;
   definitions?: DefinitionView;
   history?: SavedRun[];

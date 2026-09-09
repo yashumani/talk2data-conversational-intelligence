@@ -1,0 +1,20 @@
+{
+  "enabled": false,
+  "model": null,
+  "secret_ref": "env://T2D_CLAUDE_API_KEY",
+  "egress_approved": false,
+  "allowed_tenants": [],
+  "allowed_metric_ids": [],
+  "maximum_classification": "INTERNAL",
+  "maximum_input_tokens": 8000,
+  "maximum_output_tokens": 512,
+  "maximum_prompt_bytes": 40000,
+  "request_timeout_seconds": 25,
+  "maximum_concurrent_requests": 4,
+  "limits": {
+    "deadline_seconds": 90,
+    "maximum_steps": 6,
+    "maximum_model_calls": 1,
+    "maximum_total_tokens": 12000
+  }
+}

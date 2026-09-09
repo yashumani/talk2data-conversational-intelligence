@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 from uuid import UUID
 
 from talk2data.connectors.base import StructuredQueryPlan
@@ -13,6 +15,7 @@ from talk2data.connectors.postgres import (
     PostgreSQLSourceNotReadyError,
 )
 from talk2data.connectors.registry import ConnectorRegistry, ConnectorRegistryError
+from talk2data.domain.agents import AgentRole
 from talk2data.domain.chat import (
     ChatStatus,
     DemoChatRequest,
@@ -29,10 +32,13 @@ from talk2data.domain.models import (
     QuestionVerdict,
 )
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
+from talk2data.services.agent_runtime import AgentRun
 from talk2data.services.certification import CertifiedAnswerComposer, ResultSenseValidator
 from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.session_port import ChatSessionStore
 from talk2data.tools.query import ExecuteQueryTool
+
+T = TypeVar("T")
 
 
 class DemoChatService:
@@ -48,6 +54,7 @@ class DemoChatService:
         connector_registry: ConnectorRegistry,
         ai_model: str | None,
         synthetic_data: bool,
+        agent_run: AgentRun | None = None,
     ) -> None:
         self._domain_registry = domain_registry
         self._admissibility_engine = admissibility_engine
@@ -56,16 +63,33 @@ class DemoChatService:
         self._connector_registry = connector_registry
         self._ai_model = ai_model
         self._synthetic_data = synthetic_data
+        self._run = agent_run
         self._validator = ResultSenseValidator()
         self._composer = CertifiedAnswerComposer()
 
     async def answer(self, request: DemoChatRequest) -> DemoChatResponse:
+        if self._run is None:
+            return await self._answer(request)
+        response = await self._run.finish(lambda: self._answer(request))
+        self._run.report.status = response.status.value
+        response.agent_run = self._run.report.model_copy(deep=True)
+        return response
+
+    async def _async(self, role: AgentRole, operation: Callable[[], Awaitable[T]]) -> T:
+        return await operation() if self._run is None else await self._run.async_step(role, operation)
+
+    def _sync(self, role: AgentRole, operation: Callable[[], T]) -> T:
+        return operation() if self._run is None else self._run.sync(role, operation)
+
+    async def _answer(self, request: DemoChatRequest) -> DemoChatResponse:
         pack = self._domain_registry.get(request.access_context.tenant_id)
         session_id = await self._resolve_session(request)
         question_request = QuestionRequest.model_validate(
             request.model_dump(exclude={"as_of", "include_debug"})
         )
-        decision = await self._admissibility_engine.evaluate(question_request, pack)
+        decision = await self._async(
+            "SEMANTIC_RESOLVER", lambda: self._admissibility_engine.evaluate(question_request, pack)
+        )
         await self._session_store.record_evaluation(
             session_id=session_id,
             question=request.question,
@@ -81,10 +105,13 @@ class DemoChatService:
                 message=decision.user_message,
             )
 
-        compilation = self._query_compiler.compile(
-            request=request,
-            decision=decision,
-            session_id=session_id,
+        compilation = self._sync(
+            "QUERY_PLANNER",
+            lambda: self._query_compiler.compile(
+                request=request,
+                decision=decision,
+                session_id=session_id,
+            ),
         )
         if compilation.query_ir is None:
             status = (
@@ -145,7 +172,9 @@ class DemoChatService:
             plan = plan.model_copy(
                 update={"row_limit": min(plan.row_limit, connector.descriptor.maximum_rows)}
             )
-            receipt = await ExecuteQueryTool(connector).run(plan, request.access_context)
+            receipt = await self._async(
+                "QUERY_EXECUTOR", lambda: ExecuteQueryTool(connector).run(plan, request.access_context)
+            )
         except (DemoSourceNotReadyError, PostgreSQLSourceNotReadyError, SourceNotReadyError) as exc:
             return self._non_answer_response(
                 session_id=session_id,
@@ -173,10 +202,13 @@ class DemoChatService:
             )
 
         metric = next(item for item in pack.metrics if item.id == query_ir.metric_id)
-        receipt, verification = self._validator.validate(
-            metric=metric,
-            query_ir=query_ir,
-            receipt=receipt,
+        receipt, verification = self._sync(
+            "RESULT_VERIFIER",
+            lambda: self._validator.validate(
+                metric=metric,
+                query_ir=query_ir,
+                receipt=receipt,
+            ),
         )
         if verification.status != VerificationStatus.VERIFIED:
             return DemoChatResponse(
@@ -193,11 +225,14 @@ class DemoChatService:
                 warnings=[*compilation.warnings, *receipt.warnings],
             )
 
-        answer = self._composer.compose(
-            pack=pack,
-            metric=metric,
-            query_ir=query_ir,
-            receipt=receipt,
+        answer = self._sync(
+            "ANSWER_COMPOSER",
+            lambda: self._composer.compose(
+                pack=pack,
+                metric=metric,
+                query_ir=query_ir,
+                receipt=receipt,
+            ),
         )
         return DemoChatResponse(
             status=ChatStatus.ANSWERED,
@@ -244,7 +279,9 @@ class DemoChatService:
         )
 
     def _resolved_ai_model(self, mode: InterpreterMode) -> str | None:
-        return None if mode == InterpreterMode.RULES else self._ai_model
+        if mode == InterpreterMode.RULES:
+            return None
+        return (self._run.report.model if self._run is not None else None) or self._ai_model
 
 
 def status_for_verdict(verdict: QuestionVerdict) -> ChatStatus | None:

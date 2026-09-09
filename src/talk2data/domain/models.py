@@ -119,6 +119,7 @@ class AuthorizationStatus(StrEnum):
 
 class InterpreterMode(StrEnum):
     RULES = "RULES"
+    CLAUDE_AND_RULES = "CLAUDE_AND_RULES"
     OLLAMA_AND_RULES = "OLLAMA_AND_RULES"
     OLLAMA_FAILED_RULES_FALLBACK = "OLLAMA_FAILED_RULES_FALLBACK"
 
