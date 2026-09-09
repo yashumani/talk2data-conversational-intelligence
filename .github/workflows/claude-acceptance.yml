@@ -6,6 +6,8 @@ on:
       - "src/**"
       - "tests/**"
       - "pyproject.toml"
+      - "requirements/**"
+      - "scripts/dependencies.py"
       - "examples/claude/**"
       - ".github/workflows/claude-acceptance.yml"
   workflow_dispatch:
@@ -55,7 +57,7 @@ jobs:
               summary.write(f'Claude live acceptance: **{status}**. A skipped live job is not provider validation.\n')
           print(status)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: claude-configuration
           path: claude-configuration.json
@@ -71,12 +73,13 @@ jobs:
       CLAUDE_ACCEPTANCE_MODEL: ${{ inputs.model || vars.T2D_CLAUDE_MODEL }}
       T2D_RUN_LIVE_CLAUDE: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           cache: pip
-      - run: python -m pip install -e '.[dev]'
+          cache-dependency-path: requirements/*.txt
+      - run: python scripts/dependencies.py install dev
       - name: Create synthetic-only acceptance configuration
         run: |
           python - <<'PY'
@@ -98,7 +101,7 @@ jobs:
           PY
       - name: Verify real interpretation, exact totals, abstention and saved replay
         run: python -m pytest tests/test_live_claude.py -q
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: claude-live-acceptance

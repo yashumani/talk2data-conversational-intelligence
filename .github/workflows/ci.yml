@@ -30,19 +30,25 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev]'
+          cache-dependency-path: requirements/*.txt
+      - run: python scripts/dependencies.py install dev
       - run: python scripts/validate_workflows.py
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src
       - run: pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=96
       - run: python scripts/check_coverage.py
+      - name: Enforce coverage for dependency and workflow guards
+        run: >-
+          pytest tests/test_build_hardening.py
+          --cov=scripts.dependencies --cov=scripts.validate_workflows
+          --cov-report=term-missing --cov-report=json:build-tool-coverage.json
+          --cov-fail-under=96
       - name: Verify incomplete evidence blocks a production release
         run: |
           if python -m talk2data.operations.release \
@@ -55,11 +61,12 @@ jobs:
             test "$?" -eq 1
           fi
           python -c 'import json; r=json.load(open("release-readiness-report.json")); assert r["status"] == "BLOCKED" and not r["deployment_authorized"]'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: python-coverage-${{ matrix.python-version }}
           path: |
             coverage.json
+            build-tool-coverage.json
             release-readiness-report.json
           if-no-files-found: error

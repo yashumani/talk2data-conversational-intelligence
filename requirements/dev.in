@@ -1,0 +1,2 @@
+# The lock compiler is needed only by maintainers, never the runtime.
+uv==0.12.8
