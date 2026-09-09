@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ChatResult } from "../lib/contracts";
+import { languageNames, type LanguageProvider } from "../lib/language";
 import { AgentRunPanel } from "./AgentRunPanel";
 
 interface Props {
@@ -9,7 +10,7 @@ interface Props {
   asOf: string;
   onDate: (value: string) => void;
   onAsk: (question: string) => Promise<void>;
-  interpreter?: "rules" | "claude";
+  interpreter?: LanguageProvider;
 }
 
 const EXAMPLES = [
@@ -24,8 +25,9 @@ export function ChatPanel({ ready, busy, result, asOf, onDate, onAsk, interprete
     <p className="eyebrow">02 / Ask your data</p>
     <h2 id="chat-heading">A business question. A traceable answer.</h2>
     <p>This workspace supports Mobile Activations using approved business definitions.
-      {interpreter === "claude" ? " Claude interprets your question; governed services query and verify the data." : " Rules interpret your question; governed services query and verify the data."}</p>
-    {interpreter === "claude" && <p className="small">Your question and approved definition metadata are sent to Claude. CSV rows and query results stay in this workspace.</p>}
+      {interpreter !== "rules" ? ` ${languageNames[interpreter]} interprets your question; governed services query and verify the data.` : " Rules interpret your question; governed services query and verify the data."}</p>
+    {interpreter !== "rules" && <p className="small">{`Your question and approved definition metadata are sent to ${languageNames[interpreter]}. CSV rows and query results stay in this workspace.`}</p>}
+    {interpreter === "gemini" && <p className="small">Use synthetic demo questions and definitions. Google's free API tier may use submitted content to improve its products.</p>}
     <div className="examples" aria-label="Example questions">
       {EXAMPLES.map(example => <button key={example} className="secondary"
         disabled={busy} onClick={() => setQuestion(example)}>{example}</button>)}

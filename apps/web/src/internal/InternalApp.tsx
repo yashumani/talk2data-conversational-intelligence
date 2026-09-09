@@ -3,6 +3,7 @@ import { AgentRunPanel } from "../components/AgentRunPanel";
 import { terminal } from "../lib/runs";
 import { useInternalWorkspace } from "./useInternalWorkspace";
 import { InternalEvidence } from "./InternalEvidence";
+import { languageNames } from "../lib/language";
 
 export function InternalApp() {
   const workspace = useInternalWorkspace();
@@ -14,7 +15,7 @@ export function InternalApp() {
   const result = workspace.run?.result;
   return <div className="app">
     <header className="app-header"><div><p className="eyebrow">Talk2Data</p><h1>Business intelligence workspace</h1></div>
-      <span className="badge">Internal · {workspace.state?.language.provider === "claude" ? "Claude assisted" : "Governed questions"}</span>
+      <span className="badge">Internal · {workspace.state && workspace.state.language.provider !== "rules" ? `${languageNames[workspace.state.language.provider]} assisted` : "Governed questions"}</span>
     </header>
     <main>
       {workspace.error && <p className="error" role="alert">{workspace.error}</p>}

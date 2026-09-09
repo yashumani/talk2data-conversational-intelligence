@@ -1,9 +1,10 @@
 import type { DefinitionRecord, DefinitionView, SavedRun } from "./definitions";
 import type { SyncState } from "./runs";
+import type { LanguageProvider } from "./language";
 
 export interface AgentRun {
   status: string;
-  provider: "rules" | "claude";
+  provider: LanguageProvider;
   model: string | null;
   replayed_interpretation: boolean;
   steps: { role: string; status: string; sequence: number }[];
@@ -66,8 +67,8 @@ export interface WorkspaceState {
     };
   };
   last_response: ChatResult | null;
-  interpreter: "rules" | "claude";
-  language?: { provider: "rules" | "claude"; status: string; sends_questions: boolean; sends_csv_rows: false };
+  interpreter: LanguageProvider;
+  language?: { provider: LanguageProvider; status: string; sends_questions: boolean; sends_csv_rows: false };
   internal_connections_available: false;
   definitions?: DefinitionView;
   history?: SavedRun[];

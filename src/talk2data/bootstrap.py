@@ -30,14 +30,12 @@ from talk2data.api.run_routes import install_run_errors
 from talk2data.api.web_assets import install_web_assets
 from talk2data.connectors.factory import build_connectors
 from talk2data.connectors.registry import ConnectorRegistry
-from talk2data.core.claude_config import ClaudeConfiguration, CsvLanguageSettings
 from talk2data.core.config import DataBackend, Settings, get_settings
 from talk2data.core.csv_config import CsvDemoSettings
+from talk2data.core.language_config import CsvLanguageSettings
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
-from talk2data.services.claude_interpreter import ClaudeRuntime
-from talk2data.services.claude_transport import ClaudeTransport
 from talk2data.services.csv_workspace import CsvDemoWorkspace
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.hermes import HermesConfiguration, HermesGatewayClient
@@ -46,6 +44,12 @@ from talk2data.services.interpreter import (
     HeuristicQuestionInterpreter,
     OllamaConfiguration,
     OllamaQuestionInterpreter,
+)
+from talk2data.services.language_factory import (
+    ProviderConfiguration,
+    ProviderTransport,
+    build_language_runtime,
+    load_language_configuration,
 )
 from talk2data.services.policy import PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
@@ -70,17 +74,15 @@ def create_app(
     settings: Settings | None = None,
     *,
     csv_settings: CsvDemoSettings | None = None,
-    csv_language_config: ClaudeConfiguration | None = None,
-    csv_language_transport: ClaudeTransport | None = None,
+    csv_language_config: ProviderConfiguration | None = None,
+    csv_language_transport: ProviderTransport | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     resolved_csv_settings = csv_settings or CsvDemoSettings()
     language_config = csv_language_config
     if resolved_csv_settings.enabled and language_config is None:
         language_path = CsvLanguageSettings().config_file
-        language_config = (
-            ClaudeConfiguration() if language_path is None else ClaudeConfiguration.load(language_path)
-        )
+        language_config = None if language_path is None else load_language_configuration(language_path)
 
     domain_registry = DomainPackRegistry(resolved_settings.domain_pack_directory)
     domain_registry.load()
@@ -208,7 +210,9 @@ def create_app(
     app.state.connector_registry = connector_registry
     app.state.demo_chat_service = demo_chat_service
     app.state.csv_workspace = (
-        CsvDemoWorkspace(resolved_csv_settings, ClaudeRuntime(language_config, csv_language_transport))
+        CsvDemoWorkspace(
+            resolved_csv_settings, build_language_runtime(language_config, csv_language_transport)
+        )
         if resolved_csv_settings.enabled
         else None
     )

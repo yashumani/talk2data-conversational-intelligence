@@ -22,13 +22,14 @@ from talk2data.domain.models import AccessContext, ClassificationLevel, Interpre
 from talk2data.domain.runs import RunError, RunRequest, RunSnapshot, principal
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.agent_runtime import AgentFailure, AgentRun
-from talk2data.services.claude_interpreter import BoundQuestionInterpreter, ClaudeRuntime
 from talk2data.services.csv_checkpoint import CsvCheckpoint, SavedInterpretation
 from talk2data.services.csv_import import REGIONS, CsvDataset, parse_csv
 from talk2data.services.definition_governance import EDIT, PUBLISH, REVIEW, REVOKE, DefinitionGovernance
 from talk2data.services.definition_store import DefinitionStore, DefinitionUnavailable
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.ephemeral_run import EphemeralRunStore
+from talk2data.services.language_contract import BoundQuestionInterpreter, LanguageRuntime
+from talk2data.services.language_factory import build_language_runtime
 from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION, PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
 from talk2data.services.run_coordinator import Observer, RunCoordinator
@@ -71,9 +72,9 @@ class DemoWorkspaceSession:
 
 
 class CsvDemoWorkspace:
-    def __init__(self, settings: CsvDemoSettings, language: ClaudeRuntime | None = None) -> None:
+    def __init__(self, settings: CsvDemoSettings, language: LanguageRuntime | None = None) -> None:
         self.settings = settings
-        self.language = language or ClaudeRuntime()
+        self.language = language or build_language_runtime()
         self._sessions: dict[str, DemoWorkspaceSession] = {}
         self.run_store = RunStore(settings.state_database_path)
         self.runs = RunCoordinator(self.run_store)
@@ -262,7 +263,7 @@ class CsvDemoWorkspace:
                 }
                 for run_id, run in reversed(item.history.items())
             ],
-            "interpreter": "claude" if self.language.config.enabled else "rules",
+            "interpreter": self.language.provider if self.language.config.enabled else "rules",
             "language": self.language.describe(),
             "internal_connections_available": False,
             "connections": [
@@ -314,7 +315,9 @@ class CsvDemoWorkspace:
         if self.language.config.enabled and replay is None:
             if item.language_questions >= self.settings.maximum_language_questions:
                 raise AgentFailure(
-                    "SESSION_LANGUAGE_BUDGET", "This demo session has reached its Claude question limit.", 429
+                    "SESSION_LANGUAGE_BUDGET",
+                    "This demo session has reached its language question limit.",
+                    429,
                 )
             item.language_questions += 1
         run = AgentRun(self.language.config.limits, observer)
@@ -338,7 +341,7 @@ class CsvDemoWorkspace:
             query_compiler=BusinessQueryCompiler(semantics),
             session_store=EphemeralRunStore(),
             connector_registry=registry,
-            ai_model=self.language.config.model,
+            ai_model=replay_model if replay is not None else self.language.config.model,
             synthetic_data=False,
             agent_run=run,
         )

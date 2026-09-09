@@ -198,15 +198,17 @@ it("wires the definition and history panels into the application and disables re
   expect(api.createDraft).toHaveBeenCalled();
 });
 
-it("distinguishes configured Claude, governed stages and saved interpretation replay", async () => {
-  const trace: AgentRun = { status: "ANSWERED", provider: "claude", model: "claude-contract-test",
+it.each(["claude", "gemini"] as const)("distinguishes configured %s, governed stages and saved interpretation replay", async provider => {
+  const name = provider === "gemini" ? "Gemini" : "Claude";
+  const trace: AgentRun = { status: "ANSWERED", provider, model: `${provider}-contract-test`,
     replayed_interpretation: false, steps: [{ role: "SEMANTIC_RESOLVER", sequence: 1, status: "SUCCEEDED" }],
     usage: { model_calls: 1, input_tokens: 1000, output_tokens: 80, usage_complete: true } };
   stored.set(key, JSON.stringify(session));
-  vi.mocked(api.state).mockResolvedValue({ ...loaded, interpreter: "claude", last_response: { ...result, agent_run: trace } });
+  vi.mocked(api.state).mockResolvedValue({ ...loaded, interpreter: provider, last_response: { ...result, agent_run: trace } });
   await mount(<App />);
-  expect(rendered()).toContain("Claude assisted");
-  expect(rendered()).toContain("Your question and approved definition metadata are sent to Claude");
+  expect(rendered()).toContain(`${name} assisted`);
+  expect(rendered()).toContain(`Your question and approved definition metadata are sent to ${name}`);
+  expect(rendered().includes("Use synthetic demo questions")).toBe(provider === "gemini");
   expect(rendered()).toContain("Understand the question");
   expect(rendered()).not.toContain("unsuccessful attempt may be missing");
   await run(() => renderer.update(<AgentRunPanel run={{ ...trace, replayed_interpretation: true,

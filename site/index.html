@@ -51,7 +51,7 @@
         <li><span aria-hidden="true">✓</span> CSV demo without GCP</li>
         <li><span aria-hidden="true">✓</span> Read-only BigQuery</li>
         <li><span aria-hidden="true">✓</span> Fast Parquet snapshots</li>
-        <li><span aria-hidden="true">✓</span> Optional Claude interpretation</li>
+        <li><span aria-hidden="true">✓</span> Optional Gemini or Claude interpretation</li>
       </ul>
     </div>
 
@@ -65,7 +65,7 @@
       </div>
       <div class="delivery-line"><span>Application and contracts</span><strong class="good">Complete</strong></div>
       <div class="delivery-line"><span>Automated quality gate</span><strong class="good">Passed</strong></div>
-      <div class="delivery-line"><span>Live Claude acceptance</span><strong class="warn">External input</strong></div>
+      <div class="delivery-line"><span>Live model acceptance</span><strong class="warn">External input</strong></div>
       <div class="delivery-line"><span>Private BigQuery / SSO proof</span><strong class="warn">External input</strong></div>
       <p class="fine-print">
         This is a tested development candidate. The public page never claims that missing
@@ -212,8 +212,9 @@
       <li><span>05</span><strong>Answer composer</strong><small>Presents only claims supported by the verified result and receipt.</small></li>
     </ol>
     <p class="boundary-note">
-      Claude is optional and bounded to interpretation. It never receives CSV rows or BigQuery
+      Gemini or Claude is optional and bounded to interpretation. It never receives CSV rows or BigQuery
       results, never chooses credentials, and never certifies its own numeric answer.
+      <a href="https://github.com/yashumani/talk2data-conversational-intelligence/blob/main/docs/GEMINI_API.md">Set up the Gemini CSV demo</a> with a backend API key; this public tour stays synthetic.
     </p>
   </section>
 

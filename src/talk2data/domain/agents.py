@@ -35,7 +35,7 @@ class AgentRunReport(BaseModel):
     status: str = "RUNNING"
     steps: list[AgentStep] = Field(default_factory=list)
     usage: AgentUsage = Field(default_factory=AgentUsage)
-    provider: Literal["rules", "claude"] = "rules"
+    provider: Literal["rules", "claude", "gemini"] = "rules"
     model: str | None = None
     replayed_interpretation: bool = False
     error_code: str | None = None

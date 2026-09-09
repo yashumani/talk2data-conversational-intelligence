@@ -1,0 +1,8 @@
+# Optional synthetic-demo language overlay. No BigQuery, Cloud Run or Cloud SQL dependency.
+services:
+  api:
+    environment:
+      T2D_GEMINI_API_KEY: "${GEMINI_API_KEY:?Set a server-side Gemini API key for the demo}"
+      T2D_CSV_LANGUAGE_CONFIG_FILE: /app/language/gemini.json
+    volumes:
+      - ./examples/gemini/csv-preview.json:/app/language/gemini.json:ro

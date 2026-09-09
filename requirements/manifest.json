@@ -1,7 +1,7 @@
 {
   "compiler": "uv==0.12.8",
   "sha256": {
-    "pyproject.toml": "b4606ded4eace98411fad63bc3ebbe0e0e9195c7582fbd8ef10faa964e371cee",
+    "pyproject.toml": "323d65efcd21362cf086edac0eaa43b2064ee5ab4af7dd430087e3333bcbad98",
     "requirements/build.in": "30fbde54c067e386cc444678f8c0f118adf9ffb466d37b5ae8e599ae54d35c49",
     "requirements/dev.in": "844912ca22821167497f0c48848f3bee570ffb27c48304489dae8438f0ab2c4c",
     "requirements/runtime.txt": "7fdbf8b43e29b8369e827a6c6af128ae7a9196cab972e2c1d2568b542e156f51",

@@ -215,6 +215,10 @@ ollama serve
 
 ### 2. Install the application
 
+For the cloud-independent CSV demo with Gemini preview interpretation, use the separate
+[Gemini activation guide](docs/GEMINI_API.md). It requires a backend API key, not BigQuery
+credentials. Free-tier availability and quota must be checked for the selected project/model.
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate

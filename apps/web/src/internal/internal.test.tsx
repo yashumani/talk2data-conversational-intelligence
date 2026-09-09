@@ -9,7 +9,7 @@ import { ApiError } from "../lib/api";
 const definition = { id: "MOBILE_ACTIVATIONS", name: "Activations", definition: "Successful connections", owner: "Owner", definition_version: 1, aliases: [] };
 const identity = { user_id: "analyst", tenant_id: "tenant", scope_id: "scope", source_binding: "binding" };
 const conversation = { conversation_id: "conversation", revision: 0, title: "New conversation", latest_run_id: null };
-const workspace = { identity, definitions: { revision: 0, mode: "SEPARATE_REVIEWER" as const, snapshot_id: "snapshot", version: "1", effective_from: "2026-01-01", status: "PUBLISHED" as const, metrics: [definition], dimensions: [], drafts: [], events: [] }, conversations: [], language: { provider: "rules" } };
+const workspace = { identity, definitions: { revision: 0, mode: "SEPARATE_REVIEWER" as const, snapshot_id: "snapshot", version: "1", effective_from: "2026-01-01", status: "PUBLISHED" as const, metrics: [definition], dimensions: [], drafts: [], events: [] }, conversations: [], language: { provider: "rules" as const } };
 const request = { client_request_id: "request", conversation_id: "conversation", expected_revision: 0, question: "mobile activations", as_of: "2026-08-01T12:00:00Z", definition_snapshot_id: "snapshot" };
 const initial: InternalRun = { run_id: "run", request, source_binding: "binding", status: "RUNNING", sequence: 1, progress: null, result: null, error_code: null, message: "Processing" };
 const final: InternalRun = { ...initial, status: "COMPLETED", sequence: 3, result: { status: "ANSWERED", message: "3100", session_id: "session", answer: { headline: "Activations", text: "3100 successful activations", caveats: ["Approved scope"] }, receipt: { receipt_id: "receipt", source_kind: "bigquery", source_fingerprint: null, result_hash: "hash", result_rows: [], row_count: 1, resolved_start: "2026-07-01", resolved_end: "2026-07-31", warnings: [] }, verification: { status: "VERIFIED", checks: [], failures: [] }, query_ir: null, warnings: [], semantic_context: { snapshot_id: "snapshot", metric: definition, dimensions: [], publication_sequence: 1, effective_from: "2026-01-01" } } };
@@ -143,9 +143,10 @@ it("ignores failed or late initial loads after unmount", async () => {
   await mount(); await action(() => renderer!.unmount()); await action(() => reject(new Error("offline")));
 });
 
-it("renders signed workspace, saved evidence and question controls", async () => {
-  vi.mocked(internalApi.load).mockResolvedValue({ ...workspace, conversations: [conversation], language: { provider: "claude" } });
+it.each(["claude", "gemini"] as const)("renders signed %s workspace, saved evidence and question controls", async provider => {
+  vi.mocked(internalApi.load).mockResolvedValue({ ...workspace, conversations: [conversation], language: { provider } });
   await mount(<InternalApp />);
+  expect(text()).toContain(`${provider === "gemini" ? "Gemini" : "Claude"} assisted`);
   expect(text()).toContain("Live business definitions"); expect(text()).toContain("3100 successful activations");
   expect(text()).not.toContain("Upload CSV"); expect(text()).toContain("Signed in as analyst");
   await action(() => button("New conversation").props.onClick());
