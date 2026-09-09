@@ -1,45 +1,51 @@
-# GitHub Pages deployment
+# GitHub Pages product showcase
 
-Talk2Data publishes a static demonstration interface to:
+Talk2Data publishes its static product showcase to:
 
 ```text
 https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
+## What Pages does
+
+The page is an honest, browser-only product tour and runtime launcher. It presents the current
+repository architecture rather than treating an older PostgreSQL/Ollama example as the primary
+enterprise design:
+
+- the runnable CSV demonstration, which requires neither GCP nor a model credential;
+- direct read-only BigQuery plus local SQLite state;
+- a governed BigQuery-to-Parquet snapshot queried locally with DuckDB;
+- optional Cloud Run, Cloud SQL and distributed workers for managed scale-out;
+- the bounded semantic resolver, planner, executor, verifier and answer-composer stages.
+
+The interactive preview contains four fixed scenarios calculated from the checked-in synthetic
+CSV acceptance fixture. Every preview is visibly labeled as a fixture and `preview: true`; it is
+not a live request or a production receipt. An unrecognized question abstains instead of creating
+a number.
+
 ## Hosting boundary
 
-GitHub Pages hosts only static HTML, CSS, and JavaScript. It cannot run:
+GitHub Pages hosts only static HTML, CSS and JavaScript. It cannot run FastAPI, React server APIs,
+SQLite, BigQuery, Parquet/DuckDB execution, Claude, Ollama or durable workers. Credentials,
+connection strings, source data and private semantic configuration must never be placed in the
+Pages artifact or browser configuration.
 
-- the FastAPI service
-- Ollama or model files
-- SQLite or enterprise data connectors
-- Hermes agents
-- Unified AI Brain retrieval
+The primary **Run the CSV workspace** action opens the exact `main` revision in GitHub Codespaces,
+where the real React and Python demonstration runs. The activation center links to the direct
+BigQuery, Parquet and optional managed-profile runbooks. Its lower reference generator remains
+available for the existing PostgreSQL/Ollama package API and is explicitly labeled as such.
 
-The published interface connects to an approved Talk2Data API over HTTPS. The API remains responsible for authentication, authorization, Ollama interpretation, deterministic query execution, receipts, and answer verification.
+## Optional public evaluation API
 
-## Deployment workflow
-
-`.github/workflows/pages.yml`:
-
-1. Configures GitHub Pages for a GitHub Actions publishing source.
-2. Writes `site/config.js` from the optional repository variable `T2D_PUBLIC_API_BASE_URL`.
-3. Validates the static site.
-4. Uploads the `site/` directory as the Pages artifact.
-5. Deploys through the protected `github-pages` environment.
-
-The current demonstration branch is `feat/github-pages-demo`. Retarget the workflow trigger to `main` after the stacked application pull requests are merged.
-
-## Connecting a backend
-
-The site resolves the API base URL in this order:
+The product tour can connect to an intentionally public Talk2Data evaluation API over HTTPS. The
+API base URL is resolved in this order:
 
 1. `?api=https://approved-api.example.com`
-2. The browser's saved setting
-3. `window.T2D_PUBLIC_API_BASE_URL` generated from the repository variable
-4. Blank, which leaves the interface in static-only mode
+2. the browser's saved setting;
+3. `window.T2D_PUBLIC_API_BASE_URL`, generated from the repository variable;
+4. blank, which keeps the safe fixture preview active.
 
-To configure the repository variable:
+To configure the optional repository variable:
 
 ```text
 Settings → Secrets and variables → Actions → Variables
@@ -47,24 +53,40 @@ Name: T2D_PUBLIC_API_BASE_URL
 Value: https://approved-talk2data-api.example.com
 ```
 
-The backend must:
+That backend must use HTTPS, allow origin `https://yashumani.github.io`, return ready from
+`GET /health/ready`, expose `POST /v1/chat/demo`, and keep all credentials outside the browser.
+Readiness is provider-neutral; the page does not require Ollama. The signed internal BigQuery API
+uses organizational identity and `/v1/internal/*`, so it is deliberately not connected from this
+public page.
 
-- use HTTPS when called from the Pages site
-- allow the origin `https://yashumani.github.io`
-- expose `GET /health/ready`
-- expose `POST /v1/chat/demo`
-- keep credentials and source-system secrets outside the browser
+## Deployment and verification
 
-## Enabling Pages
+`.github/workflows/pages.yml` builds on `main` and Cycle PR branches, but deploys only the exact
+`main` ref. It writes the optional public API URL, runs `scripts/validate_pages_site.py`, and
+uploads the `site/` directory without rewriting source after validation. Separate concurrency by
+event/ref prevents a PR build from canceling a production deployment.
 
-The workflow uses `actions/configure-pages` with enablement requested. When the repository's workflow token cannot change Pages settings, select **GitHub Actions** once under:
+`.github/workflows/verify-live-pages.yml` starts only after a successful Pages deployment (or an
+explicit manual run), eliminating the former PR-versus-live race. It verifies the product-tour,
+data-profile, fixture-label and `main` launch markers at the public URL.
 
-```text
-Settings → Pages → Build and deployment → Source
+Local validation:
+
+```bash
+python scripts/validate_pages_site.py
+node --check site/app.js
+node --check site/setup/app.js
+python scripts/validate_workflows.py
 ```
 
-A repository administrator can alternatively add a `PAGES_ADMIN_TOKEN` Actions secret with Pages and administration write permissions, allowing the workflow to perform first-time enablement.
+Repository validation proves the static contract. A live release review must also open the public
+URL, exercise every fixed preview including the abstention, confirm the activation-center links,
+check browser console errors, and inspect desktop/mobile/keyboard/screen-reader behavior. That
+browser work validates Pages only; it does not close the internal React workspace or private
+enterprise acceptance gates.
 
-## Accuracy statement
+## First-time Pages enablement
 
-The static site does not calculate business metrics or fabricate AI answers. It displays live responses returned by the governed backend. When no backend is connected, the UI remains visibly in `Static UI` mode and does not simulate a certified answer.
+If Pages has not been enabled for the repository, an administrator must select **GitHub Actions**
+once under `Settings → Pages → Build and deployment → Source`. The workflow does not request or
+consume an administration token.

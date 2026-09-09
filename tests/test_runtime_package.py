@@ -69,6 +69,7 @@ def test_builder_is_deterministic_and_credential_free() -> None:
         manifest = json.loads(archive.read("manifest.json"))
 
     assert RUNTIME_IMAGE in compose
+    assert "payload.get('status') == 'ready'" in compose
     assert "T2D_POSTGRES_DSN" in compose
     assert "${T2D_POSTGRES_DSN:?Set T2D_POSTGRES_DSN}" in compose
     assert "T2D_POSTGRES_DSN=postgresql://readonly_user:replace-me" in environment

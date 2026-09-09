@@ -1,4 +1,5 @@
 {
+  "analytics_mode": "bigquery",
   "bigquery": {
     "api_timeout_seconds": 10,
     "billing_project": "example-project",
@@ -7,6 +8,7 @@
     "maximum_rows": 100,
     "query_timeout_seconds": 60
   },
+  "parquet": null,
   "bigquery_catalog_path": "/run/talk2data/catalog.json",
   "domain_pack_directory": "/run/talk2data/domains",
   "entitlements_path": "/run/talk2data/entitlements.json",
@@ -22,5 +24,10 @@
     "maximum_token_lifetime_seconds": 3600,
     "token_header": "authorization"
   },
-  "maximum_active_queries": 8
+  "maximum_active_queries": 8,
+  "http_operations": {
+    "maximum_body_bytes": 65536,
+    "body_timeout_seconds": 5,
+    "maximum_inflight": 128
+  }
 }

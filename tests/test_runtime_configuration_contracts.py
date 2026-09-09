@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import re
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
 from talk2data.bootstrap import _is_sensitive_validation_location
+from talk2data.core.claude_config import ClaudeConfiguration
+from talk2data.core.internal_config import InternalRuntimeConfig
+from talk2data.core.parquet_config import ParquetSnapshotSettings
 from talk2data.domain.physical_mapping import PhysicalMappingRegistry
 from talk2data.main import create_app
+from talk2data.services.secrets import EnvironmentSecretResolver
 from tests.test_runtime_package import runtime_package_payload
 
 
@@ -52,3 +58,35 @@ def test_bootstrap_rejects_mapping_drift_and_requires_hermes_credentials(setting
         create_app(settings)
     assert not _is_sensitive_validation_location(None)
     assert _is_sensitive_validation_location(["body", "credentials", 0])
+
+
+def test_private_deployment_injects_the_secret_consumed_by_the_claude_adapter(monkeypatch):
+    deployment = Path("infra/gcp/main.tf").read_text()
+    injected_names = re.findall(r'env\s*\{\s*name\s*=\s*"([A-Z][A-Z0-9_]+)"', deployment)
+    configured_reference = ClaudeConfiguration().secret_ref
+    monkeypatch.delenv(configured_reference.removeprefix("env://"), raising=False)
+    for name in injected_names:
+        monkeypatch.setenv(name, "synthetic-deployment-secret")
+    # Exercise resolution from deployment wiring to provider configuration, without a provider call.
+    assert (
+        EnvironmentSecretResolver().resolve(configured_reference).get_secret_value()
+        == "synthetic-deployment-secret"
+    )
+
+
+def test_internal_analytics_modes_require_only_their_runtime_dependency(tmp_path):
+    from tests.internal_support import private_config
+
+    direct = private_config(tmp_path)
+    assert direct.analytics_mode == "bigquery" and direct.bigquery is not None
+    local = direct.model_copy(
+        update={
+            "analytics_mode": "parquet",
+            "bigquery": None,
+            "parquet": ParquetSnapshotSettings(directory=tmp_path / "snapshots"),
+        }
+    )
+    local = InternalRuntimeConfig.model_validate(local.model_dump(mode="python"))
+    assert local.bigquery is None and local.parquet is not None
+    with pytest.raises(ValueError, match="BigQuery settings"):
+        InternalRuntimeConfig.model_validate(direct.model_dump(mode="python") | {"bigquery": None})

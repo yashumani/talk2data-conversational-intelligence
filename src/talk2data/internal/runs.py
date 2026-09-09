@@ -7,8 +7,10 @@ from fastapi import Request
 
 from talk2data.api.run_routes import RunContext, run_router
 from talk2data.domain.chat import DemoChatResponse
+from talk2data.domain.execution import ExecutionGrant
 from talk2data.domain.runs import RunError, RunRequest, RunSnapshot, principal
 from talk2data.internal.routes import identity, runtime
+from talk2data.services.distributed_runs import DistributedCoordinator
 from talk2data.services.identity import IdentityVerifier
 from talk2data.services.policy import ASK_ACTION, READ_DATA_ACTION
 from talk2data.services.run_coordinator import Observer
@@ -41,6 +43,9 @@ def context(request: Request) -> RunContext:
         service.definitions[access.tenant_id].resolve(
             access, payload.definition_snapshot_id, require_current=True
         )
+        if isinstance(service.runs, DistributedCoordinator):
+            grant = cast(ExecutionGrant, request.state.execution_grant)
+            return service.runs.submit(owner, scope, payload, service.source_binding, grant)
 
         async def check() -> None:
             if await verifier.verify(token) != access:

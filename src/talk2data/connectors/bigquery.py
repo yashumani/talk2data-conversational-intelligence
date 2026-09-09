@@ -19,7 +19,7 @@ from talk2data.connectors.base import (
     SourceFreshness,
     StructuredQueryPlan,
 )
-from talk2data.connectors.demo_sqlite import merge_comparison_rows, resolve_time_window
+from talk2data.connectors.demo_sqlite import merge_comparison_rows
 from talk2data.connectors.errors import ConnectorValidationError, SourceNotReadyError
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.domain.bigquery_mapping import BigQueryMapping
@@ -27,11 +27,10 @@ from talk2data.domain.chat import CloudQueryExecution, QueryReceipt
 from talk2data.domain.models import (
     CLASSIFICATION_RANK,
     AccessContext,
-    FilterOperator,
     MetricValueType,
     SourceStatus,
-    TimeGrain,
 )
+from talk2data.services.analytical_policy import validate_analytical_plan
 from talk2data.services.bigquery_port import BigQueryTransport, CloudResult
 from talk2data.services.bigquery_sql import BigQueryStatement, compile_bigquery
 from talk2data.services.policy import READ_DATA_ACTION
@@ -92,62 +91,7 @@ class BigQueryConnector:
         ]
 
     async def validate_plan(self, plan: StructuredQueryPlan, access: AccessContext) -> list[str]:
-        errors = []
-        if plan.connector_id != self.mapping.connector_id:
-            errors.append("CONNECTOR_ID_MISMATCH")
-        if plan.tenant_id != access.tenant_id or access.tenant_id != self.mapping.tenant_id:
-            errors.append("TENANT_SCOPE_MISMATCH")
-        if (
-            READ_DATA_ACTION not in access.permitted_actions
-            or not access.regions
-            or not access.business_units
-        ):
-            errors.append("EXPLICIT_DATA_SCOPE_REQUIRED")
-        metric = self._metrics.get(plan.metric_id)
-        if metric is None:
-            return [*errors, "METRIC_NOT_AVAILABLE"]
-        clearance = CLASSIFICATION_RANK[access.classification_clearance]
-        if CLASSIFICATION_RANK[metric.classification] > clearance:
-            errors.append("METRIC_CLASSIFICATION_DENIED")
-        referenced_dimensions = set(plan.dimensions) | {item.dimension_id for item in plan.filters}
-        if any(
-            CLASSIFICATION_RANK[self.mapping.dimension_classifications[dimension]] > clearance
-            for dimension in referenced_dimensions & self.mapping.dimensions.keys()
-        ):
-            errors.append("DIMENSION_CLASSIFICATION_DENIED")
-        if any(
-            getattr(plan, field) != getattr(metric, field)
-            for field in ("semantic_version", "aggregation", "value_type", "unit", "currency")
-        ):
-            errors.append("SEMANTIC_CONTRACT_MISMATCH")
-        if (
-            len(plan.dimensions) != len(set(plan.dimensions))
-            or set(plan.dimensions) - metric.allowed_dimensions
-        ):
-            errors.append("DIMENSION_NOT_ALLOWED")
-        if plan.row_limit > self.settings.maximum_rows:
-            errors.append("ROW_LIMIT_EXCEEDED")
-        for item in plan.filters:
-            if item.dimension_id not in metric.allowed_dimensions or item.operator not in {
-                FilterOperator.IN,
-                FilterOperator.EQUALS,
-            }:
-                errors.append("FILTER_NOT_ALLOWED")
-            if item.dimension_id == "REGION" and set(item.values) - access.regions:
-                errors.append("REGION_SCOPE_VIOLATION")
-        try:
-            period = resolve_time_window(plan.time_window)
-            if (
-                plan.time_window.calendar != "GREGORIAN"
-                or plan.time_window.timezone != "UTC"
-                or plan.time_window.grain == TimeGrain.HOUR
-                or plan.time_window.grain not in metric.supported_time_grains
-                or (period.end - period.start).days > 730
-            ):
-                errors.append("TIME_CONTRACT_NOT_SUPPORTED")
-        except ValueError:
-            errors.append("INVALID_TIME_WINDOW")
-        return sorted(set(errors))
+        return validate_analytical_plan(self.mapping, self.settings.maximum_rows, plan, access)
 
     async def estimate_cost(self, plan: StructuredQueryPlan) -> dict[str, Any]:
         # The generic port has no identity parameter; never issue an unscoped estimate.

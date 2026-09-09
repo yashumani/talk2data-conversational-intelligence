@@ -292,10 +292,25 @@ def test_optional_built_frontend_mount(tmp_path: Path) -> None:
     app = FastAPI()
     with pytest.raises(ValueError, match="built React"):
         install_web_assets(app, tmp_path)
-    install_web_assets(app, Path(__file__).parent / "fixtures" / "web")
+    assets = Path(__file__).parent / "fixtures" / "web"
+    install_web_assets(app, assets)
     with TestClient(app) as client:
         assert "Workspace asset" in client.get("/workspace/").text
         assert client.get("/workspace/not-found.js").status_code == 404
+
+    csv_app = create_app(
+        Settings(
+            database_path=tmp_path / "sessions.db",
+            ollama_enabled=False,
+            ollama_required=False,
+            web_directory=assets,
+        ),
+        csv_settings=CsvDemoSettings(enabled=True),
+    )
+    with TestClient(csv_app) as client:
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "/workspace/"
 
 
 async def test_connector_rejects_invalid_plan_scopes_and_filters() -> None:

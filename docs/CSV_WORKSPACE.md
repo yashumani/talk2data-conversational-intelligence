@@ -53,6 +53,13 @@ checks idempotency and source isolation, then clears its sessions and removes th
 The release workflow runs both checks against the built container. Its artifacts contain only
 sanitized check reports. Restarting the API keeps the volume; the following cleanup removes it.
 
+Cycle 6.1 adds actual backup recovery to this workflow: stop the worker, create a verified
+bundle, restore to a separate directory and start on that copy using
+`docker-compose.csv-recovery.yml`. The same HTTP verifier checks the restored source, definitions,
+answers and request identity. See [release operations](RELEASE_OPERATIONS.md) for the commands,
+offline restriction and remaining production recovery gates. Backup data/capability files are
+never CI artifacts.
+
 Stop and remove the demo when finished:
 
 ```bash

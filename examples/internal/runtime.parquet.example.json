@@ -1,0 +1,38 @@
+{
+  "analytics_mode": "parquet",
+  "bigquery": {
+    "api_timeout_seconds": 10,
+    "billing_project": "example-project",
+    "location": "US",
+    "maximum_bytes_billed": 1000000000,
+    "maximum_rows": 100,
+    "query_timeout_seconds": 120
+  },
+  "parquet": {
+    "directory": "/private/talk2data/snapshots",
+    "maximum_age_seconds": 86400,
+    "maximum_rows": 5000000,
+    "query_timeout_seconds": 30
+  },
+  "bigquery_catalog_path": "/private/talk2data/catalog.json",
+  "domain_pack_directory": "/private/talk2data/domains",
+  "entitlements_path": "/private/talk2data/entitlements.json",
+  "governance_database_path": "/private/talk2data/governance.db",
+  "state_database_path": "/private/talk2data/state.db",
+  "identity": {
+    "algorithm": "RS256",
+    "audience": "talk2data-internal",
+    "issuer": "https://identity.example.test",
+    "jwks_url": "https://identity.example.test/keys",
+    "key_cache_seconds": 60,
+    "leeway_seconds": 30,
+    "maximum_token_lifetime_seconds": 3600,
+    "token_header": "authorization"
+  },
+  "maximum_active_queries": 8,
+  "http_operations": {
+    "maximum_body_bytes": 65536,
+    "body_timeout_seconds": 5,
+    "maximum_inflight": 128
+  }
+}

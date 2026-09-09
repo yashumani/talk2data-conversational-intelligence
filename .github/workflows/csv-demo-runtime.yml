@@ -9,6 +9,7 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - "docker-compose.csv-demo.yml"
+      - "docker-compose.csv-recovery.yml"
       - "scripts/csv_workspace_smoke.py"
       - "scripts/durable_csv_smoke.py"
       - ".github/workflows/csv-demo-runtime.yml"
@@ -21,6 +22,7 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - "docker-compose.csv-demo.yml"
+      - "docker-compose.csv-recovery.yml"
       - "scripts/csv_workspace_smoke.py"
       - "scripts/durable_csv_smoke.py"
       - ".github/workflows/csv-demo-runtime.yml"
@@ -56,6 +58,36 @@ jobs:
           python scripts/durable_csv_smoke.py verify
           --checkpoint-file "$RUNNER_TEMP/talk2data-durable-checkpoint.json"
           >durable-csv-restart-report.json
+      - name: Complete a new run for backup recovery acceptance
+        run: >-
+          python scripts/durable_csv_smoke.py prepare
+          --checkpoint-file "$RUNNER_TEMP/talk2data-restore-checkpoint.json"
+          >durable-csv-restore-prepare-report.json
+      - name: Quiesce the application before consistent backup
+        run: docker compose -f docker-compose.csv-demo.yml stop api
+      - name: Create an offline verified backup bundle
+        run: >-
+          docker compose -f docker-compose.csv-demo.yml run --rm --no-deps -T api
+          python -m talk2data.operations.backup create
+          --state /app/workspace-state/csv.db
+          --destination /app/workspace-state/backup
+          >csv-backup-manifest-report.json
+      - name: Restore into a new directory without overwriting the source
+        run: >-
+          docker compose -f docker-compose.csv-demo.yml run --rm --no-deps -T api
+          python -m talk2data.operations.backup restore
+          --bundle /app/workspace-state/backup
+          --destination /app/workspace-state/restored
+          >csv-restore-manifest-report.json
+      - name: Start the installed application on the restored copy
+        run: >-
+          docker compose -f docker-compose.csv-demo.yml -f docker-compose.csv-recovery.yml
+          up --force-recreate --wait --wait-timeout 120
+      - name: Verify original answers and replay on restored state
+        run: >-
+          python scripts/durable_csv_smoke.py verify
+          --checkpoint-file "$RUNNER_TEMP/talk2data-restore-checkpoint.json"
+          >durable-csv-restore-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,6 +96,10 @@ jobs:
             csv-smoke-report.json
             durable-csv-prepare-report.json
             durable-csv-restart-report.json
+            durable-csv-restore-prepare-report.json
+            durable-csv-restore-report.json
+            csv-backup-manifest-report.json
+            csv-restore-manifest-report.json
           if-no-files-found: warn
       - name: Capture diagnostics on failure
         if: failure()
@@ -73,4 +109,4 @@ jobs:
         run: docker compose -f docker-compose.csv-demo.yml down --volumes
       - name: Remove the private acceptance checkpoint
         if: always()
-        run: rm -f "$RUNNER_TEMP/talk2data-durable-checkpoint.json"
+        run: rm -f "$RUNNER_TEMP/talk2data-durable-checkpoint.json" "$RUNNER_TEMP/talk2data-restore-checkpoint.json"

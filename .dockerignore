@@ -18,3 +18,5 @@ dist
 **/coverage
 **/.env
 **/.env.*
+
+**/dist-internal

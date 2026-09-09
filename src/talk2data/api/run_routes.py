@@ -12,14 +12,14 @@ from fastapi import APIRouter, Depends, FastAPI, Header, Query, Request, Respons
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from talk2data.domain.runs import TERMINAL, RunError, RunRequest, RunSnapshot
-from talk2data.services.run_coordinator import RunCoordinator
+from talk2data.services.state_ports import RunController
 
 
 @dataclass
 class RunContext:
     owner: str
     scope: str
-    coordinator: RunCoordinator
+    coordinator: RunController
     authorize: Callable[[RunSnapshot], Awaitable[None]]
     submit: Callable[[RunRequest], RunSnapshot]
     manage_conversations: bool = True

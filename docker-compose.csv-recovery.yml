@@ -1,0 +1,6 @@
+# Acceptance-only override: start against a newly restored copy; never replace the original database.
+# Requires the verified bundle restore command in docs/RELEASE_OPERATIONS.md first.
+services:
+  api:
+    environment:
+      T2D_CSV_DEMO_STATE_DATABASE_PATH: /app/workspace-state/restored/state.sqlite3

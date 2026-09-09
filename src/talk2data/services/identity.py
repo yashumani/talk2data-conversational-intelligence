@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Protocol, Self
 
 import jwt
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from talk2data.core.internal_config import IdentitySettings
+from talk2data.domain.execution import ExecutionGrant
 from talk2data.domain.models import AccessContext
 
 
@@ -55,8 +57,12 @@ class EntitlementStore:
         return access
 
 
+class Entitlements(Protocol):
+    def resolve(self, subject: str) -> AccessContext: ...
+
+
 class IdentityVerifier:
-    def __init__(self, settings: IdentitySettings, entitlements: EntitlementStore) -> None:
+    def __init__(self, settings: IdentitySettings, entitlements: Entitlements) -> None:
         self.settings, self.entitlements = settings, entitlements
         self.keys = jwt.PyJWKClient(
             settings.jwks_url,
@@ -69,6 +75,15 @@ class IdentityVerifier:
         return await asyncio.to_thread(self._verify, token)
 
     def _verify(self, token: str) -> AccessContext:
+        claims = self._claims(token)
+        return self.entitlements.resolve(claims["sub"])
+
+    async def grant(self, token: str) -> ExecutionGrant:
+        claims = await asyncio.to_thread(self._claims, token)
+        access = await asyncio.to_thread(self.entitlements.resolve, claims["sub"])
+        return ExecutionGrant(access=access, expires_at=datetime.fromtimestamp(claims["exp"], UTC))
+
+    def _claims(self, token: str) -> dict[str, Any]:
         if not token or len(token) > 16384:
             raise IdentityRejected("A bounded signed identity token is required.")
         try:
@@ -102,4 +117,4 @@ class IdentityVerifier:
         except jwt.PyJWTError as exc:
             raise IdentityRejected("The signed identity token was rejected.") from exc
         # Caller claims such as roles, tenant, regions and clearance never grant authority.
-        return self.entitlements.resolve(claims["sub"])
+        return claims

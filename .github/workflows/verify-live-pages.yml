@@ -1,18 +1,9 @@
-name: Verify live Talk2Data GitHub control center
+name: Verify live Talk2Data product showcase
 
 on:
-  push:
-    branches: [main, feat/github-native-runtime]
-    paths:
-      - "site/**"
-      - ".github/workflows/pages.yml"
-      - ".github/workflows/verify-live-pages.yml"
-  pull_request:
-    branches: [main, feat/github-pages-demo]
-    paths:
-      - "site/**"
-      - ".github/workflows/pages.yml"
-      - ".github/workflows/verify-live-pages.yml"
+  workflow_run:
+    workflows: ["Deploy Talk2Data product showcase"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -20,17 +11,21 @@ permissions:
 
 jobs:
   verify-live-url:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       PAGE_URL: https://yashumani.github.io/talk2data-conversational-intelligence/
     steps:
-      - name: Wait for and verify the public control center
+      - name: Wait for and verify the public product showcase
         run: |
           for attempt in $(seq 1 120); do
             body="$(curl -fsSL "$PAGE_URL" || true)"
-            if grep -Fq "Run Talk2Data now" <<<"$body" \
-              && grep -Fq "GitHub-native governed execution" <<<"$body" \
+            if grep -Fq "Interactive product tour" <<<"$body" \
+              && grep -Fq "Data paths that match the codebase" <<<"$body" \
+              && grep -Fq "Fixture preview" <<<"$body" \
               && grep -Fq "ref=main" <<<"$body"; then
               echo "Verified $PAGE_URL"
               exit 0
@@ -38,5 +33,5 @@ jobs:
             echo "Waiting for the GitHub Pages deployment (${attempt}/120)."
             sleep 5
           done
-          echo "The expected Talk2Data main runtime launcher was not available at $PAGE_URL."
+          echo "The expected Talk2Data product showcase was not available at $PAGE_URL."
           exit 1

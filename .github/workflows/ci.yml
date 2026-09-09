@@ -11,6 +11,20 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      state-postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: state_acceptance
+          POSTGRES_USER: talk2data
+          POSTGRES_PASSWORD: synthetic-state-test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U talk2data -d state_acceptance"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      T2D_RUN_STATE_TESTS: "1"
+      T2D_TEST_STATE_DSN: postgresql://talk2data:synthetic-state-test@127.0.0.1:5432/state_acceptance
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +43,23 @@ jobs:
       - run: mypy src
       - run: pytest --cov=talk2data --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=96
       - run: python scripts/check_coverage.py
+      - name: Verify incomplete evidence blocks a production release
+        run: |
+          if python -m talk2data.operations.release \
+            --candidate examples/release/candidate.example.json \
+            --manifest examples/release/evidence.example.json \
+            --evidence-directory examples/release >release-readiness-report.json; then
+            echo "The empty example evidence must never authorize a release."
+            exit 1
+          else
+            test "$?" -eq 1
+          fi
+          python -c 'import json; r=json.load(open("release-readiness-report.json")); assert r["status"] == "BLOCKED" and not r["deployment_authorized"]'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: python-coverage-${{ matrix.python-version }}
-          path: coverage.json
+          path: |
+            coverage.json
+            release-readiness-report.json
           if-no-files-found: error

@@ -9,6 +9,18 @@ result, and release only receipt-backed claims.
 
 ## Use the application
 
+Start with the [product handoff](docs/HANDOFF.md) for the reviewed candidate, runnable CSV demo,
+cycle status and remaining live acceptance inputs. The [final review](docs/FINAL_REVIEW.md)
+records corrections, verification and the boundaries of the handoff.
+Use the [repository activation guide](docs/REPOSITORY_ACTIVATION_GUIDE.md) for the complete
+merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release procedure.
+For a BigQuery-first deployment that does not require Cloud Run or Cloud SQL, including the
+optional governed Parquet acceleration path, see the
+[BigQuery/Parquet runtime guide](docs/BIGQUERY_PARQUET_RUNTIME.md).
+The [GitHub Pages showcase](https://yashumani.github.io/talk2data-conversational-intelligence/)
+provides an interactive, explicitly non-live preview of the current UI and all four activation
+profiles; its primary action launches the real CSV workspace in Codespaces.
+
 ### New modular CSV workspace
 
 An optional React/TypeScript workspace now supports isolated CSV demonstrations with the
@@ -29,12 +41,16 @@ See the [CSV workspace runbook](docs/CSV_WORKSPACE.md) and the
 The CSV increment supports a strict Mobile Activations template. Use only synthetic or
 explicitly approved demonstration data.
 
-### Internal identity and BigQuery — Cycle 2
+### Internal identity, BigQuery and optional Parquet — Cycle 2
 
 The separate private API now implements signed identity verification, server-owned tenant and
 data permissions, approved BigQuery mappings, parameterized read-only queries, cost limits,
 cancellation and cloud job receipts. It has its own container and configuration; CSV remains
 independent. See the [internal BigQuery runbook](docs/INTERNAL_BIGQUERY.md).
+Direct BigQuery can use local SQLite application state. An explicit operator command can also
+materialize approved read-only results into hash-pinned Parquet for fast local queries; this mode
+does not initialize BigQuery at API runtime. Cloud Run and Cloud SQL remain optional scale-out
+components.
 
 Cycle 2 is complete on the approved connection-placeholder boundary. GCP/SSO activation and
 live acceptance are deferred; CSV imports are the working optional data connection. See the
@@ -70,33 +86,52 @@ contract under signed identity and server-owned source bindings.
 The packaged CSV demonstration persists sources, definitions, completed answers and events
 across container restarts on its own volume. Unfinished work becomes explicitly interrupted
 and is never automatically queried again. Local Python configuration remains memory-only
-unless a state database path is supplied. Keep one API worker per database.
+unless a state database path is supplied. Keep one API worker per SQLite database.
 
 See [durable conversations and restart acceptance](docs/DURABLE_CONVERSATIONS.md) for the
 architecture, API, recovery rules and storage limits. This milestone proceeds at the user's
-request while LA-1 remains open. Production distributed storage/workers, recovery operations,
-private activation and enterprise release acceptance remain outstanding.
+request while LA-1 remains open. Cycle 6 adds the shared internal runtime described below;
+private activation and enterprise acceptance remain outstanding.
+
+### Enterprise completion candidate — Cycle 6
+
+The first milestone of Cycle 6 adds verified offline backup/restore, previewed internal retention
+with transactional audit, bounded internal HTTP requests and telemetry that omits request content.
+A release evidence checker rejects missing, stale, mismatched or unverified receipts; skipped
+Claude tests and deferred GCP connections cannot qualify as live acceptance.
+
+See [release operations and the remaining milestones](docs/RELEASE_OPERATIONS.md). The package
+acceptance restores a synthetic workspace into a separate database and verifies its original
+answers over HTTP. The consolidated candidate also adds shared PostgreSQL conversations,
+definitions and grants, independently running workers with fenced completion, an isolated
+signed internal React workspace, and private Cloud SQL/Cloud Run infrastructure.
+
+The [shared internal runtime guide](docs/SHARED_INTERNAL_RUNTIME.md) explains setup, transaction
+boundaries and operating limits. The [completion ledger](docs/PROJECT_COMPLETION.md) separates
+implemented capabilities from pending live acceptance. Trusted release checks bind workflow
+artifacts and three distinct owner approvals to the exact source, image and configuration.
+**LA-1 remains open; DG-1 remains user-deferred. This is a development candidate, not a
+production release.** Development integration does not imply a private deployment or owner approval.
 
 ### Existing application
 
-Public GitHub control center:
+Public GitHub product showcase:
 
 ```text
 https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
-Complete GitHub Codespaces runtime:
+GitHub Codespaces CSV workspace:
 
 ```text
 https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&quickstart=1
 ```
 
-The Codespace starts Docker, Ollama, the compact `qwen3:0.6b` model, FastAPI, synthetic telecom
-data, session persistence, query execution, verification, and the browser chat. Port `8000` opens
-privately after the runtime becomes ready.
+The Codespace starts the isolated CSV Compose profile, FastAPI, durable demo state and the React
+workspace. It needs no GCP access or model download. Port `8000` opens privately after readiness.
 
 ```text
-/demo         working browser chat
+/workspace/   React CSV workspace
 /docs         interactive OpenAPI explorer
 /health/ready component readiness
 ```

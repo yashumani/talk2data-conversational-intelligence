@@ -41,6 +41,9 @@ def run(base_url: str, require_ollama: bool) -> int:
         readiness.raise_for_status()
         ready_body = readiness.json()
         print(json.dumps(ready_body, indent=2))
+        if ready_body.get("status") != "ready":
+            print("Talk2Data is not ready.", file=sys.stderr)
+            return 1
         if require_ollama and ready_body["components"]["ollama"]["status"] != "ready":
             print("Ollama is not ready.", file=sys.stderr)
             return 1

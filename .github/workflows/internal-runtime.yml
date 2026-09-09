@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "apps/web/**"
       - "pyproject.toml"
       - "Dockerfile.internal"
       - ".dockerignore"
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "apps/web/**"
       - "pyproject.toml"
       - "Dockerfile.internal"
       - ".dockerignore"
@@ -45,6 +47,7 @@ jobs:
           from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
           assert os.getuid() == 10001
           assert not os.path.exists("/app/web")
+          assert os.path.exists("/app/internal-web/index.html")
           try:
               create_internal_app()
           except ValidationError:

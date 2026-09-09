@@ -96,7 +96,9 @@ jobs:
           trap cleanup EXIT
           ready=0
           for attempt in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:8000/health/ready >/tmp/readiness.json; then
+            if curl -fsS http://127.0.0.1:8000/health/ready >/tmp/readiness.json \
+              && python -c 'import json, sys; health_payload = json.load(sys.stdin); raise SystemExit(health_payload.get("status") != "ready")' \
+                </tmp/readiness.json; then
               ready=1
               break
             fi

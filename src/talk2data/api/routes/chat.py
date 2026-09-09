@@ -15,8 +15,13 @@ router = APIRouter(tags=["chat-demo"])
 
 
 @router.get("/", include_in_schema=False)
-async def root() -> RedirectResponse:
-    return RedirectResponse(url="/demo", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+async def root(request: Request) -> RedirectResponse:
+    settings = request.app.state.settings
+    csv_workspace_available = (
+        request.app.state.csv_workspace is not None and settings.web_directory is not None
+    )
+    target = "/workspace/" if csv_workspace_available else "/demo"
+    return RedirectResponse(url=target, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 @router.get("/demo", response_class=HTMLResponse, include_in_schema=False)

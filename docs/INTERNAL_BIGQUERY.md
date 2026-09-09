@@ -1,5 +1,10 @@
 # Cycle 2: trusted identity and internal BigQuery
 
+Cloud Run and Cloud SQL are optional. The governed BigQuery connector can run on an approved
+workstation or existing internal host with local SQLite state. For read-mostly operation, the
+separate materialization command can create a hash-pinned Parquet snapshot and the API can query
+it without BigQuery credentials at runtime. See `BIGQUERY_PARQUET_RUNTIME.md`.
+
 Status: **Cycle 2 complete on the user-approved placeholder boundary.** Live GCP/SSO activation
 and acceptance are deferred to release gate DG-1; they have not passed. The
 accepted Cycle 1 baseline is `ba198541dc14821dc497217e97cf67db20234d5c` (PRs #18 and #19).
@@ -33,9 +38,9 @@ verification and answer services are reused. Rules remain the default. Cycle 4 a
 
 The public `main.py` does not import or initialize the BigQuery SDK. Its container installs
 the base package; the private container installs the `internal` extra. The private API mounts
-no CSV, legacy demo, connector-configuration, documentation or React asset endpoints.
-The existing React workspace remains the CSV demo. An authenticated internal React experience
-will consume the durable run protocol in Cycle 5; this increment supplies its trusted API boundary.
+no CSV, legacy demo, connector-configuration or API-documentation endpoints. Cycle 6 adds
+an opt-in, separately built internal React workspace behind signed IAP. Its durable protocol
+and shared state deployment are documented in [SHARED_INTERNAL_RUNTIME.md](SHARED_INTERNAL_RUNTIME.md).
 
 ## Identity and authorization
 
@@ -143,11 +148,11 @@ hashes and resolved/comparison periods remain available. `source_snapshot` is th
 source-owned update timestamp observed; it is not a BigQuery time-travel snapshot or a durable
 copy of the source. Reproducible historical reruns require future source-retention controls.
 
-Stable cloud job IDs identify a compiled query and authorization scope. A repeated HTTP request
-after completion is not idempotent in this increment and may create another job. Durable request
-deduplication, run recovery, event streaming, audit retention and conversation history belong to
-Cycle 5 and Cycle 6. Run one worker/instance during this acceptance phase so request ownership,
-capacity and cancellation share the same in-memory registry.
+Stable cloud job IDs identify a compiled query and authorization scope. The legacy synchronous
+API does not provide durable request deduplication. Cycle 5 adds the durable run API and
+Cycle 6 requires it for shared execution; `/chat` is rejected in the PostgreSQL profile.
+Reference SQLite requires one worker; the shared profile coordinates worker claims, capacity,
+cancellation and replay through PostgreSQL. See the shared runtime guide for activation.
 
 ## Private configuration and runtime
 

@@ -1,28 +1,28 @@
-name: Validate GitHub-native Talk2Data runtime
+name: Validate GitHub-native CSV workspace
 
 on:
   push:
-    branches: [main, feat/github-native-runtime, feat/tenant-physical-mappings]
+    branches: [main, "feat/cycle-*"]
     paths:
       - ".devcontainer/**"
-      - "docker-compose.yml"
+      - "docker-compose.csv-demo.yml"
       - "Dockerfile"
       - ".dockerignore"
       - "apps/web/**"
       - "src/**"
-      - "scripts/demo_smoke.py"
+      - "scripts/csv_workspace_smoke.py"
       - "scripts/validate_codespaces_config.py"
       - ".github/workflows/github-runtime.yml"
   pull_request:
-    branches: [main, feat/github-pages-demo, feat/postgresql-reference-connector, feat/cycle-4-claude-orchestration]
+    branches: [main, "feat/cycle-*"]
     paths:
       - ".devcontainer/**"
-      - "docker-compose.yml"
+      - "docker-compose.csv-demo.yml"
       - "Dockerfile"
       - ".dockerignore"
       - "apps/web/**"
       - "src/**"
-      - "scripts/demo_smoke.py"
+      - "scripts/csv_workspace_smoke.py"
       - "scripts/validate_codespaces_config.py"
       - ".github/workflows/github-runtime.yml"
   workflow_dispatch:
@@ -44,19 +44,16 @@ jobs:
       - name: Validate Codespaces contract
         run: python scripts/validate_codespaces_config.py
       - name: Validate merged Compose configuration
-        env:
-          T2D_OLLAMA_MODEL: qwen3:0.6b
         run: >-
           docker compose
-          -f docker-compose.yml
+          -f docker-compose.csv-demo.yml
           -f .devcontainer/docker-compose.codespaces.yml
           config
 
-  full-runtime:
+  csv-workspace:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 20
     env:
-      T2D_OLLAMA_MODEL: qwen3:0.6b
       COMPOSE_PROJECT_NAME: talk2data-github-runtime
     steps:
       - uses: actions/checkout@v4
@@ -66,39 +63,41 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install httpx
-      - name: Start the complete Docker runtime
+      - name: Start the Codespaces CSV runtime
         run: >-
           docker compose
-          -f docker-compose.yml
+          -f docker-compose.csv-demo.yml
           -f .devcontainer/docker-compose.codespaces.yml
           up -d --build
       - name: Wait for Talk2Data readiness
         run: |
           for attempt in $(seq 1 180); do
-            if curl -fsS http://127.0.0.1:8000/health/ready >/tmp/readiness.json; then
+            if curl -fsS http://127.0.0.1:8000/health/ready >/tmp/readiness.json \
+              && python -c 'import json, sys; health_payload = json.load(sys.stdin); raise SystemExit(health_payload.get("status") != "ready")' \
+                </tmp/readiness.json; then
               cat /tmp/readiness.json
               exit 0
             fi
             sleep 5
           done
           exit 1
-      - name: Execute end-to-end governed chat smoke
-        run: python scripts/demo_smoke.py --base-url http://127.0.0.1:8000
+      - name: Execute the React and CSV workspace acceptance smoke
+        run: python scripts/csv_workspace_smoke.py --base-url http://127.0.0.1:8000
       - name: Capture runtime diagnostics
         if: always()
         run: |
           docker compose \
-            -f docker-compose.yml \
+            -f docker-compose.csv-demo.yml \
             -f .devcontainer/docker-compose.codespaces.yml \
             ps || true
           docker compose \
-            -f docker-compose.yml \
+            -f docker-compose.csv-demo.yml \
             -f .devcontainer/docker-compose.codespaces.yml \
             logs --tail=250 || true
       - name: Stop runtime
         if: always()
         run: >-
           docker compose
-          -f docker-compose.yml
+          -f docker-compose.csv-demo.yml
           -f .devcontainer/docker-compose.codespaces.yml
           down -v

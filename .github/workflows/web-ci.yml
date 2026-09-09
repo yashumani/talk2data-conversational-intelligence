@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "apps/web/**"
+      - "src/talk2data/operations/**"
       - ".github/workflows/web-ci.yml"
   push:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "src/talk2data/operations/**"
       - ".github/workflows/web-ci.yml"
 
 permissions:
@@ -30,6 +32,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm run build
+      - run: npm run build:internal
       - run: npm audit --audit-level=high
       - uses: actions/upload-artifact@v4
         if: always()

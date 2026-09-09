@@ -1,23 +1,17 @@
 {
-  "name": "Talk2Data Full Runtime",
+  "name": "Talk2Data CSV Workspace",
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "forwardPorts": [
-    8000,
-    11434
+    8000
   ],
   "portsAttributes": {
     "8000": {
       "label": "Talk2Data application",
       "onAutoForward": "openBrowser",
-      "visibility": "private"
-    },
-    "11434": {
-      "label": "Ollama",
-      "onAutoForward": "silent",
       "visibility": "private"
     }
   },

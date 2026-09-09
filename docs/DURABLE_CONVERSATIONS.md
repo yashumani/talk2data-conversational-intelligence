@@ -4,7 +4,8 @@ Updated: 2026-09-08. This milestone implements persisted conversation/run record
 progress events, safe retries, cancellation, restart recovery, and the React CSV conversation
 experience. It builds on Cycle 4's bounded specialists. The user's request to proceed authorizes
 this development while **LA-1 remains open**; it does not waive or pass real Claude acceptance.
-GCP/SSO activation remains separately deferred under DG-1. Cycle 6 has not started.
+GCP/SSO activation remains separately deferred under DG-1. Cycle 6.1 now adds the operational
+recovery and release evidence controls described in [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md).
 
 ## Delivered behavior and operating boundary
 
@@ -19,18 +20,18 @@ the latest four reproducible query inputs. The original session expiry still app
 does not extend the capability's lifetime. An unfinished run becomes `INTERRUPTED` after restart.
 It is never automatically executed again when a remote query's completion may be unknown.
 
-**The implemented execution profile is one API worker per local SQLite database.** The packaged
+**The Cycle 5 reference execution profile is one API worker per local SQLite database.** The packaged
 CSV demo mounts a persistent volume. Internal state uses its own explicitly configured private
 file and signed identity. No CSV state, data, credentials or requests enter BigQuery. This is a
-tested reference storage implementation, not a horizontally scalable production job platform.
-Cloud SQL/PostgreSQL application state, distributed workers, managed queues, HA, backup and
-retention operations are outstanding enterprise release work. The existing PostgreSQL *data
-connector* is separate from the application-state store.
+tested reference storage implementation. Cycle 6 now provides a separate PostgreSQL application-state
+store and independently running workers; see [SHARED_INTERNAL_RUNTIME.md](SHARED_INTERNAL_RUNTIME.md).
+The existing PostgreSQL *data connector* remains separate. Live private deployment, HA/recovery
+and retention policy acceptance remain required.
 
 Saved conversation history is not unbounded model memory. Each question must be self-contained.
 No prior conversation transcript, saved query rows or result body is appended to Claude's prompt.
-The current React workspace is the optional CSV demonstration; the internal protocol is available
-to an authenticated product UI, whose SSO integration remains part of private release acceptance.
+The CSV React workspace remains isolated. Cycle 6 adds a separately built signed internal workspace;
+real SSO integration remains part of private release acceptance.
 
 ## Architecture and module responsibilities
 
@@ -251,7 +252,8 @@ The internal Compose example deliberately leaves storage mounting to private con
 
 Storage has a schema version; an unsupported version fails startup without resetting history.
 Deployment migration must preserve the journal, definition snapshots and profile boundaries.
-No automatic destructive migration, backup system or external artifact bucket is introduced.
+Cycle 6.1 supplies verified offline backup/restore for this reference store; no automatic
+destructive migration, managed backup platform or external artifact bucket is introduced.
 The retained answer artifacts are structured results, citations, usage reports and receipts
 inside the run snapshot. They are not a production object-storage integration.
 
@@ -266,7 +268,8 @@ Expired CSV workspaces become inaccessible immediately when checked and are prun
 subsequent operations when inactive. Clear removes their live database records and application
 references. SQLite free pages, WAL files, storage snapshots and backups may retain bytes; this
 is not a secure-erasure guarantee. Internal history has explicit deletion and capacity limits,
-but no scheduled enterprise retention policy yet. Restarting cannot reset CSV session capacity
+and Cycle 6.1 adds offline retention preview/apply with audit, but no scheduled enterprise
+retention policy yet. Restarting cannot reset CSV session capacity
 or extend an old capability's expiry.
 
 ## Acceptance and remaining release gates
@@ -291,8 +294,8 @@ existing 96% gates. React lines, statements, functions and branches each retain 
 including all production modules. The delivery PR records the exact commit, counts, coverage
 and CI artifacts. High coverage does not substitute for the outstanding live acceptance.
 
-Before an enterprise release, Cycle 6 must deliver/review the production state adapter and job
-ownership design, HA/recovery, retention/backups, infrastructure promotion, telemetry, ingress
-limits, identity-enabled UI, browser/accessibility acceptance, and load/cost/SLO validation.
+Cycle 6 now implements shared state, fenced worker ownership, the signed internal UI and private
+infrastructure/release tooling. Before an enterprise release, verify real HA/recovery, retention/backup
+policy, private activation, browser/accessibility and load/cost/SLO acceptance.
 Real Claude LA-1 and deferred GCP/SSO DG-1 also remain release gates. Do not advertise this
 single-worker CSV reference deployment as a completed enterprise production service.

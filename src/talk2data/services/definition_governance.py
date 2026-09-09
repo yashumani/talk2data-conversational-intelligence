@@ -16,8 +16,9 @@ from talk2data.domain.governance import (
     pack_hash,
 )
 from talk2data.domain.models import CLASSIFICATION_RANK, AccessContext, TenantDomainPack
-from talk2data.services.definition_store import DefinitionConflict, DefinitionStore, DefinitionUnavailable
+from talk2data.services.definition_store import DefinitionConflict, DefinitionUnavailable
 from talk2data.services.policy import READ_DATA_ACTION
+from talk2data.services.state_ports import DefinitionJournal
 
 EDIT = "EDIT_DEFINITIONS"
 REVIEW = "REVIEW_DEFINITIONS"
@@ -36,7 +37,7 @@ class DefinitionNotFound(RuntimeError):
 class DefinitionGovernance:
     def __init__(
         self,
-        store: DefinitionStore,
+        store: DefinitionJournal,
         namespace: str,
         pack: TenantDomainPack,
         *,
