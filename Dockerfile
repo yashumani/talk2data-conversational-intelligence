@@ -22,7 +22,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir .
 
 RUN useradd --create-home --uid 10001 talk2data \
-    && mkdir -p /app/.talk2data \
+    && mkdir -p /app/.talk2data /app/workspace-state \
     && chown -R talk2data:talk2data /app
 
 USER talk2data

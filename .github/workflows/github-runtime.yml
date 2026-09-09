@@ -14,7 +14,7 @@ on:
       - "scripts/validate_codespaces_config.py"
       - ".github/workflows/github-runtime.yml"
   pull_request:
-    branches: [main, feat/github-pages-demo, feat/postgresql-reference-connector]
+    branches: [main, feat/github-pages-demo, feat/postgresql-reference-connector, feat/cycle-4-claude-orchestration]
     paths:
       - ".devcontainer/**"
       - "docker-compose.yml"

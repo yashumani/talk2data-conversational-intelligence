@@ -11,6 +11,7 @@ services:
       T2D_DATA_BACKEND: demo_sqlite
       T2D_DATABASE_PATH: /app/.talk2data/talk2data.db
       T2D_CSV_DEMO_ENABLED: "true"
+      T2D_CSV_DEMO_STATE_DATABASE_PATH: /app/workspace-state/csv.db
       T2D_WEB_DIRECTORY: /app/web
       T2D_OLLAMA_ENABLED: "false"
       T2D_OLLAMA_REQUIRED: "false"
@@ -26,6 +27,8 @@ services:
       - --workers
       - "1"
     read_only: true
+    volumes:
+      - csv-workspace-state:/app/workspace-state
     tmpfs:
       - /tmp
       - /app/.talk2data:uid=10001,gid=10001,mode=0700
@@ -43,3 +46,6 @@ services:
       timeout: 4s
       retries: 12
       start_period: 10s
+
+volumes:
+  csv-workspace-state:

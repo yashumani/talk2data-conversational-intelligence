@@ -31,12 +31,19 @@ class AgentFailure(RuntimeError):
 
 
 class AgentRun:
-    def __init__(self, limits: AgentLimits | None = None) -> None:
+    def __init__(
+        self, limits: AgentLimits | None = None, observer: Callable[[AgentRunReport], None] | None = None
+    ) -> None:
         self.limits = limits or AgentLimits()
         self.deadline = time.monotonic() + self.limits.deadline_seconds
         self.report = AgentRunReport()
         self.interpretation: InterpretationResult | None = None
         self.last_reservation = 0
+        self.observer = observer
+
+    def notify(self) -> None:
+        if self.observer is not None:
+            self.observer(self.report.model_copy(deep=True))
 
     def remaining(self) -> float:
         remaining = self.deadline - time.monotonic()
@@ -57,6 +64,7 @@ class AgentRun:
             raise AgentFailure("INVALID_STAGE", "The requested specialist transition is not permitted.")
         step = AgentStep(role=role, tool=TOOLS[role], sequence=len(self.report.steps) + 1)
         self.report.steps.append(step)
+        self.notify()
         return step, time.monotonic()
 
     def sync(self, role: AgentRole, operation: Callable[[], T]) -> T:
@@ -71,6 +79,7 @@ class AgentRun:
             raise
         finally:
             step.duration_ms = max(0, int((time.monotonic() - started) * 1000))
+            self.notify()
 
     async def async_step(self, role: AgentRole, operation: Callable[[], Awaitable[T]]) -> T:
         step, started = self._start(role)
@@ -93,6 +102,7 @@ class AgentRun:
             raise
         finally:
             step.duration_ms = max(0, int((time.monotonic() - started) * 1000))
+            self.notify()
 
     def reserve(self, input_tokens: int, output_tokens: int) -> None:
         self.remaining()
@@ -104,9 +114,11 @@ class AgentRun:
         ):
             raise AgentFailure("MODEL_BUDGET", "The language-model usage budget was reached.")
         usage.model_calls += 1
+        usage.usage_complete = False
         usage.counted_input_tokens += input_tokens
         usage.reserved_tokens += required
         self.last_reservation = required
+        self.notify()
 
     async def finish(self, operation: Callable[[], Awaitable[T]]) -> T:
         try:

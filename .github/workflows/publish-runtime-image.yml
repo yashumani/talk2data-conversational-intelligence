@@ -11,7 +11,7 @@ on:
       - "src/**"
       - ".github/workflows/publish-runtime-image.yml"
   pull_request:
-    branches: [main]
+    branches: [main, feat/cycle-4-claude-orchestration]
     paths:
       - "Dockerfile"
       - ".dockerignore"

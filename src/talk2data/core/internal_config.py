@@ -62,9 +62,10 @@ class InternalRuntimeConfig(BaseModel):
     bigquery_catalog_path: Path
     maximum_active_queries: int = Field(default=8, ge=1, le=32)
     governance_database_path: Path | None = None
+    state_database_path: Path | None = None
     claude: ClaudeConfiguration = Field(default_factory=ClaudeConfiguration)
 
-    @field_validator("governance_database_path")
+    @field_validator("governance_database_path", "state_database_path")
     @classmethod
     def private_definition_database(cls, value: Path | None) -> Path | None:
         if value is not None and not value.is_absolute():

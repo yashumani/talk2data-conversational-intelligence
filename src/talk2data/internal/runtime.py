@@ -19,6 +19,8 @@ from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.ephemeral_run import EphemeralRunStore
 from talk2data.services.policy import PolicyEngine
 from talk2data.services.query_compiler import BusinessQueryCompiler
+from talk2data.services.run_coordinator import Observer, RunCoordinator
+from talk2data.services.run_store import RunStore
 from talk2data.services.semantic import SemanticRegistry
 from talk2data.services.semantic_context import cite_definitions
 
@@ -35,9 +37,14 @@ class InternalQueryRuntime:
         maximum_active: int,
         definition_store: DefinitionStore | None = None,
         language: ClaudeRuntime | None = None,
+        run_store: RunStore | None = None,
+        source_binding: str = "unconfigured",
     ) -> None:
         self.domains, self.registries, self.maximum_active = domains, registries, maximum_active
         self.language = language or ClaudeRuntime()
+        self.run_store = run_store or RunStore()
+        self.runs = RunCoordinator(self.run_store, maximum_active)
+        self.source_binding = source_binding
         self.definition_store = definition_store or DefinitionStore()
         self.definitions = {
             tenant: DefinitionGovernance(self.definition_store, f"internal:{tenant}", domains.get(tenant))
@@ -53,6 +60,8 @@ class InternalQueryRuntime:
         as_of: datetime,
         access: AccessContext,
         definition_snapshot_id: str | None = None,
+        observer: Observer | None = None,
+        require_current: bool = True,
     ) -> DemoChatResponse:
         key = (access.tenant_id, access.user_id, request_id)
         if key in self.active:
@@ -60,10 +69,10 @@ class InternalQueryRuntime:
         if len(self.active) >= self.maximum_active:
             raise InternalQueryBusy("Internal query capacity is currently occupied.")
         definitions = self.definitions[access.tenant_id]
-        snapshot = definitions.resolve(access, definition_snapshot_id, require_current=True)
+        snapshot = definitions.resolve(access, definition_snapshot_id, require_current=require_current)
         domains = DomainPackRegistry.from_snapshot(snapshot.pack)
         compiler = BusinessQueryCompiler(SemanticRegistry(domains, PolicyEngine()))
-        run = AgentRun(self.language.config.limits)
+        run = AgentRun(self.language.config.limits, observer)
         interpreter = BoundQuestionInterpreter(self.language, access, run)
         service = DemoChatService(
             domain_registry=domains,
@@ -101,8 +110,10 @@ class InternalQueryRuntime:
         return task.cancel()
 
     async def close(self) -> None:
+        await self.runs.close()
         tasks = list(self.active.values())
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         self.definition_store.close()
+        self.run_store.close()

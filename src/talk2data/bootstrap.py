@@ -17,6 +17,7 @@ from talk2data.api.routes import (
     connectors,
     csv_definitions,
     csv_demo,
+    csv_runs,
     health,
     physical_mappings,
     query_plans,
@@ -25,6 +26,7 @@ from talk2data.api.routes import (
     semantics,
     sessions,
 )
+from talk2data.api.run_routes import install_run_errors
 from talk2data.api.web_assets import install_web_assets
 from talk2data.connectors.factory import build_connectors
 from talk2data.connectors.registry import ConnectorRegistry
@@ -153,6 +155,7 @@ def create_app(
             yield
         finally:
             if app.state.csv_workspace is not None:
+                await app.state.csv_workspace.runs.close()
                 app.state.csv_workspace.close()
 
     app = FastAPI(
@@ -190,7 +193,7 @@ def create_app(
             allow_origins=resolved_settings.cors_allowed_origins,
             allow_credentials=False,
             allow_methods=["GET", "POST", "OPTIONS"],
-            allow_headers=["Accept", "Content-Type", "X-Demo-Session"],
+            allow_headers=["Accept", "Content-Type", "X-Demo-Session", "Last-Event-ID"],
         )
 
     app.state.settings = resolved_settings
@@ -213,8 +216,10 @@ def create_app(
     install_demo_errors(app)
     install_definition_errors(app)
     install_agent_errors(app)
+    install_run_errors(app)
     install_web_assets(app, resolved_settings.web_directory)
     app.include_router(csv_demo.router)
+    app.include_router(csv_runs.router)
     app.include_router(csv_definitions.router)
     app.include_router(chat.router)
     app.include_router(connectors.router)
