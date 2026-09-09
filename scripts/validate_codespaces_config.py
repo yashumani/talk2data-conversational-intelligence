@@ -10,8 +10,10 @@ OVERRIDE = ROOT / ".devcontainer" / "docker-compose.codespaces.yml"
 SETUP = ROOT / ".devcontainer" / "setup.sh"
 START = ROOT / ".devcontainer" / "start.sh"
 WAIT = ROOT / ".devcontainer" / "wait-for-runtime.sh"
+WORKFLOW = ROOT / ".github" / "workflows" / "github-runtime.yml"
+CSV_COMPOSE = ROOT / "docker-compose.csv-demo.yml"
 
-EXPECTED_FILES = [DEVCONTAINER, OVERRIDE, SETUP, START, WAIT]
+EXPECTED_FILES = [DEVCONTAINER, OVERRIDE, SETUP, START, WAIT, WORKFLOW, CSV_COMPOSE]
 FORBIDDEN_PATTERNS = [
     re.compile(r"hf_[A-Za-z0-9]{20,}"),
     re.compile(r"sk-[A-Za-z0-9]{20,}"),
@@ -59,27 +61,47 @@ def main() -> int:
 
     override = OVERRIDE.read_text(encoding="utf-8")
     require(
-        "qwen3:0.6b" in override,
-        "Codespaces must use the compact model by default",
+        'T2D_CSV_DEMO_ENABLED: "true"' in override,
+        "Codespaces must enable the CSV workspace",
     )
     require(
-        'T2D_OLLAMA_REQUIRED: "true"' in override,
-        "Codespaces must require live Ollama",
+        'T2D_OLLAMA_REQUIRED: "false"' in override,
+        "Codespaces must not require a model",
     )
 
     start = START.read_text(encoding="utf-8")
     require(
-        "docker compose" in start,
-        "Startup must use the governed Docker Compose stack",
+        "docker-compose.csv-demo.yml" in start,
+        "Startup must use the isolated CSV Docker Compose profile",
     )
     require("wait-for-runtime.sh" in start, "Startup readiness monitor is missing")
+    require(
+        "--remove-orphans" in start,
+        "Startup must remove containers left by an earlier runtime profile",
+    )
 
     waiter = WAIT.read_text(encoding="utf-8")
     require(
         "/health/ready" in waiter,
         "Readiness must use the application health contract",
     )
-    require("/demo" in waiter, "Runtime URL must open the Talk2Data interface")
+    require(
+        'health_payload.get("status") != "ready"' in waiter,
+        "Codespaces must reject a failed readiness payload",
+    )
+    require("/workspace/" in waiter, "Runtime URL must open the React CSV workspace")
+
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    require(
+        'health_payload.get("status") != "ready"' in workflow,
+        "GitHub runtime validation must reject a failed readiness payload",
+    )
+
+    csv_compose = CSV_COMPOSE.read_text(encoding="utf-8")
+    require(
+        "payload.get('status') == 'ready'" in csv_compose,
+        "The CSV container healthcheck must reject a failed readiness payload",
+    )
 
     for path in EXPECTED_FILES:
         text = path.read_text(encoding="utf-8")

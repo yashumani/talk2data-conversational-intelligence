@@ -14,10 +14,9 @@ python scripts/validate_codespaces_config.py
 cat <<'EOF'
 Talk2Data Codespaces setup completed.
 
-The full runtime starts automatically after the container opens:
-  - Talk2Data UI/API: port 8000
-  - Ollama: port 11434
-  - Default Codespaces model: qwen3:0.6b
+The standalone CSV workspace starts automatically after the container opens:
+  - React workspace and Talk2Data API: port 8000
+  - No GCP, database credential, or model download required
 
 Startup logs:
   tail -f .talk2data/codespaces-startup.log

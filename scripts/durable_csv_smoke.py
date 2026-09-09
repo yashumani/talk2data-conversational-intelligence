@@ -69,10 +69,12 @@ class Acceptance:
         deadline = time.monotonic() + 45
         while time.monotonic() < deadline:
             try:
-                self.request("/health/ready")
-                return
+                readiness = json.loads(self.request("/health/ready"))
+                if readiness.get("status") == "ready":
+                    return
             except (HTTPException, OSError, RuntimeError):
-                time.sleep(0.25)
+                pass
+            time.sleep(0.25)
         raise RuntimeError("The API did not become ready after restart.")
 
     def terminal(self, token: str, run_id: str) -> dict[str, Any]:

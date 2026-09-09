@@ -1,6 +1,6 @@
 # Final development review
 
-Review date: 2026-09-08. The original six-cycle requirements and completion stopping point
+Review date: 2026-09-09. The original six-cycle requirements and completion stopping point
 define the scope. The review began from `8a9873e0a5c0c9221ac48476cd413edbc8558068` and produced
 the corrections below. Final CI results and the exact reviewed source are recorded in
 [PR #24](https://github.com/yashumani/talk2data-conversational-intelligence/pull/24).
@@ -37,10 +37,10 @@ and their regressions pass. No unresolved implementation finding remains within 
 
 ## Verification record
 
-Python passes **804 tests**, with six explicitly opt-in service checks skipped. The full
-Python 3.11/3.12/3.13 matrix includes actual PostgreSQL 16. Python line coverage is **99.17%
-(7182/7242)** and branch coverage is **97.02% (1694/1746)**. Ruff, formatting, strict typing
-across 109 source files and all 20 workflow syntax checks pass.
+Python passes **828 tests**, with six explicitly opt-in service checks skipped. The full
+Python 3.11/3.12/3.13 matrix includes actual PostgreSQL 16. Python line coverage is **98.94%
+(7552/7633)** and branch coverage is **96.48% (1752/1816)**. Ruff, formatting, strict typing
+and all workflow syntax checks pass.
 
 React passes **99 tests** with **100% line, statement and function coverage** and **98.42%
 branch coverage (437/444)**. Both CSV and internal production builds pass. Coverage floors
@@ -56,15 +56,17 @@ not a production disaster-recovery measurement.
 Required final CI includes the Python 3.11/3.12/3.13 matrix with actual PostgreSQL 16, separate
 Python line/branch coverage checks, React/build/audit, internal packaging, the real CSV container
 restart/backup/restore exercise, private Terraform validation, PostgreSQL connector regression,
-CodeQL and the Docker/Ollama runtime. All nine required workflows pass on the corrected code.
+CodeQL and the Docker/Ollama runtime. All ten core workflows pass on the corrected pre-integration
+head; the final integration additionally validates the Pages showcase and internal-image workflow.
 Read their exact final-candidate results in PR #24; Claude configuration success is recorded
 separately from the skipped live job.
 
 ## Explicit limitations and external dependencies
 
-- The review browser returned `net::ERR_BLOCKED_BY_CLIENT` for the local demo URL. No live
-  browser, visual, keyboard, accessibility or device acceptance is claimed. Component/HTTP
-  tests and semantic table markup do not substitute for those checks.
+- The public GitHub Pages surface was inspected in a live desktop browser. That review found the
+  disabled legacy launcher and PostgreSQL/Ollama-first setup drift corrected by the final Pages
+  redesign. This is Pages acceptance only; full keyboard, screen-reader, supported-device and
+  signed internal-workspace acceptance still require their release environment.
 - No approved local Claude key/configuration is available. GitHub's Claude configuration
   check reports `NOT_CONFIGURED`, and the live job is skipped. LA-1 stays open and unwaived.
 - Real BigQuery, SSO/IAP and GCP activation remain user-deferred DG-1. Recording transports,

@@ -1,120 +1,96 @@
-# GitHub-native Talk2Data runtime
+# GitHub-native Talk2Data workspace
 
-Talk2Data uses GitHub for the control center, source of truth, complete evaluation runtime, testing,
-and packaging.
+Talk2Data uses GitHub for its public product showcase, source of truth, isolated evaluation
+workspace, automated tests and package evidence.
 
 ## Launch
 
-Open the deployed control center:
+Open the public showcase and select **Run the CSV workspace**:
 
 ```text
 https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
-Then select **Run Talk2Data now**, or open the Codespaces link directly:
+Or open the exact `main` branch directly:
 
 ```text
 https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&quickstart=1
 ```
 
-GitHub creates or resumes a Codespace from the permanent `main` runtime.
+## Default Codespaces profile
 
-## What starts automatically
-
-The dev container executes this sequence:
+The default Codespace intentionally starts the smallest working product:
 
 ```text
 Codespace
-  -> Docker-in-Docker runtime
-  -> Ollama service
-  -> qwen3:0.6b model pull
-  -> Talk2Data FastAPI service
-  -> synthetic telecom SQLite data
-  -> question admissibility
-  -> governed Business Query IR
-  -> parameterized query execution
-  -> result-sense verification
-  -> certified claims and query receipt
+  -> Docker-in-Docker
+  -> isolated CSV Compose profile
+  -> FastAPI service and durable demo state
+  -> React CSV workspace
+  -> business-definition governance
+  -> bounded conversation and agent progress
+  -> deterministic query and result verification
+  -> evidence table, definitions and receipt
 ```
 
-Port `8000` is forwarded privately and opens in the browser when the application becomes ready.
+No GCP project, database credential, Claude key, Ollama process or model download is required.
+Port `8000` is forwarded privately and opens `/workspace/` when readiness passes.
 
-The working routes include:
-
-```text
-GET  /demo
-GET  /docs
-GET  /health/ready
-POST /v1/connectors/list
-POST /v1/connectors/catalog
-POST /v1/connectors/freshness
-POST /v1/connectors/test
-POST /v1/chat/demo
-POST /v1/questions/evaluate
-POST /v1/query-plans/compile
-POST /v1/semantics/metrics/resolve
-```
-
-## First startup
-
-The first startup downloads Docker images and the compact local model, so it can take several
-minutes. Follow the startup log inside the Codespace:
+Follow startup inside the Codespace:
 
 ```bash
 tail -f .talk2data/codespaces-startup.log
 ```
 
-Check the stack:
+Inspect the stack:
 
 ```bash
 docker compose \
-  -f docker-compose.yml \
+  -f docker-compose.csv-demo.yml \
   -f .devcontainer/docker-compose.codespaces.yml \
   ps
 ```
 
-Restart the full stack:
+Restart it with `bash .devcontainer/start.sh`. The primary routes are:
 
-```bash
-bash .devcontainer/start.sh
+```text
+GET    /workspace/
+GET    /docs
+GET    /health/ready
+POST   /v1/demo/csv/sessions
+POST   /v1/demo/csv/upload
+POST   /v1/demo/csv/conversations
+POST   /v1/demo/csv/runs
+GET    /v1/demo/csv/runs/{run_id}
+GET    /v1/demo/csv/runs/{run_id}/events
+DELETE /v1/demo/csv/sessions/current
 ```
 
-## PostgreSQL execution profile
+Use only the checked-in synthetic sample or explicitly approved demonstration data. The strict
+CSV contract and acceptance sequence are in [`CSV_WORKSPACE.md`](CSV_WORKSPACE.md).
 
-The default Codespaces profile uses the synthetic SQLite connector to keep startup small. The same
-runtime can execute through the PostgreSQL reference adapter:
+## Optional reference Ollama/PostgreSQL profile
+
+The older `/demo` reference application and local Ollama pipeline remain available, but they are
+not the Codespaces default and are not prerequisites for CSV, direct BigQuery or Parquet use:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.postgres.yml \
-  up -d --build
+T2D_OLLAMA_MODEL=qwen3:0.6b docker compose up -d --build
 ```
 
-See [`POSTGRESQL_CONNECTOR.md`](POSTGRESQL_CONNECTOR.md).
+The PostgreSQL reference data connector can be added with `docker-compose.postgres.yml`; see
+[`POSTGRESQL_CONNECTOR.md`](POSTGRESQL_CONNECTOR.md). A separate live-Ollama workflow retains the
+real local-model regression.
 
-## Runtime boundary
+## Enterprise profiles
 
-GitHub Pages is the durable public control center. GitHub Codespaces is the complete isolated
-evaluation and development environment. A Codespace can stop after inactivity, so it is not the
-permanent production server.
+Codespaces is an evaluation environment, not an always-on server. Direct BigQuery and Parquet
+activation use private runtime configuration and organizational identity outside the public repo;
+see [`BIGQUERY_PARQUET_RUNTIME.md`](BIGQUERY_PARQUET_RUNTIME.md). Cloud Run and Cloud SQL are an
+optional scale-out profile described in [`SHARED_INTERNAL_RUNTIME.md`](SHARED_INTERNAL_RUNTIME.md).
 
-The same governed Docker stack can later run continuously on:
+## Public-data boundary
 
-- a developer workstation;
-- an on-premises Linux server;
-- an enterprise VM;
-- a Kubernetes platform;
-- a private cloud account.
-
-GitHub Actions certifies the Docker/Ollama pipeline and the real PostgreSQL connector path before a
-change is promoted.
-
-## Current public-data boundary
-
-The repository contains only synthetic, employer-neutral telecom data. Do not add production
-credentials, private schemas, customer data, employee data, internal Domain Packs, or proprietary
-organizational memory to this public repository.
-
-The Unified AI Brain integration remains a separate service boundary and is not required for the
-current data-execution path.
+The repository contains synthetic, employer-neutral telecom data only. Never add production
+credentials, private schemas, customer or employee data, internal Domain Packs, entitlements,
+acceptance output or proprietary organizational memory to this public repository.

@@ -1,6 +1,6 @@
 # Consolidated completion checkpoint
 
-Updated 2026-09-08. The user authorized combining the remaining Cycle 5/6 work into one
+Updated 2026-09-09. The user authorized combining the remaining Cycle 5/6 work into one
 completion effort. This replaces the previous one-sub-milestone-at-a-time stopping instruction.
 The original product scope and six-cycle plan remain authoritative.
 
@@ -8,14 +8,15 @@ The original product scope and six-cycle plan remain authoritative.
 
 | Item | Implemented capability | Acceptance boundary |
 | --- | --- | --- |
-| Cycle 5 | Durable conversations, revisions, safe retries, cancellation, progress/replay, saved results and CSV restart recovery | Automated/package acceptance delivered in PR #23; formal acceptance/merge still depends on open Cycle 4 LA-1 |
+| Cycle 5 | Durable conversations, revisions, safe retries, cancellation, progress/replay, saved results and CSV restart recovery | Automated/package acceptance delivered in PR #23; development integration is independent of open live-provider gate LA-1 |
 | Cycle 6.1 | Verified reference backup/restore, controlled retention/audit, bounded HTTP, safe telemetry and receipt checks | Delivered in PR #24; reference recovery checks remain required |
 | Cycle 6.2 | Shared PostgreSQL state, definitions and grants; independently claimable/fenced jobs; signed internal React workspace; private Cloud SQL/Cloud Run infrastructure | Actual PostgreSQL and application tests, UI coverage/build, container and Terraform validation required; private activation is DG-1 |
 | Cycle 6.3 | Exact-candidate evidence checks, authenticated GitHub workflow/artifact provenance, three distinct authorized owner approvals and review workflow | Automation implemented; real acceptance evidence, private rollout and owner approvals remain open |
 
-PR #24 is the consolidated completion candidate. PR #22 and #23 remain visible dependencies;
-none is automatically merged by the release checker. Passing code checks establishes a tested
-development candidate, not a completed enterprise production release.
+PRs #22–#24 preserve the implementation history and are integrated in dependency order into
+`main`. The release checker never interprets a merge as private-cloud or business acceptance.
+Passing code checks establishes a tested development candidate, not a completed enterprise
+production release.
 
 ## Fixed definition of done for this development handoff
 
@@ -32,8 +33,8 @@ Once these conditions pass, stop adding implementation features. The remaining w
 the activation/acceptance ledger below. No optional orchestration framework, new data connector,
 CSV schema expansion or broader model memory is required to close this agreed development scope.
 
-The current Python acceptance run passes **804 tests** with **99.17% line coverage** and
-**97.02% branch coverage**; six external-service checks remain explicitly opt-in. React passes
+The final pre-integration Python acceptance run passes **828 tests** with **98.94% line coverage**
+and **96.48% branch coverage**; six external-service checks remain explicitly opt-in. React passes
 **99 tests** with independent coverage floors enforced. The final PR records the exact commit,
 coverage fractions, all required workflow links and the unchanged LA-1/DG-1 dispositions.
 
@@ -41,6 +42,11 @@ The user-requested final review corrected stale-result handling, conversation ca
 grouped internal evidence, malformed pending requests, provider secret injection and lease expiry
 during database lock waits. See [FINAL_REVIEW.md](FINAL_REVIEW.md) for findings and verification,
 and [HANDOFF.md](HANDOFF.md) for startup instructions and the concrete remaining acceptance inputs.
+
+The final integration also replaces the disabled, obsolete Pages launcher with a clearly labeled
+synthetic product tour; documents CSV/direct BigQuery/Parquet/optional managed profiles; makes
+runtime readiness provider-neutral; removes deploy-time source rewriting; and adds a controlled
+`Dockerfile.internal` build/publication workflow with digest, SBOM and provenance output.
 
 ## Remaining enterprise acceptance
 

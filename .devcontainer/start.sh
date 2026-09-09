@@ -4,13 +4,12 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 mkdir -p .talk2data
 
-export T2D_OLLAMA_MODEL="${T2D_OLLAMA_MODEL:-qwen3:0.6b}"
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-talk2data-codespaces}"
 
 docker compose \
-  -f docker-compose.yml \
+  -f docker-compose.csv-demo.yml \
   -f .devcontainer/docker-compose.codespaces.yml \
-  up -d --build
+  up -d --build --remove-orphans
 
 if [[ -f .talk2data/codespaces-wait.pid ]] && kill -0 "$(cat .talk2data/codespaces-wait.pid)" 2>/dev/null; then
   exit 0

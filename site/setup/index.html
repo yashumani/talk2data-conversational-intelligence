@@ -8,10 +8,10 @@
     http-equiv="Content-Security-Policy"
     content="default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
   >
-  <title>Talk2Data Setup — Generate an Installable Runtime</title>
+  <title>Talk2Data Setup — Choose an Activation Profile</title>
   <meta
     name="description"
-    content="Configure an approved data source and download an installable Talk2Data runtime package."
+    content="Choose CSV, direct BigQuery, Parquet, or optional managed GCP activation; retain the PostgreSQL package generator as a reference profile."
   >
   <style>
     :root {
@@ -30,6 +30,7 @@
       --bad: #ff9b9b;
     }
     * { box-sizing: border-box; }
+    :focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -120,6 +121,42 @@
       margin-bottom: 18px;
     }
     .connection p { grid-column: 1 / -1; color: var(--muted); margin: 0; font-size: 12px; line-height: 1.45; }
+    .profiles {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 24px 0 32px;
+    }
+    .profile {
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 17px;
+      background: rgba(13, 17, 24, .9);
+    }
+    .profile.primary { border-color: rgba(216, 255, 98, .45); }
+    .profile.optional { border-style: dashed; }
+    .profile-tag {
+      align-self: flex-start;
+      margin-bottom: 22px;
+      border: 1px solid #3c4a5f;
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: var(--good);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .profile.optional .profile-tag { color: var(--warn); }
+    .profile p { flex: 1; margin: 9px 0 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .profile a { color: var(--lime); font-size: 11px; font-weight: 800; text-decoration: none; }
+    .profile a:hover { text-decoration: underline; }
+    .reference-heading { margin: 4px 0 15px; }
+    .reference-heading h2 { font-size: 27px; letter-spacing: -.025em; }
+    .reference-heading p { max-width: 850px; margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
     .steps {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -248,10 +285,12 @@
     @media (max-width: 1050px) {
       .shell { grid-template-columns: 1fr; }
       aside { border-left: 0; border-top: 1px solid var(--line); }
+      .profiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 760px) {
       main, aside { padding: 18px; }
       .topbar { flex-direction: column; }
+      .profiles { grid-template-columns: 1fr; }
       .steps { grid-template-columns: 1fr; }
       .step.wide { grid-column: auto; }
       .fields, .fields.three { grid-template-columns: 1fr; }
@@ -265,20 +304,57 @@
   <main>
     <header class="topbar">
       <div>
-        <p class="eyebrow">Guided tenant generator</p>
-        <h1>Build your Talk2Data runtime</h1>
+        <p class="eyebrow">Activation center</p>
+        <h1>Choose the smallest runtime that fits</h1>
         <p class="subtitle">
-          Connect an approved Talk2Data API, map your PostgreSQL view, select the local Ollama
-          model, validate the contract, and download a complete installable package. This wizard
-          asks only for a secret variable name—never a password or connection string.
+          Start with the CSV workspace, or activate direct BigQuery or a refreshed Parquet
+          snapshot when enterprise access is approved. Cloud Run and Cloud SQL are an optional
+          scale-out profile—not a prerequisite for using read-only BigQuery.
         </p>
       </div>
       <a class="back" href="../">← Back to Talk2Data</a>
     </header>
 
-    <section class="connection" aria-label="Talk2Data API connection">
+    <section class="profiles" aria-label="Activation profiles">
+      <article class="profile primary">
+        <span class="profile-tag">Runnable now</span>
+        <h3>CSV demonstration</h3>
+        <p>Upload the supported synthetic CSV schema and use the full React and FastAPI workflow without GCP or a model key.</p>
+        <a href="https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&amp;quickstart=1" target="_blank" rel="noreferrer">Launch CSV workspace →</a>
+      </article>
+      <article class="profile">
+        <span class="profile-tag">Implemented</span>
+        <h3>Direct BigQuery</h3>
+        <p>Use application-default authorization or an approved read-only identity against exact allowlisted views.</p>
+        <a href="https://github.com/yashumani/talk2data-conversational-intelligence/blob/main/docs/BIGQUERY_PARQUET_RUNTIME.md" target="_blank" rel="noreferrer">Read activation steps →</a>
+      </article>
+      <article class="profile">
+        <span class="profile-tag">Implemented</span>
+        <h3>BigQuery to Parquet</h3>
+        <p>Refresh a hash-pinned Parquet snapshot, then execute locally with DuckDB when predictable speed and cost matter.</p>
+        <a href="https://github.com/yashumani/talk2data-conversational-intelligence/blob/main/docs/BIGQUERY_PARQUET_RUNTIME.md" target="_blank" rel="noreferrer">Read snapshot steps →</a>
+      </article>
+      <article class="profile optional">
+        <span class="profile-tag">Optional</span>
+        <h3>Managed scale-out</h3>
+        <p>Add Cloud Run, Cloud SQL, private networking, and distributed workers only when multiple replicas and managed operations are required.</p>
+        <a href="https://github.com/yashumani/talk2data-conversational-intelligence/blob/main/docs/SHARED_INTERNAL_RUNTIME.md" target="_blank" rel="noreferrer">Read managed profile →</a>
+      </article>
+    </section>
+
+    <div class="reference-heading">
+      <p class="eyebrow">Optional reference tool</p>
+      <h2 id="reference-generator-title">PostgreSQL and Ollama package generator</h2>
+      <p>
+        This existing generator packages the reference PostgreSQL/Ollama runtime only. It does
+        not configure the direct BigQuery or Parquet profiles above, and it never asks for a
+        secret value—only a variable name, never a password or connection string.
+      </p>
+    </div>
+
+    <section class="connection" aria-label="Reference Talk2Data API connection">
       <label>
-        Talk2Data API base URL
+        Reference runtime API base URL
         <input id="api-base" type="url" inputmode="url" placeholder="https://your-codespace-8000.app.github.dev">
       </label>
       <button id="connect" type="button">Connect and load template</button>
@@ -288,7 +364,7 @@
       </p>
     </section>
 
-    <form id="setup-form">
+    <form id="setup-form" aria-labelledby="reference-generator-title">
       <div class="steps">
         <section class="step">
           <div class="step-heading">
@@ -314,7 +390,7 @@
         <section class="step">
           <div class="step-heading">
             <div class="step-number">2</div>
-            <div><h3>Local AI</h3><p>Ollama interprets language but never calculates data.</p></div>
+            <div><h3>Reference local AI</h3><p>Ollama interprets language but never calculates data.</p></div>
           </div>
           <div class="fields">
             <label>
@@ -332,7 +408,7 @@
         <section class="step wide">
           <div class="step-heading">
             <div class="step-number">3</div>
-            <div><h3>PostgreSQL source</h3><p>Map the approved database object and secret reference.</p></div>
+            <div><h3>Optional PostgreSQL source</h3><p>Map the reference database object and secret reference.</p></div>
           </div>
           <div class="fields three">
             <label>
@@ -403,10 +479,10 @@
   </main>
 
   <aside>
-    <h2>Package receipt</h2>
+    <h2>Reference package receipt</h2>
     <div class="card">
       <div class="label">Status</div>
-      <div id="status-detail" class="value">Connect a Talk2Data runtime to load the approved tenant template.</div>
+      <div id="status-detail" class="value" aria-live="polite">Connect a Talk2Data runtime to load the approved tenant template.</div>
     </div>
     <div class="card">
       <div class="label">Template</div>

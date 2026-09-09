@@ -265,8 +265,10 @@ class RuntimePackageBuilder:
                             "python",
                             "-c",
                             (
-                                "import urllib.request; "
-                                "urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)"
+                                "import json, urllib.request; "
+                                "payload = json.load(urllib.request.urlopen("
+                                "'http://127.0.0.1:8000/health/ready', timeout=5)); "
+                                "assert payload.get('status') == 'ready'"
                             ),
                         ],
                         "interval": "15s",

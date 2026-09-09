@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "talk2data-conversational-intelligence"
 version = "0.6.0"
-description = "Governed conversational intelligence for enterprise data using Ollama and Hermes Agent."
+description = "Governed conversational intelligence for enterprise data across CSV, BigQuery, and Parquet."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Talk2Data Contributors" }]

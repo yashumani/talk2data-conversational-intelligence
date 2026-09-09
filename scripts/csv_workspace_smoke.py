@@ -49,7 +49,8 @@ def run(base_url: str) -> dict[str, Any]:
             raise RuntimeError(f"{path}: expected HTTP {expected}, received {status}")
         return raw
 
-    request("/health/ready")
+    readiness = json.loads(request("/health/ready"))
+    check(readiness.get("status") == "ready", "Application readiness is ready")
     html = request("/workspace/").decode()
     assets = re.findall(r'(?:src|href)="(/workspace/assets/[^\"]+)"', html)
     check(any(path.endswith(".js") for path in assets), "Built JavaScript is present")

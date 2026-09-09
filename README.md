@@ -17,6 +17,9 @@ merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release pro
 For a BigQuery-first deployment that does not require Cloud Run or Cloud SQL, including the
 optional governed Parquet acceleration path, see the
 [BigQuery/Parquet runtime guide](docs/BIGQUERY_PARQUET_RUNTIME.md).
+The [GitHub Pages showcase](https://yashumani.github.io/talk2data-conversational-intelligence/)
+provides an interactive, explicitly non-live preview of the current UI and all four activation
+profiles; its primary action launches the real CSV workspace in Codespaces.
 
 ### New modular CSV workspace
 
@@ -108,28 +111,27 @@ boundaries and operating limits. The [completion ledger](docs/PROJECT_COMPLETION
 implemented capabilities from pending live acceptance. Trusted release checks bind workflow
 artifacts and three distinct owner approvals to the exact source, image and configuration.
 **LA-1 remains open; DG-1 remains user-deferred. This is a development candidate, not a
-production release.** No private cloud deployment or automatic merge has been performed.
+production release.** Development integration does not imply a private deployment or owner approval.
 
 ### Existing application
 
-Public GitHub control center:
+Public GitHub product showcase:
 
 ```text
 https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
-Complete GitHub Codespaces runtime:
+GitHub Codespaces CSV workspace:
 
 ```text
 https://codespaces.new/yashumani/talk2data-conversational-intelligence?ref=main&quickstart=1
 ```
 
-The Codespace starts Docker, Ollama, the compact `qwen3:0.6b` model, FastAPI, synthetic telecom
-data, session persistence, query execution, verification, and the browser chat. Port `8000` opens
-privately after the runtime becomes ready.
+The Codespace starts the isolated CSV Compose profile, FastAPI, durable demo state and the React
+workspace. It needs no GCP access or model download. Port `8000` opens privately after readiness.
 
 ```text
-/demo         working browser chat
+/workspace/   React CSV workspace
 /docs         interactive OpenAPI explorer
 /health/ready component readiness
 ```

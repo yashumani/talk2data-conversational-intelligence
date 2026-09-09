@@ -1,8 +1,8 @@
 # Repository activation and final verification guide
 
-Reviewed on 2026-09-08 against BigQuery-first redesign candidate
-`415c2b8a303528665d283b7003b8a98c9441a421` on
-`feat/cycle-6-operations-readiness`.
+Reviewed through the final integration pass on 2026-09-09. The last full pre-integration suite
+ran on `ce33ccaaa865ea799de8fdd7911be4bb8917bce6`; release evidence must use the later exact
+merged `main` SHA reported by GitHub, not this predecessor.
 
 This is the single activation runbook for the repository. It does not treat implemented code,
 passing synthetic tests, a configured cloud resource or an approved production release as the
@@ -14,12 +14,12 @@ private configuration digest.
 
 The codebase is a strong, tested development candidate. The standalone CSV product can be
 activated now without Claude or GCP. The internal enterprise product cannot yet be called fully
-active because the stacked PRs are unmerged, real Claude gate LA-1 is open, real GCP/BigQuery/IAP
-gate DG-1 is deferred, and production recovery, load, browser/accessibility, business and owner
+active because real Claude gate LA-1 is open, real GCP/BigQuery/IAP gate DG-1 is deferred, and
+production recovery, load, full browser/accessibility, business and owner
 acceptance evidence has not been supplied.
 
-No source-code defect was found in this review. The remaining blockers are release integration,
-private configuration, live environment proof and accountable approval. Cloud Run and Cloud SQL
+No source-code defect remains in the agreed development scope. The remaining enterprise blockers
+are repository governance, private configuration, live environment proof and accountable approval. Cloud Run and Cloud SQL
 are not prerequisites for the enterprise analytical runtime; they are an optional scale-out
 profile. The minimal internal runtime uses direct BigQuery plus local SQLite, or an explicitly
 refreshed BigQuery-to-Parquet snapshot plus local SQLite. See `BIGQUERY_PARQUET_RUNTIME.md`.
@@ -40,7 +40,7 @@ accept a caller-selected source or a CSV fingerprint.
 
 ## Repository-wide scan performed
 
-The review enumerated all **328 published files**, including hidden repository configuration.
+The review enumerated all **330 published files**, including hidden repository configuration.
 Every file was included in automated readability/format parsing or a subsystem-specific check;
 production paths also received static analysis, type checking, tests or targeted trust-boundary
 inspection. This is broader than sampling files, but it is not a claim that automated tools can
@@ -48,7 +48,7 @@ prove every business definition or cloud policy correct.
 
 | Area | Review performed | Result |
 | --- | --- | --- |
-| All 328 files | UTF-8, NUL, maximum-size, trailing-whitespace and symlink scan | Passed; no issue found |
+| All 330 files | UTF-8, NUL, maximum-size, trailing-whitespace and symlink scan | Passed; no issue found |
 | Structured files | All JSON, YAML and TOML parsed | Passed |
 | Documentation | Local Markdown link targets checked | Passed; no broken local target |
 | Python | Ruff, formatting, strict mypy over 116 source files, compile-all | Passed |
@@ -60,7 +60,7 @@ prove every business definition or cloud policy correct.
 | Node dependencies | `npm audit --audit-level=high` | No vulnerability reported |
 | Python environment | `pip check` | No broken requirement reported |
 | CSV HTTP behavior | Real local FastAPI process and 36-check smoke suite | Passed; 736 rows and July total 24,676 |
-| Workflow/configuration | 20 GitHub workflows, Codespaces, Pages and Hugging Face validators | Passed |
+| Workflow/configuration | 21 GitHub workflows, Codespaces, Pages and Hugging Face validators | Passed |
 | Shell | Bash syntax for all repository shell scripts | Passed |
 | Secret scan | Key/private-key patterns and connection strings reviewed | No committed real secret found; local test passwords are synthetic |
 | Security analysis | CodeQL workflow on reviewed source | Passed |
@@ -68,7 +68,7 @@ prove every business definition or cloud policy correct.
 | Terraform | Terraform 1.13.5 initialization and validation workflow | Passed remotely; Terraform was unavailable in this review workspace |
 | Live Claude | Configuration job succeeded; live job skipped | **LA-1 open** |
 | Live BigQuery/IAP/GCP | Recording/synthetic contracts only | **DG-1 open/deferred** |
-| Browser/accessibility | Component semantics tested; real browser acceptance absent | Open |
+| Browser/accessibility | Public Pages desktop browser inspected; signed runtime and assistive-technology acceptance remain | Partially complete |
 
 ### Reproduce the full development validation
 
@@ -113,22 +113,15 @@ Run the repository workflows as the authoritative container, PostgreSQL and Terr
 The six live external-service tests must remain skipped unless their approved private inputs are
 present; a skipped test is not acceptance.
 
-## Phase 1 — integrate the reviewed source
+## Phase 1 — verify the integrated source
 
-PRs #22, #23 and #24 are a stacked chain and are all still draft/unmerged. Do not merge #24 into
-its feature-branch base and assume the code reached `main`.
+PRs #22, #23 and #24 preserve the Cycle 4→5→6 ancestry and are integrated with merge commits in
+that order. Confirm that `main` contains the final Pages and internal-image files, then require all
+applicable checks on the resulting merge SHA. Record that 40-character source SHA; evidence from a
+feature head cannot certify the merged revision. Create an immutable release tag only after the
+exact merged revision passes and the applicable external gates have evidence.
 
-1. Review and mark PR #22 ready. Resolve its review requirements, require its checks, then merge
-   it into `main`.
-2. Retarget PR #23 from `feat/cycle-4-claude-orchestration` to `main`. Confirm the diff still
-   contains only Cycle 5 work, rerun required checks, review and merge it.
-3. Retarget PR #24 from `feat/cycle-5-durable-conversations` to `main`. Confirm the final diff,
-   rerun required checks, review and merge it.
-4. Require CI on the resulting `main` revision. Record that new 40-character source SHA. Evidence
-   from `560539...` proves the reviewed development baseline but cannot certify a later merge SHA.
-5. Create an immutable release tag only after the exact merged revision passes the required checks.
-
-Recommended branch protection before merging:
+Required `main` repository protection before enterprise promotion:
 
 - pull request required;
 - required CI, React, CodeQL, package and infrastructure checks;
@@ -160,9 +153,11 @@ fixture and ask: `What were mobile activations by region last month?` with the s
 
 CSV acceptance must also include restart and restore:
 
-1. Run `scripts/durable_csv_smoke.py prepare` and retain its private checkpoint only for the test.
+1. Run `scripts/durable_csv_smoke.py prepare --checkpoint-file /tmp/talk2data-durable-checkpoint.json`
+   and retain that private checkpoint only for the test.
 2. Restart the API container.
-3. Run `scripts/durable_csv_smoke.py verify` against the same private checkpoint.
+3. Run `scripts/durable_csv_smoke.py verify --checkpoint-file /tmp/talk2data-durable-checkpoint.json`
+   against the same private checkpoint.
 4. Follow `RELEASE_OPERATIONS.md` to stop the writer, create a verified backup, restore into a
    new directory and verify the restored copy.
 5. Remove the test checkpoint and synthetic volume when acceptance is complete.
@@ -319,9 +314,16 @@ BigQuery reachability under the organization's Private Google Access/VPC-SC poli
 ## Phase 6 — build the correct immutable internal image
 
 The existing `Publish Talk2Data runtime image` workflow builds `Dockerfile`, which is the public
-runtime. It is **not** the image expected by the private Terraform deployment. Until a protected
-internal-image publication workflow is added, build and push `Dockerfile.internal` from the exact
-released revision through an approved build system:
+runtime and is **not** the artifact expected by the private Terraform deployment. The separate
+`Build and publish internal runtime image` workflow validates `Dockerfile.internal` on PRs and
+`main`. Publication is manual, accepts only `publish=true` on `main`, and enters the
+`internal-image-publish` GitHub environment. Configure that environment with approved reviewers
+and self-review prevention before dispatching it.
+
+The workflow publishes an exact-SHA tag to GHCR, attaches an SBOM and build provenance, and uploads
+a digest-only `internal-image-receipt-<sha>` artifact. Download the receipt and use its `sha256:`
+digest. If the organization requires Artifact Registry, mirror that already reviewed digest or
+perform an equivalent controlled build from the same source:
 
 ```bash
 export T2D_ACT_SHA="$(git rev-parse HEAD)"
@@ -489,16 +491,16 @@ merges code, grants cloud authority or moves production traffic.
 
 | Finding | Impact | Required treatment |
 | --- | --- | --- |
-| PRs #22–#24 are draft and stacked | Final cycles are not on `main` | Review, retarget and merge in order |
+| `main` protection/ruleset is not configured | Future commits could bypass reviewed checks | Require PRs, checks, conversation resolution and no force-push before enterprise promotion |
 | LA-1 live job is skipped | Claude is not provider-accepted | Configure and pass the nine-case live gate |
 | DG-1 is deferred | BigQuery and organizational identity are not live-proven; managed GCP is also unproven if selected | Complete restricted-principal acceptance for the selected profile |
-| Internal image has no publication workflow | Public image workflow is the wrong artifact for Terraform | Add a protected pipeline or perform a controlled `Dockerfile.internal` build/push |
+| Internal image publication requires an environment decision | The workflow exists, but unprotected publication would not establish owner approval | Protect `internal-image-publish`, dispatch from exact `main`, retain digest/SBOM/provenance and scan it |
 | SQL migration/grant bootstrap is outside Terraform | First application revision cannot initialize an empty database | Use the documented staged bootstrap before full rollout |
 | Repository is public | Private contracts or evidence would be exposed if committed | Keep private material in Secret Manager/protected evidence storage |
 | Python dependencies have ranges but no committed lock | Rebuilding later may resolve different transitive versions | Produce an approved lock/SBOM or rely on a scanned immutable digest and retained provenance |
 | Terraform provider lock is not committed | Provider resolution can change within the allowed range | Generate/review a lock in the protected deployment workspace |
 | Actions and base images use major/minor tags; Ollama uses `latest` | Supply-chain inputs are mutable | Pin production build inputs by digest/SHA under security policy |
-| Browser/accessibility evidence is absent | Component tests do not prove real UX | Complete supported-device and assistive-technology acceptance |
+| Full browser/accessibility evidence is incomplete | Public Pages desktop inspection does not prove the signed workspace, supported devices or assistive technology | Complete signed-runtime, device and assistive-technology acceptance |
 
 The final three supply-chain items are enterprise hardening findings, not failures in the current
 functional test suite. They should be resolved or formally risk-accepted before a production
@@ -508,7 +510,7 @@ release requiring reproducible builds.
 
 The repository is fully active only when every box below is true for one exact candidate:
 
-- [ ] PRs #22, #23 and #24 are reviewed and their intended changes are on protected `main`.
+- [ ] The intended Cycle 4–6 changes are present on protected `main` and its exact SHA is recorded.
 - [ ] The merged SHA passes Python 3.11/3.12/3.13 with PostgreSQL and all independent 96% gates.
 - [ ] React tests, both production builds, dependency audit, CodeQL, containers and Terraform pass.
 - [ ] CSV restart and verified restore acceptance pass.

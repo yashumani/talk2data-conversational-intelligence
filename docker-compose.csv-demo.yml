@@ -41,7 +41,7 @@ services:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"
+        - "import json, urllib.request; payload = json.load(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)); assert payload.get('status') == 'ready'"
       interval: 5s
       timeout: 4s
       retries: 12

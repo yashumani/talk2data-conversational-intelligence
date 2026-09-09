@@ -1,6 +1,6 @@
 # Talk2Data product handoff
 
-Reviewed 2026-09-08. This is the tested development candidate for the agreed six-cycle
+Reviewed 2026-09-09. This is the tested development candidate for the agreed six-cycle
 implementation. Production activation remains subject to the live acceptance items below.
 The final source revision and CI evidence are recorded in
 [PR #24](https://github.com/yashumani/talk2data-conversational-intelligence/pull/24).
@@ -8,10 +8,10 @@ The final source revision and CI evidence are recorded in
 ## What you can run now
 
 The standalone React + Python CSV demonstration runs without GCP or model credentials.
-Use the completion branch while the release reviews remain open:
+Use the integrated `main` branch:
 
 ```bash
-git clone --branch feat/cycle-6-operations-readiness --single-branch https://github.com/yashumani/talk2data-conversational-intelligence.git
+git clone --branch main --single-branch https://github.com/yashumani/talk2data-conversational-intelligence.git
 cd talk2data-conversational-intelligence
 docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
 ```
@@ -46,7 +46,7 @@ formats, validation, expiry, recovery and cleanup are in [CSV_WORKSPACE.md](CSV_
 | 2 | Separate signed internal API and governed BigQuery connector/configuration | Complete on the user-approved placeholder boundary; actual GCP/SSO remains deferred |
 | 3 | Live metric/dimension definition governance, immutable citations and saved CSV reproduction | Accepted |
 | 4 | Claude adapter and bounded specialist orchestration with deterministic query and answer verification | Implementation complete; real Claude gate LA-1 still open |
-| 5 | Durable conversation/run state, ordered progress, retries, cancellation and restart recovery | Implementation and automated acceptance complete; formal acceptance depends on LA-1 |
+| 5 | Durable conversation/run state, ordered progress, retries, cancellation and restart recovery | Implementation and automated acceptance complete; enterprise promotion still depends on applicable live gates |
 | 6 | Reference recovery/retention, shared PostgreSQL state/grants/definitions, fenced workers, signed internal UI, private infrastructure and release review controls | Implementation complete; private activation and release acceptance still open |
 
 The internal workspace has its own build/container and signed identity gateway. It presents
@@ -87,18 +87,18 @@ and approvals cannot be replaced by unit-test coverage or self-written receipts.
 
 ## Review and release procedure
 
-1. Resolve LA-1 and the applicable acceptance findings. PR #22, #23 and #24 form the existing
-   review chain; keep the final candidate intact while reviewing dependencies.
-2. Obtain the required reviews and merge through the repository's normal controls. Repeat
-   required CI on the resulting release revision and build its immutable image.
+1. Keep the integrated `main` revision intact and require its application, Pages and internal-image
+   validation checks. Code integration does not waive LA-1, DG-1 or owner acceptance.
+2. After the applicable live gates pass, build the immutable internal image through the protected
+   `internal-image-publish` environment and retain its digest, SBOM, provenance and receipt.
 3. Bind real acceptance receipts to that exact source, image and private configuration.
    Run the enterprise review and provenance verifier with the protected reviewer policy.
 4. Activate the reviewed private deployment only after the environment gates and owners
    approve it. The receipt tools never merge, deploy, change permissions or approve their own claims.
 
-No merge, real provider connection, private cloud deployment or business-owner approval was
-performed during this handoff. Full enterprise acceptance remains pending for the concrete
-reasons above. There is no additional feature-development cycle proposed.
+No real provider connection, private cloud deployment or business-owner approval is inferred from
+development integration. Full enterprise acceptance remains pending for the concrete reasons
+above. There is no additional feature-development cycle proposed.
 
 ## Maintainer map
 
