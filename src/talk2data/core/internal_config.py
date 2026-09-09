@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from talk2data.core.bigquery_config import BigQuerySettings
 from talk2data.core.claude_config import ClaudeConfiguration
+from talk2data.core.gemini_config import GeminiConfiguration
 from talk2data.core.parquet_config import ParquetSnapshotSettings
 from talk2data.core.state_config import SharedStateSettings
 from talk2data.operations.http import HttpOperations
@@ -69,6 +70,7 @@ class InternalRuntimeConfig(BaseModel):
     governance_database_path: Path | None = None
     state_database_path: Path | None = None
     claude: ClaudeConfiguration = Field(default_factory=ClaudeConfiguration)
+    gemini: GeminiConfiguration = Field(default_factory=GeminiConfiguration)
     http_operations: HttpOperations = Field(default_factory=HttpOperations)
     shared_state: SharedStateSettings | None = None
     deployment_revision: str | None = Field(default=None, pattern=r"^[a-f0-9]{40}$")
@@ -77,6 +79,10 @@ class InternalRuntimeConfig(BaseModel):
 
     @model_validator(mode="after")
     def isolated_state(self) -> Self:
+        if self.claude.enabled and self.gemini.enabled:
+            raise ValueError("Enable exactly one internal language provider.")
+        if self.gemini.enabled and self.gemini.data_policy != "approved_enterprise":
+            raise ValueError("Internal Gemini requires an explicitly approved enterprise data policy.")
         if self.analytics_mode == "bigquery" and self.bigquery is None:
             raise ValueError("Direct BigQuery mode requires BigQuery settings.")
         if self.analytics_mode == "parquet" and self.parquet is None:
@@ -94,6 +100,10 @@ class InternalRuntimeConfig(BaseModel):
         ):
             raise ValueError("The internal browser workspace requires signed IAP and an absolute asset path.")
         return self
+
+    @property
+    def language_configuration(self) -> ClaudeConfiguration | GeminiConfiguration:
+        return self.gemini if self.gemini.enabled else self.claude
 
     @field_validator("governance_database_path", "state_database_path")
     @classmethod

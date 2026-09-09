@@ -30,8 +30,6 @@ from talk2data.internal.worker import create_worker
 from talk2data.operations.http import OperationalHttp
 from talk2data.services.bigquery_port import BigQueryTransport
 from talk2data.services.bigquery_sdk import GoogleBigQueryTransport
-from talk2data.services.claude_interpreter import ClaudeRuntime
-from talk2data.services.claude_transport import ClaudeTransport
 from talk2data.services.definition_store import DefinitionStore
 from talk2data.services.identity import (
     Entitlements,
@@ -40,6 +38,7 @@ from talk2data.services.identity import (
     IdentityUnavailable,
     IdentityVerifier,
 )
+from talk2data.services.language_factory import ProviderTransport, build_language_runtime
 from talk2data.services.postgres_database import PostgresDatabase
 from talk2data.services.postgres_governance import PostgresDefinitionStore, PostgresEntitlementStore
 from talk2data.services.postgres_runs import PostgresRunStore
@@ -51,10 +50,10 @@ def create_internal_app(
     config: InternalRuntimeConfig | None = None,
     *,
     transport_factory: Callable[[BigQuerySettings], BigQueryTransport] = GoogleBigQueryTransport,
-    language_transport: ClaudeTransport | None = None,
+    language_transport: ProviderTransport | None = None,
 ) -> FastAPI:
     resolved = config or InternalRuntimeConfig.load(InternalSettings().config_file)
-    language = ClaudeRuntime(resolved.claude, language_transport)
+    language = build_language_runtime(resolved.language_configuration, language_transport)
     domains = DomainPackRegistry(resolved.domain_pack_directory)
     domains.load()
     catalog = BigQueryCatalog.load(resolved.bigquery_catalog_path)
@@ -118,7 +117,7 @@ def create_internal_app(
                 "analytics_mode": resolved.analytics_mode,
                 "bigquery": resolved.bigquery.model_dump(mode="json") if resolved.bigquery else None,
                 "parquet": resolved.parquet.model_dump(mode="json") if resolved.parquet else None,
-                "language": resolved.claude.model_dump(mode="json"),
+                "language": resolved.language_configuration.model_dump(mode="json"),
                 "identity": resolved.identity.model_dump(mode="json"),
                 "deployment_revision": resolved.deployment_revision,
                 "shared_state": resolved.shared_state.model_dump(mode="json")

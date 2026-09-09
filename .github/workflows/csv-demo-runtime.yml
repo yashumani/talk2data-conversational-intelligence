@@ -11,6 +11,8 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - "docker-compose.csv-demo.yml"
+      - "docker-compose.csv-gemini.yml"
+      - "examples/gemini/**"
       - "docker-compose.csv-recovery.yml"
       - "scripts/csv_workspace_smoke.py"
       - "scripts/durable_csv_smoke.py"
@@ -26,6 +28,8 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - "docker-compose.csv-demo.yml"
+      - "docker-compose.csv-gemini.yml"
+      - "examples/gemini/**"
       - "docker-compose.csv-recovery.yml"
       - "scripts/csv_workspace_smoke.py"
       - "scripts/durable_csv_smoke.py"
@@ -46,6 +50,10 @@ jobs:
           python-version: "3.12"
       - name: Validate the independent demo configuration
         run: docker compose -f docker-compose.csv-demo.yml config --quiet
+      - name: Validate the optional Gemini overlay without API calls
+        env:
+          GEMINI_API_KEY: synthetic-configuration-only
+        run: docker compose -f docker-compose.csv-demo.yml -f docker-compose.csv-gemini.yml config --quiet
       - name: Build and start the packaged workspace
         run: docker compose -f docker-compose.csv-demo.yml up --build --wait --wait-timeout 120
       - name: Verify the installed UI assets and CSV API flow

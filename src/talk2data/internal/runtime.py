@@ -12,12 +12,13 @@ from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import AccessContext
 from talk2data.services.admissibility import QuestionAdmissibilityEngine
 from talk2data.services.agent_runtime import AgentRun
-from talk2data.services.claude_interpreter import BoundQuestionInterpreter, ClaudeRuntime
 from talk2data.services.definition_governance import DefinitionGovernance
 from talk2data.services.definition_store import DefinitionStore
 from talk2data.services.demo_chat import DemoChatService
 from talk2data.services.distributed_runs import DistributedCoordinator
 from talk2data.services.ephemeral_run import EphemeralRunStore
+from talk2data.services.language_contract import BoundQuestionInterpreter, LanguageRuntime
+from talk2data.services.language_factory import build_language_runtime
 from talk2data.services.policy import PolicyEngine
 from talk2data.services.postgres_runs import PostgresRunStore
 from talk2data.services.query_compiler import BusinessQueryCompiler
@@ -39,12 +40,12 @@ class InternalQueryRuntime:
         registries: dict[str, ConnectorRegistry],
         maximum_active: int,
         definition_store: DefinitionJournal | None = None,
-        language: ClaudeRuntime | None = None,
+        language: LanguageRuntime | None = None,
         run_store: RunStore | PostgresRunStore | None = None,
         source_binding: str = "unconfigured",
     ) -> None:
         self.domains, self.registries, self.maximum_active = domains, registries, maximum_active
-        self.language = language or ClaudeRuntime()
+        self.language = language or build_language_runtime()
         self.run_store = run_store or RunStore()
         self.runs = (
             DistributedCoordinator(self.run_store)

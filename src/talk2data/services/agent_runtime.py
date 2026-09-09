@@ -7,7 +7,7 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
-from talk2data.core.claude_config import AgentLimits
+from talk2data.core.language_config import AgentLimits
 from talk2data.domain.agents import AgentRole, AgentRunReport, AgentStep
 from talk2data.domain.models import InterpretationResult
 

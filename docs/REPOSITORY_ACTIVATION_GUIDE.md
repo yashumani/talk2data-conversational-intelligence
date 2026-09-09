@@ -20,7 +20,7 @@ private configuration digest.
 
 The codebase is a strong, tested development candidate. The standalone CSV product can be
 activated now without Claude or GCP. The internal enterprise product cannot yet be called fully
-active because real Claude gate LA-1 is open, real GCP/BigQuery/IAP gate DG-1 is deferred, and
+active because the selected language provider's real gate LA-1 is open, real GCP/BigQuery/IAP gate DG-1 is deferred, and
 production recovery, load, full browser/accessibility, business and owner
 acceptance evidence has not been supplied.
 
@@ -171,7 +171,16 @@ CSV acceptance must also include restart and restore:
 The accepted CSV contract is deliberately narrow: required `date`, `region`, `channel` and
 `activations`; optional `market`, `store` and `plan`. It is not an arbitrary spreadsheet agent.
 
-## Phase 3 — close Claude gate LA-1
+## Phase 3 — close the selected language provider's gate LA-1
+
+For the Gemini demonstration, follow [GEMINI_API.md](GEMINI_API.md). It supplies the isolated
+CSV overlay, `GEMINI_API_KEY` setup, preview opt-in and manual **Gemini live acceptance** workflow.
+Gemini is the selected demo option; Claude remains an alternative. Require the real nine-case
+benchmark for the provider/model you actually deploy, bound to the reviewed configuration.
+The Claude-specific instructions below apply only when choosing Claude. Neither workflow
+configuration status nor mocked tests are live acceptance.
+
+### Claude alternative
 
 Claude is an optional, isolated interpretation service. It receives the question and approved
 semantic catalog, not CSV rows, BigQuery results, credentials or executable SQL. Deterministic
@@ -520,7 +529,7 @@ The repository is fully active only when every box below is true for one exact c
 - [ ] The merged SHA passes Python 3.11/3.12/3.13 with PostgreSQL and all independent 96% gates.
 - [ ] React tests, both production builds, dependency audit, CodeQL, containers and Terraform pass.
 - [ ] CSV restart and verified restore acceptance pass.
-- [ ] LA-1 passes the real Claude nine-case benchmark.
+- [ ] LA-1 passes the real nine-case benchmark for the selected Gemini or Claude provider/model.
 - [ ] The internal image is built from `Dockerfile.internal`, scanned, pushed and pinned by digest.
 - [ ] Private runtime, domain, catalog, entitlements and secrets are reviewed and pinned by version.
 - [ ] Selected state mode passes restart/recovery: local SQLite for one process, or Cloud SQL for managed scale-out.

@@ -56,6 +56,7 @@ markers = [
   "live_postgres: integration test that requires a running PostgreSQL reference schema",
   "live_bigquery: integration test requiring approved private configuration and restricted GCP identities",
   "live_claude: opt-in real Claude acceptance using approved synthetic questions and definitions",
+  "live_gemini: opt-in real Gemini acceptance using approved synthetic questions and definitions",
 ]
 
 [tool.ruff]

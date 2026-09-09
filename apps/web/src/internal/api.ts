@@ -1,5 +1,6 @@
 import { ApiError } from "../lib/api";
 import type { DefinitionView } from "../lib/definitions";
+import type { LanguageProvider } from "../lib/language";
 import { readEvents, terminal, type RunRequest, type RunSnapshot } from "../lib/runs";
 
 export type InternalRequest = Omit<RunRequest, "source_fingerprint">;
@@ -25,7 +26,7 @@ export const internalApi = {
   async load() {
     const [identity, definitions, conversations, language] = await Promise.all([
       internalRequest<Identity>("/me"), internalRequest<DefinitionView>("/definitions"),
-      internalRequest<Conversation[]>("/conversations"), internalRequest<{ provider: string }>("/language"),
+      internalRequest<Conversation[]>("/conversations"), internalRequest<{ provider: LanguageProvider }>("/language"),
     ]);
     return { identity, definitions, conversations, language };
   },

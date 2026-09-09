@@ -47,7 +47,7 @@ formats, validation, expiry, recovery and cleanup are in [CSV_WORKSPACE.md](CSV_
 | 1 | One product repository; thin React/Python entry points; separated services/tools; optional isolated CSV workspace | Accepted |
 | 2 | Separate signed internal API and governed BigQuery connector/configuration | Complete on the user-approved placeholder boundary; actual GCP/SSO remains deferred |
 | 3 | Live metric/dimension definition governance, immutable citations and saved CSV reproduction | Accepted |
-| 4 | Claude adapter and bounded specialist orchestration with deterministic query and answer verification | Implementation complete; real Claude gate LA-1 still open |
+| 4 | Claude and optional Gemini adapters with bounded specialist orchestration, deterministic queries and answer verification | Implementation complete; selected provider's real gate LA-1 still open |
 | 5 | Durable conversation/run state, ordered progress, retries, cancellation and restart recovery | Implementation and automated acceptance complete; enterprise promotion still depends on applicable live gates |
 | 6 | Reference recovery/retention, shared PostgreSQL state/grants/definitions, fenced workers, signed internal UI, private infrastructure and release review controls | Implementation complete; private activation and release acceptance still open |
 
@@ -60,7 +60,13 @@ The final review, corrections, evidence and limitations are in [FINAL_REVIEW.md]
 
 ## What is required to close the live gates
 
-**Immediate dependency: real Claude acceptance (LA-1).** Configure these existing GitHub
+**Selected demo provider: Gemini.** Follow [GEMINI_API.md](GEMINI_API.md): configure Actions secret
+`GEMINI_API_KEY` and manually run **Gemini live acceptance** with the reviewed model. The provided
+CSV overlay selects `gemini-3-flash-preview`; confirm free-tier eligibility and quota in your
+project. A key in Actions enables the benchmark, not a public Pages backend. Require the real
+nine-case benchmark for LA-1; skipped checks do not count. No Claude key is needed for Gemini.
+
+**Alternative: real Claude acceptance (LA-1).** If selecting Claude, configure these GitHub
 Actions inputs through the approved secret/configuration process:
 
 | Kind | Name | Required value |
@@ -114,3 +120,4 @@ above. There is no additional feature-development cycle proposed.
 | Backup, retention, evidence and release operations | [RELEASE_OPERATIONS.md](RELEASE_OPERATIONS.md) |
 | Complete CSV and enterprise activation sequence | [REPOSITORY_ACTIVATION_GUIDE.md](REPOSITORY_ACTIVATION_GUIDE.md) |
 | Locked installation, action pins and remaining build boundaries | [BUILD_REPRODUCIBILITY.md](BUILD_REPRODUCIBILITY.md) |
+| Gemini preview demo, private key setup and live acceptance | [GEMINI_API.md](GEMINI_API.md) |

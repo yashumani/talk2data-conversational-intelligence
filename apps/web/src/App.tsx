@@ -6,6 +6,7 @@ import { HistoryPanel } from "./components/HistoryPanel";
 import { useWorkspace } from "./hooks/useWorkspace";
 import { ConversationPanel } from "./components/ConversationPanel";
 import { terminal } from "./lib/runs";
+import { languageNames } from "./lib/language";
 
 export function App() {
   const workspace = useWorkspace();
@@ -14,7 +15,7 @@ export function App() {
   return <div className="app">
     <header className="app-header">
       <div><p className="eyebrow">Talk2Data</p><h1>Data workspace</h1></div>
-      <span className="badge">CSV demonstration · {workspace.state?.interpreter === "claude" ? "Claude assisted" : "rules-based"}</span>
+      <span className="badge">CSV demonstration · {workspace.state && workspace.state.interpreter !== "rules" ? `${languageNames[workspace.state.interpreter]} assisted` : "rules-based"}</span>
     </header>
     <main>
       <div className="workspace-toolbar">
