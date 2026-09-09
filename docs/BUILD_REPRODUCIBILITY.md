@@ -77,3 +77,16 @@ action updates. This implements GitHub's [action-pinning guidance](https://docs.
 
 Do not describe the whole product build as bit-for-bit reproducible or production-approved on
 the strength of these dependency and action pins alone.
+
+## Verification record
+
+The fresh CPython 3.12 runtime install passed its hash checks and `pip check`; importing the CSV
+application succeeded with neither Google nor DuckDB packages installed. The locked development
+install passed 840 local tests with 27 explicitly disabled database/live checks. The new dependency
+and workflow guards passed 33 tests with 97.69% combined coverage; CI enforces a separate 96%
+floor for these tools. A second lock generation produced identical lock and manifest bytes.
+
+The full PostgreSQL-backed Python matrix, frontend and packaged runtime validation belong to
+the exact source recorded in [PR #26](https://github.com/yashumani/talk2data-conversational-intelligence/pull/26),
+not to a generic branch-name claim. Refer to that record for hosted results and the integrated
+source. The live provider and owner gates remain separate even when all development checks pass.

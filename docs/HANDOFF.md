@@ -2,8 +2,10 @@
 
 Reviewed 2026-09-09. This is the tested development candidate for the agreed six-cycle
 implementation. Production activation remains subject to the live acceptance items below.
-The final source revision and CI evidence are recorded in
+The six-cycle source revision and CI evidence are recorded in
 [PR #24](https://github.com/yashumani/talk2data-conversational-intelligence/pull/24).
+The subsequent dependency/workflow hardening and its exact-source validation are recorded in
+[PR #26](https://github.com/yashumani/talk2data-conversational-intelligence/pull/26).
 
 ## What you can run now
 

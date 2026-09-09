@@ -4,6 +4,12 @@ Reviewed through the final integration pass on 2026-09-09. The last full pre-int
 ran on `ce33ccaaa865ea799de8fdd7911be4bb8917bce6`; release evidence must use the later exact
 merged `main` SHA reported by GitHub, not this predecessor.
 
+The verification table below records the six-cycle handoff baseline. The subsequent locked
+installation/action-pinning pass adds 33 regression tests; its latest exact-source checks are
+recorded in [PR #26](https://github.com/yashumani/talk2data-conversational-intelligence/pull/26).
+See [BUILD_REPRODUCIBILITY.md](BUILD_REPRODUCIBILITY.md) for the supported locked install paths
+and the remaining image/infrastructure boundaries.
+
 This is the single activation runbook for the repository. It does not treat implemented code,
 passing synthetic tests, a configured cloud resource or an approved production release as the
 same thing. Follow the phases in order. Do not mark the enterprise product active until every
