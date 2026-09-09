@@ -114,7 +114,7 @@ async def run_live_acceptance(language: LanguageRuntime, artifact: Path) -> None
                 assert result.status.value in {"CLARIFICATION_REQUIRED", "OUT_OF_DOMAIN", "INVALID"}, name
                 assert result.receipt is None and result.answer is None, name
                 trace = result.agent_run
-                assert trace and trace.provider == "claude" and trace.usage.model_calls == 1, name
+                assert trace and trace.provider == language.provider and trace.usage.model_calls == 1, name
                 report["cases"].append({"id": name, "status": "passed", "run": trace.model_dump(mode="json")})
             with pytest.raises(AgentFailure, match="governed analytical") as denied:
                 await workspace.answer(

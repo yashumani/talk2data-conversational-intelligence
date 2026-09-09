@@ -15,15 +15,43 @@ from talk2data.core.internal_config import InternalRuntimeConfig
 from talk2data.internal.bootstrap import create_internal_app
 from talk2data.main import create_app
 from talk2data.services.gemini_interpreter import GeminiRuntime
-from tests.claude_support import RecordingClaude
+from tests.claude_support import RecordingClaude, proposal
 from tests.claude_support import config as claude_config
+from tests.claude_support import message as claude_message
 from tests.gemini_support import RecordingGemini, config
+from tests.gemini_support import message as gemini_message
 from tests.internal_support import RecordingCloud, private_config
+from tests.language_acceptance import ABSTENTIONS, CASES, run_live_acceptance
 from tests.test_csv_demo import ask, new_session, upload
 from tests.test_internal_api import headers, question
 from tests.test_run_workflows import application, completed, payload, submit
 
 BASE = "/v1/demo/csv"
+
+
+@pytest.mark.parametrize("provider", ["gemini", "claude"])
+async def test_acceptance_harness_checks_all_cases_with_recorded_responses(provider, tmp_path):
+    """Harness regression only: these recordings are never live-provider acceptance evidence."""
+    proposals = [proposal(dimensions=[dimension] if dimension else []) for _, _, dimension, _ in CASES]
+    proposals.extend(proposal(metric_id=None, dimensions=[], needs_clarification=True) for _ in ABSTENTIONS)
+    if provider == "gemini":
+        responses = []
+        for item in proposals:
+            response = gemini_message()
+            response["candidates"][0]["content"]["parts"][0]["text"] = json.dumps(item)
+            responses.append(response)
+        recording = RecordingGemini(responses)
+    else:
+        recording = RecordingClaude(
+            [claude_message(content=[{"type": "text", "text": json.dumps(item)}]) for item in proposals]
+        )
+    artifact = tmp_path / "recorded-harness-regression.json"
+    await run_live_acceptance(recording.runtime(limits={"maximum_model_calls": 1}), artifact)
+    report = json.loads(artifact.read_text())
+    assert report["status"] == "PASSED" and report["provider"] == provider
+    assert len(report["cases"]) == 9 and len(recording.requests) == 16
+    assert not recording.responses
+    assert "synthetic-secret" not in artifact.read_text()
 
 
 def test_csv_gemini_answer_and_saved_replay_survive_restart_and_provider_change(tmp_path):
