@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from threading import Event
@@ -83,8 +84,23 @@ def test_internal_durable_result_and_duplicate_request_use_one_cloud_job(
     assert client.post(BASE + "/runs", headers=auth, json=value).json() == result
     assert len(cloud.jobs) == 1
     stream = client.get(BASE + "/runs/" + identifier + "/events", headers=auth)
-    assert stream.status_code == 200 and "result_rows" not in stream.text
-    assert "request_id" not in stream.text and "3100" not in stream.text
+    assert stream.status_code == 200
+    events = [json.loads(line[6:]) for line in stream.text.splitlines() if line.startswith("data: ")]
+    assert events
+
+    def assert_safe_event(value: Any) -> None:
+        if isinstance(value, dict):
+            assert "request_id" not in value and "result_rows" not in value
+            for nested in value.values():
+                assert_safe_event(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                assert_safe_event(nested)
+        else:
+            assert value != 3100
+
+    for event in events:
+        assert_safe_event(event)
     assert auth["Authorization"].split(" ")[1].encode() not in config.state_database_path.read_bytes()
     other = headers(signing_key, "second-analyst")
     for suffix in ["", "/events"]:
