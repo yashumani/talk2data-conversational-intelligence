@@ -1,6 +1,6 @@
 {
   "name": "@talk2data/workspace",
-  "version": "0.1.0",
+  "version": "0.7.0-alpha.1",
   "private": true,
   "type": "module",
   "engines": { "node": ">=24" },
@@ -8,9 +8,10 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "build:internal": "tsc --noEmit && vite build --config vite.internal.config.ts",
+    "build:pages": "node scripts/clean-pages-output.mjs && vite build --config vite.pages.config.ts",
     "test": "vitest run --coverage"
   },
-  "dependencies": { "react": "19.2.8", "react-dom": "19.2.8" },
+  "dependencies": { "echarts": "6.1.0", "react": "19.2.8", "react-dom": "19.2.8" },
   "devDependencies": {
     "vitest": "5.0.0",
     "@vitest/coverage-v8": "5.0.0",

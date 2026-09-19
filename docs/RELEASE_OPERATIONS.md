@@ -1,5 +1,9 @@
 # Cycle 6: operational recovery and release evidence
 
+> **Enterprise runbook:** this document governs the earlier private-runtime release evidence.
+> The separate community-alpha decision, static Pages boundary, and repository-owner gates are in
+> [PUBLIC_ALPHA_RELEASE_CHECKLIST.md](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
+
 Updated: 2026-09-08. The user has now authorized a combined completion effort across the
 outstanding Cycle 5/6 items. This document retains the Cycle 6.1 reference recovery procedures.
 The shared PostgreSQL/worker/internal UI implementation is documented in

@@ -107,6 +107,7 @@ def test_live_postgres_end_to_end_receipt_backed_answer(tmp_path: Path) -> None:
 
     with seeded_postgres(dsn):
         settings = Settings(
+            runtime_profile="trusted_local",
             database_path=tmp_path / "sessions.db",
             data_backend="postgresql",
             postgres_dsn=dsn,

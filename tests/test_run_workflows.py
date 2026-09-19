@@ -26,7 +26,12 @@ BASE = "/v1/demo/csv"
 
 def application(path: Path, **kwargs: Any) -> Any:
     return create_app(
-        Settings(database_path=path.parent / "legacy.db", ollama_enabled=False, ollama_required=False),
+        Settings(
+            runtime_profile="trusted_local",
+            database_path=path.parent / "legacy.db",
+            ollama_enabled=False,
+            ollama_required=False,
+        ),
         csv_settings=CsvDemoSettings(enabled=True, state_database_path=path),
         **kwargs,
     )

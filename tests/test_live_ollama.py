@@ -19,6 +19,7 @@ pytestmark = pytest.mark.live_ollama
 def test_real_ollama_interprets_and_answers_demo_question(tmp_path: Path) -> None:
     model = os.getenv("T2D_OLLAMA_MODEL", "qwen3:0.6b")
     settings = Settings(
+        runtime_profile="trusted_local",
         database_path=tmp_path / "live-ollama.db",
         ollama_enabled=True,
         ollama_required=True,

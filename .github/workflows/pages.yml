@@ -1,20 +1,12 @@
-name: Deploy Talk2Data product showcase
+name: Build and deploy static visualization gallery
 
 on:
-  push:
-    branches: [main, "feat/cycle-*"]
-    paths:
-      - "site/**"
-      - "apps/web/public/samples/mobile-activations.csv"
-      - "scripts/validate_pages_site.py"
-      - ".github/workflows/pages.yml"
   pull_request:
-    branches: [main, "feat/cycle-*"]
-    paths:
-      - "site/**"
-      - "apps/web/public/samples/mobile-activations.csv"
-      - "scripts/validate_pages_site.py"
-      - ".github/workflows/pages.yml"
+    branches: [main]
+    paths: ["apps/web/**", "contracts/**", "site/**", "VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "scripts/prepare_pages_release.py", "scripts/validate_pages_site.py", ".github/workflows/pages.yml"]
+  push:
+    branches: [main]
+    paths: ["apps/web/**", "contracts/**", "site/**", "VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "scripts/prepare_pages_release.py", "scripts/validate_pages_site.py", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -27,33 +19,31 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Check out repository
+      - name: Check out exact source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
-
-      - name: Write public runtime configuration
-        env:
-          T2D_PUBLIC_API_BASE_URL: ${{ vars.T2D_PUBLIC_API_BASE_URL }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          value = os.environ.get("T2D_PUBLIC_API_BASE_URL", "").strip().rstrip("/")
-          Path("site/config.js").write_text(
-              f"window.T2D_PUBLIC_API_BASE_URL = {json.dumps(value)};\n",
-              encoding="utf-8",
-          )
-          PY
-
-      - name: Validate static product showcase
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Validate source profile
         run: python scripts/validate_pages_site.py
-
-      - name: Upload Pages artifact
+      - name: Install exact web dependencies
+        working-directory: apps/web
+        run: npm ci --ignore-scripts
+      - name: Build dedicated static gallery
+        working-directory: apps/web
+        run: npm run build:pages
+      - name: Stamp exact source and license receipt
+        run: python scripts/prepare_pages_release.py --source-sha "$GITHUB_SHA"
+      - name: Validate release artifact
+        run: python scripts/validate_pages_site.py --profile release --source-sha "$GITHUB_SHA"
+      - name: Upload immutable Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: site
@@ -62,6 +52,7 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -69,27 +60,6 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy exact artifact
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
-
-      - name: Verify published product showcase
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: |
-          for attempt in $(seq 1 60); do
-            body="$(curl -fsSL "$PAGE_URL" || true)"
-            if grep -Fq "Interactive product tour" <<<"$body" \
-              && grep -Fq "Data paths that match the codebase" <<<"$body" \
-              && grep -Fq "Fixture preview" <<<"$body" \
-              && grep -Fq "ref=main" <<<"$body"; then
-              echo "Verified $PAGE_URL"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "The deployed page did not expose the expected product showcase."
-          exit 1
-
-      - name: Record deployment
-        run: echo "Published ${{ steps.deployment.outputs.page_url }}"

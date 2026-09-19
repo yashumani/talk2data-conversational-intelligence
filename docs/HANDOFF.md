@@ -1,5 +1,10 @@
 # Talk2Data product handoff
 
+> **Scope note:** this runbook preserves the September 9 enterprise/CSV handoff. The public
+> `0.7.0-alpha.1` contribution candidate adds a static visualization gallery and fail-closed
+> public boundaries; its authoritative release verdict is
+> [PUBLIC_ALPHA_RELEASE_CHECKLIST.md](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
+
 Reviewed 2026-09-09. This is the tested development candidate for the agreed six-cycle
 implementation. Production activation remains subject to the live acceptance items below.
 The six-cycle source revision and CI evidence are recorded in

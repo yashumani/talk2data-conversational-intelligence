@@ -2,6 +2,7 @@ services:
   api:
     environment:
       T2D_ENVIRONMENT: codespaces
+      T2D_RUNTIME_PROFILE: trusted_local
       T2D_CSV_DEMO_ENABLED: "true"
       T2D_OLLAMA_ENABLED: "false"
       T2D_OLLAMA_REQUIRED: "false"

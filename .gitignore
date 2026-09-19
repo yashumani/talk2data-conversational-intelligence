@@ -9,10 +9,15 @@ __pycache__/
 htmlcov/
 coverage/
 coverage.json
+build-tool-coverage.json
 .venv/
 venv/
 dist/
 dist-internal/
+dist-pages/
+site/workspace/
+site/release.json
+site/licenses/
 build/
 node_modules/
 *.tsbuildinfo

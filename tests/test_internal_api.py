@@ -363,7 +363,12 @@ def test_public_csv_profile_never_initializes_bigquery(
 
     monkeypatch.setattr("google.cloud.bigquery.Client", forbidden)
     app = create_app(
-        Settings(database_path=tmp_path / "demo.db", ollama_enabled=False, ollama_required=False),
+        Settings(
+            runtime_profile="trusted_local",
+            database_path=tmp_path / "demo.db",
+            ollama_enabled=False,
+            ollama_required=False,
+        ),
         csv_settings=CsvDemoSettings(enabled=True),
     )
     with TestClient(app) as client:

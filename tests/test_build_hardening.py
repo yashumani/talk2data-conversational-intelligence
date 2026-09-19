@@ -183,6 +183,46 @@ def test_repository_workflows_pass_pinning_gate():
     assert validate_workflows.main() == 0
 
 
+def test_job_controls_accept_bounded_pr_timeout_and_hardened_checkout():
+    validate_workflows.validate_job_controls(
+        {
+            "on": {"pull_request": {}},
+            "jobs": {
+                "quality": {
+                    "timeout-minutes": "30",
+                    "steps": [
+                        {
+                            "uses": "actions/checkout@" + "a" * 40,
+                            "with": {"persist-credentials": "false"},
+                        }
+                    ],
+                }
+            },
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ("workflow", "message"),
+    [
+        ({"jobs": []}, "jobs must be a mapping"),
+        ({"jobs": {"quality": []}}, "must be a mapping"),
+        (
+            {"on": {"pull_request": {}}, "jobs": {"quality": {"timeout-minutes": "0"}}},
+            "literal 1–360 minute timeout",
+        ),
+        ({"jobs": {"quality": {"steps": {}}}}, "steps must be a list"),
+        (
+            {"jobs": {"quality": {"steps": [{"uses": "actions/checkout@" + "a" * 40}]}}},
+            "persist-credentials",
+        ),
+    ],
+)
+def test_job_controls_reject_unsafe_shapes(workflow, message):
+    with pytest.raises(ValueError, match=message):
+        validate_workflows.validate_job_controls(workflow)
+
+
 @pytest.mark.parametrize("content", [None, "jobs: [", "on: push\njobs: {}", "- not-a-workflow"])
 def test_missing_malformed_or_invalid_workflows_fail(tmp_path, monkeypatch, capsys, content):
     monkeypatch.setattr(validate_workflows, "__file__", str(tmp_path / "scripts/validate_workflows.py"))

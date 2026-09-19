@@ -1,5 +1,10 @@
 # Consolidated completion checkpoint
 
+> **Historical checkpoint:** the implementation claims and test counts below apply to the prior
+> six-cycle checkpoint. They do not declare the `0.7.0-alpha.1` community candidate released.
+> Current scope and remaining gates are in
+> [PUBLIC_ALPHA_RELEASE_CHECKLIST.md](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
+
 Updated 2026-09-09. The user authorized combining the remaining Cycle 5/6 work into one
 completion effort. This replaces the previous one-sub-milestone-at-a-time stopping instruction.
 The original product scope and six-cycle plan remain authoritative.

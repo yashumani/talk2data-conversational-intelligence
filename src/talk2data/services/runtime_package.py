@@ -211,6 +211,7 @@ class RuntimePackageBuilder:
     ) -> dict[str, Any]:
         api_environment: dict[str, str] = {
             "T2D_ENVIRONMENT": "production",
+            "T2D_RUNTIME_PROFILE": "trusted_local",
             "T2D_DEFAULT_TENANT_ID": request.domain_pack.tenant_id,
             "T2D_DATABASE_PATH": "/app/.talk2data/talk2data.db",
             "T2D_DOMAIN_PACK_DIRECTORY": "/app/config/domain-packs",

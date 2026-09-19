@@ -1,11 +1,31 @@
 # Talk2Data Conversational Intelligence
 
+> **Community alpha candidate:** `0.7.0-alpha.1` is implemented for public review, but the current
+> release decision is **NO-GO** until the hosted and owner-controlled gates in the
+> [public alpha release checklist](docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md) are complete.
+
 Talk2Data is a governed, local-first conversational intelligence platform for asking business
 questions across enterprise data, organizational knowledge, and approved external evidence.
 
 A language model interprets the wording of a question. Deterministic services define the metrics,
 authorize access, compile the Business Query IR, execute read-only source queries, validate the
 result, and release only receipt-backed claims.
+
+## Community alpha and visualization gallery
+
+The project now has an Apache-2.0 license, DCO contribution process, governance, Code of Conduct,
+support policy, security guidance, ownership rules, issue forms, and release metadata. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md) and the [community preview](docs/COMMUNITY_PREVIEW.md).
+
+The visualization program inventories the public Holtzy D3, R, Python, and React gallery landing
+pages into **44 deduplicated semantic targets** and a finite **76-type product matrix** across eight
+batches. Batch 1 contains **15 tested renderers**; **61 types are explicitly queued**. The static
+Pages gallery uses synthetic data and cannot call a runtime API. See the
+[implementation matrix](docs/VISUALIZATION_IMPLEMENTATION_MATRIX.md).
+
+The example under `examples/canvas/ai-studio/` demonstrates deterministic preview-model requests
+through a bounded localhost-only server. It needs no API key and does not accept one from the HTML
+or browser JavaScript. It is an implementation reference, not a Talk2Data UI reference.
 
 ## Use the application
 
@@ -17,9 +37,9 @@ merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release pro
 For a BigQuery-first deployment that does not require Cloud Run or Cloud SQL, including the
 optional governed Parquet acceleration path, see the
 [BigQuery/Parquet runtime guide](docs/BIGQUERY_PARQUET_RUNTIME.md).
-The [GitHub Pages showcase](https://yashumani.github.io/talk2data-conversational-intelligence/)
-provides an interactive, explicitly non-live preview of the current UI and all four activation
-profiles; its primary action launches the real CSV workspace in Codespaces.
+The [GitHub Pages guide](docs/GITHUB_PAGES.md) describes the candidate's dedicated static
+visualization gallery and the exact-SHA evidence required before the public URL can be treated as
+this version. It does not launch or imitate the Talk2Data application UI.
 
 ### New modular CSV workspace
 

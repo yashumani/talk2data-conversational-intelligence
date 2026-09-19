@@ -30,7 +30,12 @@ BASE = "/v1/demo/csv"
 def workspace(tmp_path: Path) -> Any:
     recording = RecordingClaude()
     app = create_app(
-        Settings(database_path=tmp_path / "demo.db", ollama_enabled=False, ollama_required=False),
+        Settings(
+            runtime_profile="trusted_local",
+            database_path=tmp_path / "demo.db",
+            ollama_enabled=False,
+            ollama_required=False,
+        ),
         csv_settings=CsvDemoSettings(enabled=True),
         csv_language_config=config(),
         csv_language_transport=recording.transport(),
@@ -210,7 +215,12 @@ def test_csv_loads_its_own_optional_language_file(tmp_path: Path, monkeypatch: p
     monkeypatch.setenv("T2D_CSV_LANGUAGE_CONFIG_FILE", str(path))
     monkeypatch.setenv("T2D_CLAUDE_API_KEY", "synthetic-config-secret")
     app = create_app(
-        Settings(database_path=tmp_path / "demo.db", ollama_enabled=False, ollama_required=False),
+        Settings(
+            runtime_profile="trusted_local",
+            database_path=tmp_path / "demo.db",
+            ollama_enabled=False,
+            ollama_required=False,
+        ),
         csv_settings=CsvDemoSettings(enabled=True),
     )
     with TestClient(app) as client:

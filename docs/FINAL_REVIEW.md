@@ -1,5 +1,10 @@
 # Final development review
 
+> **Historical review:** this file records the September 9 six-cycle candidate. For the current
+> `0.7.0-alpha.1` community candidate, its local evidence, and all still-open hosted/owner gates,
+> use [PUBLIC_ALPHA_RELEASE_CHECKLIST.md](PUBLIC_ALPHA_RELEASE_CHECKLIST.md). Historical PR links
+> and counts below are not evidence for the current unpushed candidate.
+
 Review date: 2026-09-09. The original six-cycle requirements and completion stopping point
 define the scope. The review began from `8a9873e0a5c0c9221ac48476cd413edbc8558068` and produced
 the corrections below. Final CI results and the exact reviewed source are recorded in

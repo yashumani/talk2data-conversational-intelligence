@@ -13,6 +13,7 @@ from talk2data.main import create_app
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
+        runtime_profile="trusted_local",
         database_path=tmp_path / "talk2data-test.db",
         ollama_enabled=False,
         ollama_required=False,

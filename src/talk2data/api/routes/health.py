@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from talk2data.api.dependencies import (
     get_connector_registry,
@@ -13,6 +13,7 @@ from talk2data.api.dependencies import (
     get_session_store,
 )
 from talk2data.connectors.registry import ConnectorRegistry
+from talk2data.core.config import RuntimeProfile
 from talk2data.domain.domain_pack import DomainPackRegistry
 from talk2data.domain.models import ComponentHealth, ReadinessResponse
 from talk2data.domain.physical_mapping import PhysicalMappingRegistry
@@ -30,6 +31,8 @@ async def liveness() -> dict[str, str]:
 
 @router.get("/health/ready", response_model=ReadinessResponse)
 async def readiness(
+    request: Request,
+    response: Response,
     registry: Annotated[DomainPackRegistry, Depends(get_domain_registry)],
     mappings: Annotated[
         PhysicalMappingRegistry,
@@ -74,8 +77,9 @@ async def readiness(
         components["ollama"] = ComponentHealth(status="disabled")
     else:
         ollama_ok, ollama_detail = await ollama.health()
+        required = request.app.state.settings.ollama_required
         components["ollama"] = ComponentHealth(
-            status="ready" if ollama_ok else "degraded",
+            status="ready" if ollama_ok else ("failed" if required else "degraded"),
             detail=ollama_detail,
         )
 
@@ -88,10 +92,27 @@ async def readiness(
             detail=hermes_detail,
         )
 
+    if request.app.state.settings.runtime_profile == RuntimeProfile.PUBLIC_SYNTHETIC:
+        connector_ready = all(
+            component.status == "ready"
+            for name, component in components.items()
+            if name.startswith("connector:")
+        )
+        components = {
+            "domain_packs": ComponentHealth(status=components["domain_packs"].status),
+            "physical_mappings": ComponentHealth(status=components["physical_mappings"].status),
+            "session_store": ComponentHealth(status=components["session_store"].status),
+            "synthetic_connector": ComponentHealth(status="ready" if connector_ready else "failed"),
+            "external_models": ComponentHealth(status="disabled"),
+        }
+
     hard_failure = any(
         component.status == "failed"
         for name, component in components.items()
-        if name in {"domain_packs", "physical_mappings", "session_store"} or name.startswith("connector:")
+        if name in {"domain_packs", "physical_mappings", "session_store", "synthetic_connector", "ollama"}
+        or name.startswith("connector:")
     )
     overall = "failed" if hard_failure else "ready"
+    if hard_failure:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return ReadinessResponse(status=overall, components=components)

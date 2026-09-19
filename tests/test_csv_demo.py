@@ -40,7 +40,12 @@ def sample(*, start: date = date(2026, 7, 1), days: int = 31, amount: int = 100)
 @pytest.fixture
 def csv_client(tmp_path: Path) -> Any:
     app = create_app(
-        Settings(database_path=tmp_path / "sessions.db", ollama_enabled=False, ollama_required=False),
+        Settings(
+            runtime_profile="trusted_local",
+            database_path=tmp_path / "sessions.db",
+            ollama_enabled=False,
+            ollama_required=False,
+        ),
         csv_settings=CsvDemoSettings(enabled=True),
     )
     with TestClient(app) as client:
@@ -300,6 +305,7 @@ def test_optional_built_frontend_mount(tmp_path: Path) -> None:
 
     csv_app = create_app(
         Settings(
+            runtime_profile="trusted_local",
             database_path=tmp_path / "sessions.db",
             ollama_enabled=False,
             ollama_required=False,
