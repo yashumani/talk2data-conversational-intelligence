@@ -40,9 +40,14 @@ function identity(request) {
 
 function allowedOrigins(request) {
   const authority = request.headers.host || "";
-  const hostname = authority.replace(/^\[/, "").replace(/\].*$/, "").split(":")[0];
-  return new Set(["127.0.0.1", "localhost"]).has(hostname)
-    && request.headers.origin === `http://${authority}`;
+  let requestedOrigin;
+  try {
+    requestedOrigin = new URL(`http://${authority}`);
+  } catch {
+    return false;
+  }
+  return new Set(["127.0.0.1", "localhost"]).has(requestedOrigin.hostname)
+    && request.headers.origin === requestedOrigin.origin;
 }
 
 function admitted(request) {
