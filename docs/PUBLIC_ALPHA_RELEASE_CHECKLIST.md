@@ -32,7 +32,8 @@ recorded for the exact candidate SHA.
 - [ ] Web tests, 96% line/branch threshold, all builds, and production/full npm audits pass.
 - [ ] Docker builds execute successfully for public and internal images.
 - [ ] CodeQL, dependency review, secret scanning, image vulnerability scan, SBOM, and provenance
-      jobs complete without an unaccepted high/critical finding.
+      jobs complete. The blocking image scan has no fixable high/critical finding; every unfixed
+      base-image high/critical SARIF finding has an explicit release-owner disposition.
 - [ ] Pages artifact is built from the candidate SHA, stamped once, deployed from `main`, and the
       public `release.json` matches the deployed SHA and version.
 

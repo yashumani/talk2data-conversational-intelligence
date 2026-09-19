@@ -22,6 +22,11 @@ COPY --from=workspace /web/dist ./web
 
 RUN PIP_NO_CACHE_DIR=1 python scripts/dependencies.py install runtime
 
+# Package installers are build-time tools, not runtime dependencies. Removing them also removes
+# their vendored libraries and the base image's obsolete ensurepip wheels from the attack surface.
+RUN python -m pip uninstall -y pip setuptools wheel \
+    && rm -rf /usr/local/lib/python3.12/ensurepip /root/.cache
+
 RUN useradd --create-home --uid 10001 talk2data \
     && mkdir -p /app/.talk2data /app/workspace-state \
     && chown -R talk2data:talk2data /app
