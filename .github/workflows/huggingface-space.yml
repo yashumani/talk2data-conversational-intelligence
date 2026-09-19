@@ -28,6 +28,7 @@ permissions:
 
 jobs:
   validate:
+    name: Hugging Face package validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

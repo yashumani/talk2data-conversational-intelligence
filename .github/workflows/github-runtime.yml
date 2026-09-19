@@ -60,6 +60,7 @@ jobs:
           config
 
   csv-workspace:
+    name: GitHub CSV workspace
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

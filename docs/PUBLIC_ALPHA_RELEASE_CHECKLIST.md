@@ -42,6 +42,23 @@ recorded for the exact candidate SHA.
 - [ ] Protect `main`; disallow force pushes and deletion.
 - [ ] Require pull requests, resolved conversations, CODEOWNERS review, current branch, and the
       documented stable required-check names.
+
+### Stable required-check names
+
+Configure branch protection with these exact GitHub check names. Names are intentionally unique
+across workflows so one workflow cannot satisfy another workflow's gate:
+
+- `DCO sign-off`
+- `Python quality (3.11)`, `Python quality (3.12)`, and `Python quality (3.13)`
+- `Web test and build`
+- `CodeQL analysis` and GitHub code scanning's `CodeQL`
+- `Dependency review`, `Secret scan`, and `Container security`
+- `Pages artifact`
+- `CSV demo acceptance`
+- `GitHub CSV workspace`
+- `PostgreSQL integration`
+- `Internal runtime package`
+- `Runtime image validation` and `Internal image validation`
 - [ ] Enable private vulnerability reporting.
 - [ ] Protect publication environments and restrict deployment to approved branches/tags.
 - [ ] Disable all remote workflow registrations absent from the candidate tree, including legacy

@@ -54,6 +54,7 @@ permissions:
 
 jobs:
   live-postgres:
+    name: PostgreSQL integration
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:

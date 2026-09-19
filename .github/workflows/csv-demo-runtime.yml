@@ -41,6 +41,7 @@ permissions:
 
 jobs:
   packaged-demo:
+    name: CSV demo acceptance
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

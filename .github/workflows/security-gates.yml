@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   dependency-review:
+    name: Dependency review
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -25,6 +26,7 @@ jobs:
           fail-on-severity: high
 
   secret-scan:
+    name: Secret scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -38,6 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   container:
+    name: Container security
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
