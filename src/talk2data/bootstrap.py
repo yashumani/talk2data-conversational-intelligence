@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from talk2data import __version__
 from talk2data.api.agent_errors import install_agent_errors
 from talk2data.api.definition_errors import install_definition_errors
 from talk2data.api.demo_errors import install_demo_errors
@@ -27,10 +28,11 @@ from talk2data.api.routes import (
     sessions,
 )
 from talk2data.api.run_routes import install_run_errors
+from talk2data.api.runtime_security import RuntimeAdmission
 from talk2data.api.web_assets import install_web_assets
 from talk2data.connectors.factory import build_connectors
 from talk2data.connectors.registry import ConnectorRegistry
-from talk2data.core.config import DataBackend, Settings, get_settings
+from talk2data.core.config import DataBackend, RuntimeProfile, Settings, get_settings
 from talk2data.core.csv_config import CsvDemoSettings
 from talk2data.core.language_config import CsvLanguageSettings
 from talk2data.domain.domain_pack import DomainPackRegistry
@@ -79,6 +81,10 @@ def create_app(
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     resolved_csv_settings = csv_settings or CsvDemoSettings()
+    if resolved_settings.runtime_profile == RuntimeProfile.PUBLIC_SYNTHETIC and (
+        resolved_csv_settings.enabled or csv_language_config is not None or csv_language_transport is not None
+    ):
+        raise ValueError("public_synthetic cannot compose the CSV upload or external language runtime")
     language_config = csv_language_config
     if resolved_csv_settings.enabled and language_config is None:
         language_path = CsvLanguageSettings().config_file
@@ -162,7 +168,7 @@ def create_app(
 
     app = FastAPI(
         title=resolved_settings.app_name,
-        version="0.6.0",
+        version=__version__,
         description=(
             "Governed question interpretation, deterministic query planning, receipt-backed "
             "answers, and installable tenant runtime package generation."
@@ -197,6 +203,7 @@ def create_app(
             allow_methods=["GET", "POST", "OPTIONS"],
             allow_headers=["Accept", "Content-Type", "X-Demo-Session", "Last-Event-ID"],
         )
+    app.add_middleware(RuntimeAdmission, settings=resolved_settings)
 
     app.state.settings = resolved_settings
     app.state.domain_registry = domain_registry

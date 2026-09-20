@@ -28,6 +28,7 @@ services:
       - "8000:8000"
     environment:
       T2D_ENVIRONMENT: development
+      T2D_RUNTIME_PROFILE: trusted_local
       T2D_DATABASE_PATH: /app/.talk2data/talk2data.db
       T2D_OLLAMA_ENABLED: "true"
       T2D_OLLAMA_REQUIRED: "true"

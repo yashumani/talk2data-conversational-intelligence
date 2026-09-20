@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a reproducible Talk2Data defect using synthetic data.
+title: "[Bug]: "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, private data, employer information, or vulnerabilities.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options: [Python API, CSV workspace, Internal runtime, Visualization gallery, Documentation, CI or packaging]
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Explain what happened and include a minimal synthetic example.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed credentials, private data, production source names, and proprietary schemas.
+          required: true
+        - label: This is not a vulnerability report.
+          required: true

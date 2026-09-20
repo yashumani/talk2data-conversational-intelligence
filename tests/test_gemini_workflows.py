@@ -113,7 +113,12 @@ def test_gemini_file_selection_is_backend_only_and_disabled_csv_never_resolves_i
     path.write_text(config().model_dump_json())
     monkeypatch.setenv("T2D_CSV_LANGUAGE_CONFIG_FILE", str(path))
     monkeypatch.setenv("T2D_GEMINI_API_KEY", "synthetic-private-value")
-    settings = Settings(database_path=tmp_path / "reference.db", ollama_enabled=False, ollama_required=False)
+    settings = Settings(
+        runtime_profile="trusted_local",
+        database_path=tmp_path / "reference.db",
+        ollama_enabled=False,
+        ollama_required=False,
+    )
     app = create_app(settings, csv_settings=CsvDemoSettings(enabled=True))
     with TestClient(app) as client:
         auth = new_session(client)

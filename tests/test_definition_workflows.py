@@ -30,7 +30,12 @@ BASE = "/v1/demo/csv"
 @pytest.fixture
 def client(tmp_path: Path) -> Any:
     app = create_app(
-        Settings(database_path=tmp_path / "sessions.db", ollama_enabled=False, ollama_required=False),
+        Settings(
+            runtime_profile="trusted_local",
+            database_path=tmp_path / "sessions.db",
+            ollama_enabled=False,
+            ollama_required=False,
+        ),
         csv_settings=CsvDemoSettings(enabled=True),
     )
     with TestClient(app) as client:

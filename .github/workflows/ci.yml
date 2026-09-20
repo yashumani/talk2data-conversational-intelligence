@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   quality:
+    name: Python quality (${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       state-postgres:
         image: postgres:16-alpine
@@ -31,6 +33,8 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -38,6 +42,11 @@ jobs:
           cache-dependency-path: requirements/*.txt
       - run: python scripts/dependencies.py install dev
       - run: python scripts/validate_workflows.py
+      - run: python scripts/validate_community.py
+      - run: python scripts/validate_visualization_inventory.py
+      - run: python scripts/validate_ai_studio.py
+      - run: python scripts/validate_pages_site.py
+      - run: python scripts/validate_public_security.py
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy src

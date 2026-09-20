@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "method": "Normalized union of chart-type labels shown on the D3, R, and Python Graph Gallery landing pages; React Graph Gallery is an alias cross-check. General-knowledge topics are excluded.",
+  "sources": [
+    "https://d3-graph-gallery.com/",
+    "https://r-graph-gallery.com/",
+    "https://python-graph-gallery.com/",
+    "https://www.react-graph-gallery.com/"
+  ],
+  "targets": [
+    "violin", "density", "histogram", "boxplot", "ridgeline", "scatter", "heatmap",
+    "correlogram", "bubble", "connected-scatter", "density-2d", "bar", "radar",
+    "wordcloud", "parallel-coordinates", "lollipop", "circular-bar", "treemap", "donut",
+    "pie", "dendrogram", "circle-packing", "line", "area", "stacked-area", "streamgraph",
+    "map", "choropleth", "hexbin-map", "cartogram", "connection-map", "bubble-map", "chord",
+    "network", "sankey", "arc-diagram", "edge-bundling", "beeswarm", "table",
+    "grouped-stacked-bar", "waffle", "time-series", "venn", "candlestick"
+  ],
+  "aliases": {
+    "2d density": "density-2d",
+    "area chart": "area",
+    "barplot": "bar",
+    "bubble map": "bubble-map",
+    "circular barplot": "circular-bar",
+    "circular packing": "circle-packing",
+    "connected scatter": "connected-scatter",
+    "connection": "connection-map",
+    "density 2d": "density-2d",
+    "donut": "donut",
+    "doughnut": "donut",
+    "grouped and stacked barplot": "grouped-stacked-bar",
+    "hexbin": "hexbin-map",
+    "line chart": "line",
+    "line plot": "line",
+    "pie chart": "pie",
+    "scatterplot": "scatter",
+    "spider / radar": "radar",
+    "streamchart": "streamgraph",
+    "timeseries": "time-series",
+    "time series": "time-series",
+    "venn diagram": "venn",
+    "voronoi": "circle-packing"
+  },
+  "exclusions": {
+    "general_knowledge": ["animation", "basics", "caveats", "colors", "custom", "data art", "interactivity", "shape helpers", "statistics", "3d"],
+    "react_voronoi": "Cross-checked as a spatial partition technique and mapped to the circle-packing family rather than counted as a new semantic chart target."
+  }
+}

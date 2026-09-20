@@ -1,5 +1,10 @@
 # Repository activation and final verification guide
 
+> **Baseline notice:** this guide retains the September 9 enterprise activation record. Do not
+> reuse its historical SHA, file count, test count, or PR results for the `0.7.0-alpha.1`
+> community candidate. Follow [PUBLIC_ALPHA_RELEASE_CHECKLIST.md](PUBLIC_ALPHA_RELEASE_CHECKLIST.md)
+> for its exact-SHA release decision.
+
 Reviewed through the final integration pass on 2026-09-09. The last full pre-integration suite
 ran on `ce33ccaaa865ea799de8fdd7911be4bb8917bce6`; release evidence must use the later exact
 merged `main` SHA reported by GitHub, not this predecessor.

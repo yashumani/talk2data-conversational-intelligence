@@ -1,0 +1,25 @@
+name: Support question
+description: Ask about installation, contribution, or the synthetic demo.
+title: "[Support]: "
+labels: [support, needs-triage]
+body:
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options: [Installation, Local synthetic demo, Contributing, Documentation, Visualization gallery, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed credentials, private data, production logs, and proprietary information.
+          required: true

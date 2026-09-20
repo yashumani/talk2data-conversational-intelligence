@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "inventoried_at": "2026-09-12",
+  "sources": [
+    {
+      "id": "d3",
+      "url": "https://d3-graph-gallery.com/",
+      "normalized_target_count": 37,
+      "adds_to_union": 37
+    },
+    {
+      "id": "r",
+      "url": "https://r-graph-gallery.com/",
+      "normalized_target_count": 42,
+      "adds_to_union": 5,
+      "new_targets": ["beeswarm", "table", "grouped-stacked-bar", "waffle", "time-series"]
+    },
+    {
+      "id": "python",
+      "url": "https://python-graph-gallery.com/",
+      "normalized_target_count": 43,
+      "adds_to_union": 2,
+      "new_targets": ["venn", "candlestick"]
+    },
+    {
+      "id": "react",
+      "url": "https://www.react-graph-gallery.com/",
+      "role": "alias cross-check",
+      "adds_to_union": 0
+    }
+  ],
+  "union_count": 44,
+  "copyright_boundary": "Names and public source links are inventory facts. No source code, screenshots, datasets, or visual assets were copied."
+}
