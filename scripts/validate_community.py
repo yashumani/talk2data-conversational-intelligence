@@ -36,7 +36,7 @@ def validate() -> None:
         "pyproject.toml": 'version = "0.7.0a2"',
         "apps/web/package.json": '"version": "0.7.0-alpha.2"',
         "CHANGELOG.md": "0.7.0-alpha.2",
-        "docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md": "Current decision: NO-GO for `0.7.0-alpha.2`",
+        "docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md": "Current decision: GO for the scoped `0.7.0-alpha.2`",
     }
     for path, marker in expected.items():
         if marker not in (ROOT / path).read_text():

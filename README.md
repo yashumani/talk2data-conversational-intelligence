@@ -1,7 +1,7 @@
 # Talk2Data Conversational Intelligence
 
-> **Community alpha:** `0.7.0-alpha.2` is the visualization-studio candidate for public source
-> review and contribution. Its exact release evidence, accepted risks, and deliberately excluded
+> **Community alpha:** `0.7.0-alpha.2` is released for public source review and contribution. Its
+> exact release evidence, accepted risks, and deliberately excluded
 > production-runtime scope are tracked in the
 > [public alpha release checklist](docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
@@ -31,7 +31,7 @@ or browser JavaScript. It is an implementation reference, not a Talk2Data UI ref
 
 ## Use the application
 
-Start with the [product handoff](docs/HANDOFF.md) for the reviewed candidate, runnable CSV demo,
+Start with the [product handoff](docs/HANDOFF.md) for the reviewed release, runnable CSV demo,
 cycle status and remaining live acceptance inputs. The [final review](docs/FINAL_REVIEW.md)
 records corrections, verification and the boundaries of the handoff.
 Use the [repository activation guide](docs/REPOSITORY_ACTIVATION_GUIDE.md) for the complete
@@ -39,8 +39,8 @@ merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release pro
 For a BigQuery-first deployment that does not require Cloud Run or Cloud SQL, including the
 optional governed Parquet acceleration path, see the
 [BigQuery/Parquet runtime guide](docs/BIGQUERY_PARQUET_RUNTIME.md).
-The [GitHub Pages guide](docs/GITHUB_PAGES.md) describes the candidate's dedicated visualization
-studio and the exact-SHA evidence required before the public URL can be treated as this version.
+The [GitHub Pages guide](docs/GITHUB_PAGES.md) describes the release's dedicated visualization
+studio and its exact-SHA evidence.
 It is a network-disabled end-user demonstration, not the connected Talk2Data application runtime.
 
 ### New modular CSV workspace
