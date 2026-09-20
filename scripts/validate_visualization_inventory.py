@@ -32,10 +32,10 @@ def validate() -> None:
     if [batches[number] for number in range(1, 9)] != [15, 10, 9, 10, 8, 8, 8, 8]:
         raise SystemExit(f"Unexpected batch sizes: {dict(batches)}")
     statuses = Counter(entry["status"] for entry in entries)
-    if statuses != {"accepted": 15, "queued": 61}:
+    if statuses != {"accepted": 25, "queued": 51}:
         raise SystemExit(f"Unexpected status totals: {dict(statuses)}")
-    if any(entry["batch"] != 1 for entry in entries if entry["status"] == "accepted"):
-        raise SystemExit("Only Batch 1 may be accepted in this candidate")
+    if any(entry["batch"] not in {1, 2} for entry in entries if entry["status"] == "accepted"):
+        raise SystemExit("Only completed Batches 1 and 2 may be accepted in this candidate")
     catalog = (ROOT / "apps/web/src/visualizations/catalog.ts").read_text()
     for entry_id in ids:
         if f'["{entry_id}",' not in catalog:
@@ -44,4 +44,4 @@ def validate() -> None:
 
 if __name__ == "__main__":
     validate()
-    print("Validated 44 taxonomy targets, 76 product types, 8 batches, 15 accepted, and 61 queued.")
+    print("Validated 44 taxonomy targets, 76 product types, 8 batches, 25 accepted, and 51 queued.")

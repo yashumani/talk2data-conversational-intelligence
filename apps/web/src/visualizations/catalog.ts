@@ -27,7 +27,7 @@ export const VISUALIZATION_REGISTRY: readonly VisualizationEntry[] = Object.free
     ["boxplot", "Boxplot", "boxplot"], ["heatmap", "Heatmap", "heatmap"],
     ["pie", "Pie", "pie"], ["donut", "Donut", "donut"],
   ]),
-  ...batch(2, "queued", [
+  ...batch(2, "accepted", [
     ["violin", "Violin", "violin"], ["density", "Density", "density"],
     ["ridgeline", "Ridgeline", "ridgeline"], ["beeswarm", "Beeswarm", "beeswarm"],
     ["density-2d", "2D density", "density-2d"], ["correlogram", "Correlogram", "correlogram"],

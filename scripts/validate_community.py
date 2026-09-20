@@ -30,13 +30,13 @@ def validate() -> None:
         raise SystemExit("Missing community files: " + ", ".join(missing))
 
     version = (ROOT / "VERSION").read_text().strip()
-    if version != "0.7.0-alpha.1":
+    if version != "0.7.0-alpha.2":
         raise SystemExit(f"Unexpected release version: {version}")
     expected = {
-        "pyproject.toml": 'version = "0.7.0a1"',
-        "apps/web/package.json": '"version": "0.7.0-alpha.1"',
-        "CHANGELOG.md": "0.7.0-alpha.1",
-        "docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md": "Current decision: GO for the scoped community alpha",
+        "pyproject.toml": 'version = "0.7.0a2"',
+        "apps/web/package.json": '"version": "0.7.0-alpha.2"',
+        "CHANGELOG.md": "0.7.0-alpha.2",
+        "docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md": "Current decision: NO-GO for `0.7.0-alpha.2`",
     }
     for path, marker in expected.items():
         if marker not in (ROOT / path).read_text():

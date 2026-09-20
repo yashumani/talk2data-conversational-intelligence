@@ -1,6 +1,6 @@
 {
   "name": "talk2data-ai-studio-preview",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0-alpha.2",
   "private": true,
   "type": "module",
   "scripts": { "start": "node server.mjs", "test": "node --test server.test.mjs" },

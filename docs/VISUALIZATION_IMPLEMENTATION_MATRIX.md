@@ -39,16 +39,16 @@ The registry therefore contains 76 deliberately bounded product types.
 | Batch | Count | Status | Product types |
 | ---: | ---: | --- | --- |
 | 1 | 15 | Accepted | Bar, grouped bar, stacked bar, horizontal bar, line, multi-line, area, stacked area, scatter, bubble, histogram, boxplot, heatmap, pie, donut |
-| 2 | 10 | Queued | Violin, density, ridgeline, beeswarm, 2D density, correlogram, connected scatter, lollipop, circular bar, radar |
+| 2 | 10 | Accepted | Violin, density, ridgeline, beeswarm, 2D density, correlogram, connected scatter, lollipop, circular bar, radar |
 | 3 | 9 | Queued | Word cloud, parallel coordinates, treemap, circle packing, dendrogram, waffle, table, Venn, sunburst |
 | 4 | 10 | Queued | Time series, step line, sparkline, streamgraph, candlestick, bump, slope, horizon, calendar heatmap, range area |
 | 5 | 8 | Queued | Choropleth, symbol map, hexbin map, cartogram, connection map, tile map, route map, proportional map |
 | 6 | 8 | Queued | Network, force network, Sankey, chord, arc diagram, edge bundling, alluvial, dependency wheel |
 | 7 | 8 | Queued | Funnel, bullet, gauge, waterfall, Marimekko, diverging bar, dot plot, dumbbell |
 | 8 | 8 | Queued | Small multiples, faceted bar, population pyramid, mosaic, contour, Voronoi, hexbin scatter, polar area |
-| **Total** | **76** | **15 accepted / 61 queued** | |
+| **Total** | **76** | **25 accepted / 51 queued** | |
 
-## Batch 1 acceptance contract
+## Accepted-batch contract
 
 Every accepted implementation must:
 
@@ -60,7 +60,8 @@ Every accepted implementation must:
 6. appear in the dedicated static Pages entry; and
 7. remain independently implemented—no copied gallery code, assets, screenshots, or datasets.
 
-Batch 1 satisfies this contract. Remaining entries are visible to contributors but explicitly
+Batches 1 and 2 satisfy this contract. The end-user gallery shows only accepted visualizations;
+remaining entries stay in this contributor matrix and the machine-readable registry, explicitly
 marked queued. A queued registry row is not an implementation claim.
 
 ## Contribution workflow

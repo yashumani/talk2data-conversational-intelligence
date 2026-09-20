@@ -1,8 +1,9 @@
 # Talk2Data Conversational Intelligence
 
-> **Community alpha:** `0.7.0-alpha.1` is approved for public source review and contribution.
-> The exact release evidence, accepted risks, and deliberately excluded production-runtime scope
-> are recorded in the [public alpha release checklist](docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
+> **Community alpha:** `0.7.0-alpha.2` is the visualization-studio candidate for public source
+> review and contribution. Its exact release evidence, accepted risks, and deliberately excluded
+> production-runtime scope are tracked in the
+> [public alpha release checklist](docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
 Talk2Data is a governed, local-first conversational intelligence platform for asking business
 questions across enterprise data, organizational knowledge, and approved external evidence.
@@ -19,8 +20,9 @@ support policy, security guidance, ownership rules, issue forms, and release met
 
 The visualization program inventories the public Holtzy D3, R, Python, and React gallery landing
 pages into **44 deduplicated semantic targets** and a finite **76-type product matrix** across eight
-batches. Batch 1 contains **15 tested renderers**; **61 types are explicitly queued**. The static
-Pages gallery uses synthetic data and cannot call a runtime API. See the
+batches. Batches 1 and 2 contain **25 tested renderers**; **51 types remain in the contributor
+backlog**. The end-user Pages studio presents only usable visualizations, organized by analytical
+purpose, and uses synthetic data without calling a runtime API. See the
 [implementation matrix](docs/VISUALIZATION_IMPLEMENTATION_MATRIX.md).
 
 The example under `examples/canvas/ai-studio/` demonstrates deterministic preview-model requests
@@ -37,9 +39,9 @@ merge, validation, Claude, GCP/BigQuery/IAP, Cloud SQL bootstrap and release pro
 For a BigQuery-first deployment that does not require Cloud Run or Cloud SQL, including the
 optional governed Parquet acceleration path, see the
 [BigQuery/Parquet runtime guide](docs/BIGQUERY_PARQUET_RUNTIME.md).
-The [GitHub Pages guide](docs/GITHUB_PAGES.md) describes the candidate's dedicated static
-visualization gallery and the exact-SHA evidence required before the public URL can be treated as
-this version. It does not launch or imitate the Talk2Data application UI.
+The [GitHub Pages guide](docs/GITHUB_PAGES.md) describes the candidate's dedicated visualization
+studio and the exact-SHA evidence required before the public URL can be treated as this version.
+It is a network-disabled end-user demonstration, not the connected Talk2Data application runtime.
 
 ### New modular CSV workspace
 

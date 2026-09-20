@@ -41,8 +41,8 @@ def validate_source() -> None:
         if marker.lower() in source.lower():
             raise SystemExit(f"Pages source contains forbidden marker: {marker}")
     accessibility_markers = (
-        "@media (max-width: 980px)",
-        "@media (max-width: 640px)",
+        "@media (max-width: 1050px)",
+        "@media (max-width: 700px)",
         "@media (prefers-reduced-motion: reduce)",
         ":focus-visible",
         ".sr-only",
@@ -50,8 +50,19 @@ def validate_source() -> None:
     for marker in accessibility_markers:
         if marker not in css:
             raise SystemExit(f"Pages gallery is missing accessibility marker: {marker}")
-    if 'aria-pressed={view === "accepted"}' not in source or 'aria-pressed={view === "queue"}' not in source:
-        raise SystemExit("Pages gallery status controls must expose their selected state")
+    if 'aria-pressed={category === activeCategory}' not in source or 'aria-controls="visualization-results"' not in source:
+        raise SystemExit("Pages gallery purpose filters must expose their selected state and controlled results")
+    visible_source = "\n".join(
+        (ROOT / path).read_text()
+        for path in (
+            "apps/web/src/gallery/GalleryApp.tsx",
+            "apps/web/src/visualizations/VisualizationGallery.tsx",
+        )
+    )
+    visible_tracking_markers = ("Finite queue", "Batch 1 accepted", "Registry contract reserved")
+    for marker in visible_tracking_markers:
+        if marker in visible_source:
+            raise SystemExit(f"End-user gallery exposes contributor tracking copy: {marker}")
 
 
 def validate_release(source_sha: str) -> None:
@@ -78,7 +89,7 @@ def validate_release(source_sha: str) -> None:
     javascript = b"".join(path.read_bytes() for path in files_under(workspace) if path.suffix == ".js")
     if len(javascript) > 1_000_000 or len(gzip.compress(javascript, mtime=0)) > 350_000:
         raise SystemExit("Compiled Pages JavaScript exceeds the release budget")
-    if len(re.findall(r"Static visualization gallery", combined)) != 1:
+    if len(re.findall(r"Turn data into a clear decision", combined)) != 1:
         raise SystemExit("Dedicated gallery sentinel must occur exactly once")
 
 

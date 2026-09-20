@@ -1,13 +1,14 @@
 # GitHub Pages static visualization gallery
 
-> **Release status:** the dedicated gallery is deployed from release source
-> `a31848bf5262c03c4fe3bb5a9d2b293a01682e9b`. Its public `release.json` records that exact SHA and
-> version `0.7.0-alpha.1`; the immutable Pages artifact and workflow evidence are linked from the
+> **Candidate status:** the `0.7.0-alpha.2` visualization studio is locally verified. It remains a
+> release candidate until the public `release.json`, immutable Pages artifact, hosted workflow,
+> and browser review are recorded for the exact merged SHA in the
 > [public alpha checklist](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
-The community alpha publishes a static, synthetic visualization gallery. It shows all 15 accepted
-Batch 1 renderers and the finite 61-item queue for Batches 2–8. It is a contributor-facing catalog,
-not the Talk2Data application UI and not a data or model service.
+The community alpha publishes a static, synthetic visualization studio. It shows the 25 accepted
+renderers from Batches 1 and 2 in a searchable, purpose-based end-user experience. Delivery status,
+batch labels, and queued work remain in contributor documentation instead of the public interface.
+The studio is a safe product demonstration, not a data or model service.
 
 ## Enforced hosting boundary
 
@@ -52,9 +53,10 @@ GitHub's OIDC-backed Pages deployment with minimal permissions.
 The repository owner must enable GitHub Actions as the Pages source and protect the `github-pages`
 environment. After deployment, verify all of the following against the public URL:
 
-1. `/release.json` exactly matches the reviewed `main` SHA and `0.7.0-alpha.1`.
+1. `/release.json` exactly matches the reviewed `main` SHA and `0.7.0-alpha.2`.
 2. `/workspace/` loads without console, CSP, or network-request failures.
-3. All 15 accepted cards render and the queue shows 61 non-interactive reserved types.
+3. All 25 accepted cards render; search and analytical-purpose filters return the expected views;
+   no batch, status, or queued-work tracking copy appears in the end-user interface.
 4. Keyboard focus, zoom, contrast, screen-reader names, mobile layout, and reduced-motion behavior
    are manually reviewed.
 5. License notices are reachable and no legacy launcher or configurable API endpoint is exposed.
@@ -66,8 +68,8 @@ https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
 A reachable URL alone is not acceptance. For this release, the matching public receipt, immutable
-artifact digest, hosted workflow, renderer count, queue count, accessible names, selected-button
-state, polite result-count announcement, keyboard controls, and desktop overflow checks bind the
-deployment to the release SHA. Responsive breakpoints, visible keyboard focus, and reduced-motion
-behavior are also enforced by the release validator; future releases must repeat the hosted review
-instead of inheriting this decision.
+artifact digest, hosted workflow, renderer count, accessible names, selected-filter state, polite
+result-count announcement, keyboard controls, and desktop overflow checks bind the deployment to
+the release SHA. Responsive breakpoints, visible keyboard focus, reduced-motion behavior, and the
+absence of contributor tracking copy are also enforced by the release validator; future releases
+must repeat the hosted review instead of inheriting this decision.
