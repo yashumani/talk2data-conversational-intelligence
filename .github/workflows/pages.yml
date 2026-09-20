@@ -3,7 +3,6 @@ name: Build and deploy static visualization gallery
 on:
   pull_request:
     branches: [main]
-    paths: ["apps/web/**", "contracts/**", "site/**", "VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "scripts/prepare_pages_release.py", "scripts/validate_pages_site.py", ".github/workflows/pages.yml"]
   push:
     branches: [main]
     paths: ["apps/web/**", "contracts/**", "site/**", "VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "scripts/prepare_pages_release.py", "scripts/validate_pages_site.py", ".github/workflows/pages.yml"]

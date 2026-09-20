@@ -1,8 +1,8 @@
 # Talk2Data Conversational Intelligence
 
-> **Community alpha candidate:** `0.7.0-alpha.1` is implemented for public review, but the current
-> release decision is **NO-GO** until the hosted and owner-controlled gates in the
-> [public alpha release checklist](docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md) are complete.
+> **Community alpha:** `0.7.0-alpha.1` is approved for public source review and contribution.
+> The exact release evidence, accepted risks, and deliberately excluded production-runtime scope
+> are recorded in the [public alpha release checklist](docs/PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
 Talk2Data is a governed, local-first conversational intelligence platform for asking business
 questions across enterprise data, organizational knowledge, and approved external evidence.

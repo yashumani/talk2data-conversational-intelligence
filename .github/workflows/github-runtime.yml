@@ -18,19 +18,6 @@ on:
       - ".github/workflows/github-runtime.yml"
   pull_request:
     branches: [main, "feat/cycle-*"]
-    paths:
-      - ".devcontainer/**"
-      - "docker-compose.csv-demo.yml"
-      - "Dockerfile"
-      - "pyproject.toml"
-      - "requirements/**"
-      - "scripts/dependencies.py"
-      - ".dockerignore"
-      - "apps/web/**"
-      - "src/**"
-      - "scripts/csv_workspace_smoke.py"
-      - "scripts/validate_codespaces_config.py"
-      - ".github/workflows/github-runtime.yml"
   workflow_dispatch:
 
 permissions:

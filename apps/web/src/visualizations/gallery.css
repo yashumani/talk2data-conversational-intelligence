@@ -2,6 +2,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 12% 0%, #18223a 0, #080b12 42%); }
 button { font: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .gallery-shell { width: min(1480px, 100%); margin: auto; padding: clamp(24px, 5vw, 72px); }
 .gallery-shell__header { max-width: 880px; margin-bottom: 32px; }
 .eyebrow { color: #55d6be; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
@@ -16,6 +17,7 @@ h2 { margin: 34px 0 18px; }
 .gallery-controls { display: flex; gap: 8px; margin-top: 22px; }
 .gallery-controls button { color: #c9d2e3; background: #111725; border: 1px solid #303a51; border-radius: 999px; padding: 10px 17px; cursor: pointer; }
 .gallery-controls button.active { color: #07100d; border-color: #55d6be; background: #55d6be; font-weight: 750; }
+.gallery-controls button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .gallery-grid.queue { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .chart-card { min-width: 0; padding: 16px; overflow: hidden; }

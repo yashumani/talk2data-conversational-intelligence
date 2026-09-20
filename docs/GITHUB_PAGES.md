@@ -1,8 +1,9 @@
 # GitHub Pages static visualization gallery
 
-> **Candidate status:** the dedicated gallery is implemented and locally verified, but the
-> public URL is not evidence of this candidate until its `release.json` identifies the exact
-> reviewed SHA. See the [public alpha checklist](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
+> **Release status:** the dedicated gallery is deployed from release source
+> `b803bd7bb443199abc2726af31454f2d16deda4c`. Its public `release.json` records that exact SHA and
+> version `0.7.0-alpha.1`; the immutable Pages artifact and workflow evidence are linked from the
+> [public alpha checklist](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
 The community alpha publishes a static, synthetic visualization gallery. It shows all 15 accepted
 Batch 1 renderers and the finite 61-item queue for Batches 2–8. It is a contributor-facing catalog,
@@ -58,11 +59,14 @@ environment. After deployment, verify all of the following against the public UR
    are manually reviewed.
 5. License notices are reachable and no legacy launcher or configurable API endpoint is exposed.
 
-The intended URL after a verified deployment is:
+The verified deployment is:
 
 ```text
 https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
-A reachable URL alone is not acceptance; only the matching receipt and hosted workflow evidence
-bind it to this candidate.
+A reachable URL alone is not acceptance. For this release, the matching public receipt, immutable
+artifact digest, hosted workflow, renderer count, queue count, accessible names, keyboard controls,
+and desktop overflow checks bind the deployment to the release SHA. The responsive breakpoints and
+reduced-motion behavior remain regression-tested in source; future releases must repeat the hosted
+review instead of inheriting this decision.
