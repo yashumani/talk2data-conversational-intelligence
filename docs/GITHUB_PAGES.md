@@ -1,8 +1,8 @@
 # GitHub Pages static visualization gallery
 
-> **Candidate status:** the `0.7.0-alpha.2` visualization studio is locally verified. It remains a
-> release candidate until the public `release.json`, immutable Pages artifact, hosted workflow,
-> and browser review are recorded for the exact merged SHA in the
+> **Released:** the `0.7.0-alpha.2` visualization studio is deployed from exact source SHA
+> `57a82ee98a3f1733a825881df5ee6296d7035e03`. Its public receipt, immutable Pages artifact,
+> hosted workflow, and browser review are recorded in the
 > [public alpha checklist](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
 The community alpha publishes a static, synthetic visualization studio. It shows the 25 accepted
