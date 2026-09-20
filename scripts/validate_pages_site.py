@@ -50,8 +50,13 @@ def validate_source() -> None:
     for marker in accessibility_markers:
         if marker not in css:
             raise SystemExit(f"Pages gallery is missing accessibility marker: {marker}")
-    if 'aria-pressed={category === activeCategory}' not in source or 'aria-controls="visualization-results"' not in source:
-        raise SystemExit("Pages gallery purpose filters must expose their selected state and controlled results")
+    if (
+        "aria-pressed={category === activeCategory}" not in source
+        or 'aria-controls="visualization-results"' not in source
+    ):
+        raise SystemExit(
+            "Pages gallery purpose filters must expose their selected state and controlled results"
+        )
     visible_source = "\n".join(
         (ROOT / path).read_text()
         for path in (
