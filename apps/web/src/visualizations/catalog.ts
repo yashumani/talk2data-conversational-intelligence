@@ -19,15 +19,16 @@ function batch(number: number, status: VisualizationStatus, entries: readonly En
 
 export const VISUALIZATION_REGISTRY: readonly VisualizationEntry[] = Object.freeze([
   ...batch(1, "accepted", [
-    ["bar", "Bar", "bar"], ["grouped-bar", "Grouped bar", "grouped-stacked-bar"],
-    ["stacked-bar", "Stacked bar", "grouped-stacked-bar"], ["horizontal-bar", "Horizontal bar", "bar"],
-    ["line", "Line", "line"], ["multi-line", "Multi-line", "line"], ["area", "Area", "area"],
+    ["bar", "Bar", "bar"], ["grouped-bar", "Grouped bar", "grouped-stacked-bar", "grouped-bar"],
+    ["stacked-bar", "Stacked bar", "grouped-stacked-bar", "stacked-bar"],
+    ["horizontal-bar", "Horizontal bar", "bar", "horizontal-bar"],
+    ["line", "Line", "line"], ["multi-line", "Multi-line", "line", "multi-line"], ["area", "Area", "area"],
     ["stacked-area", "Stacked area", "stacked-area"], ["scatter", "Scatter", "scatter"],
     ["bubble", "Bubble", "bubble"], ["histogram", "Histogram", "histogram"],
     ["boxplot", "Boxplot", "boxplot"], ["heatmap", "Heatmap", "heatmap"],
     ["pie", "Pie", "pie"], ["donut", "Donut", "donut"],
   ]),
-  ...batch(2, "queued", [
+  ...batch(2, "accepted", [
     ["violin", "Violin", "violin"], ["density", "Density", "density"],
     ["ridgeline", "Ridgeline", "ridgeline"], ["beeswarm", "Beeswarm", "beeswarm"],
     ["density-2d", "2D density", "density-2d"], ["correlogram", "Correlogram", "correlogram"],

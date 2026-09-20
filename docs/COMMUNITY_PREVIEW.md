@@ -1,12 +1,14 @@
 # Community preview
 
-Talk2Data `0.7.0-alpha.1` is designed for public inspection and contribution, not unrestricted
+Talk2Data `0.7.0-alpha.2` is designed for public inspection and contribution, not unrestricted
 production data processing.
 
 ## What visitors can use
 
-- A static visualization gallery with 15 accepted synthetic renderers.
-- A visible, finite queue of 61 additional product types across seven batches.
+- A polished visualization studio with 25 accepted synthetic renderers, search, and purpose-based
+  filtering.
+- A finite contributor backlog of 51 additional product types across six batches, documented in
+  the implementation matrix rather than exposed in the end-user interface.
 - A Codespaces/local CSV demonstration that is isolated from private BigQuery configuration.
 - Contributor documentation, issue forms, governance, support, DCO, licensing, and security
   reporting guidance.

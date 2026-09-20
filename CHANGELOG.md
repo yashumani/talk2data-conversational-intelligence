@@ -3,6 +3,24 @@
 All notable changes are documented here. Talk2Data follows Semantic Versioning; alpha releases
 are evaluation candidates and do not imply a hosted production service.
 
+## 0.7.0-alpha.2 — visualization studio
+
+### Added
+
+- Ten independently authored Batch 2 renderers for distribution, correlation, relationship, and
+  ranking use cases, bringing the tested visualization library to 25 product types.
+- End-user search and analytical-purpose filtering across the available visualization library.
+- Plain-language selection guidance and chart-specific descriptions based on the question each
+  visual form is best suited to answer.
+
+### Changed
+
+- Replaced the contributor-facing implementation tracker with a polished visualization studio
+  that displays only usable chart experiences.
+- Moved batch status, delivery counts, and the finite backlog out of the public interface and into
+  contributor documentation and the machine-readable registry.
+- Updated Python, web, preview, registry, and release metadata to `0.7.0-alpha.2` / `0.7.0a2`.
+
 ## 0.7.0-alpha.1 — community alpha candidate
 
 ### Added

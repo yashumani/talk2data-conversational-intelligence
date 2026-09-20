@@ -1,7 +1,7 @@
 # Talk2Data product handoff
 
 > **Scope note:** this runbook preserves the September 9 enterprise/CSV handoff. The public
-> `0.7.0-alpha.1` contribution candidate adds a static visualization gallery and fail-closed
+> `0.7.0-alpha.2` contribution candidate adds the end-user visualization studio and fail-closed
 > public boundaries; its authoritative release verdict is
 > [PUBLIC_ALPHA_RELEASE_CHECKLIST.md](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
