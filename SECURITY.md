@@ -4,9 +4,8 @@
 
 Do not open a public issue for suspected vulnerabilities, exposed credentials, cross-tenant leakage,
 authorization bypasses, prompt-injection paths, or data-loss risks. Use GitHub's private
-**Report a vulnerability** flow after the release owner enables private vulnerability reporting.
-Until that setting is confirmed, contact the repository owner privately through their GitHub
-profile. Include reproducible evidence without real customer or employee data.
+**Report a vulnerability** flow; private vulnerability reporting is enabled for this repository.
+Include reproducible evidence without real customer or employee data.
 
 Do not send secrets in the initial report. State the affected version, impact, and a safe synthetic
 reproduction. Maintainers will acknowledge reports on a best-effort basis; the alpha has no formal

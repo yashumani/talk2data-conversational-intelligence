@@ -19,12 +19,12 @@ recorded for the exact candidate SHA.
 | ---: | --- | --- | --- |
 | 1 | License, DCO, versioning | Implemented | Hosted DCO check on every candidate commit |
 | 2 | CI and supported runtimes | Implemented | Green Python 3.11–3.13, PostgreSQL, web, container, and security runs |
-| 3 | Community operations | Implemented | CODEOWNERS enforcement and confidential conduct intake confirmed by owner |
+| 3 | Community operations | Implemented | Solo-maintainer review policy and confidential conduct intake recorded |
 | 4 | Visualization scope | 44 targets, 76 product types, eight batches | Manual browser and assistive-technology review |
 | 5 | Batch 1 | 15 accepted; 61 queued | Hosted build and exact registry validator |
 | 6 | Static Pages release | Dedicated network-disabled gallery | Exact-SHA Pages deploy and public receipt verification |
 | 7 | Runtime/provider safety | Request/response bounds, deadlines, exact origins, status-only readiness | Deployment-specific ingress, privacy, budget, cancellation, and host validation |
-| 8 | Supply chain and repository protection | Pinned workflows, security gates, SBOM/provenance design | Protected `main`, required checks/reviews, PVR, environments, orphan-workflow shutdown |
+| 8 | Supply chain and repository protection | Pinned workflows, security gates, SBOM/provenance design | Exact-SHA post-merge SBOM and provenance receipts |
 
 ## Mandatory hosted checks
 
@@ -42,8 +42,9 @@ recorded for the exact candidate SHA.
 ## Mandatory owner settings
 
 - [x] Protect `main`; disallow force pushes and deletion.
-- [x] Require pull requests, resolved conversations, CODEOWNERS review, current branch, and the
-      documented stable required-check names.
+- [x] Require pull requests, resolved conversations, a current branch, and the documented stable
+      required-check names. Review approval is not required while the repository has one maintainer;
+      enable independent CODEOWNERS review before adding another maintainer.
 
 ### Stable required-check names
 
@@ -65,17 +66,18 @@ across workflows so one workflow cannot satisfy another workflow's gate:
 - [x] Protect publication environments and restrict deployment to approved branches/tags.
 - [x] Disable all remote workflow registrations absent from the candidate tree, including legacy
       self-mutating and external-publishing workflows.
-- [ ] Record a confidential Code of Conduct intake channel, authorized responders, retention, and
-      escalation path. Do not invent or publish a private address without owner approval.
+- [x] Record a confidential Code of Conduct intake channel, authorized responders, retention, and
+      escalation path without publishing the maintainer's private account email.
 
 ### Owner-setting evidence (2026-09-19)
 
 | Control | Recorded state |
 | --- | --- |
-| `main` branch rule | Classic protection rule `83423121`; pull request required; one approval; stale approvals dismissed; CODEOWNERS and latest-reviewable-push approval required; branch must be current; conversations must be resolved; administrators cannot bypass |
+| `main` branch rule | Classic protection rule `83423121`; pull request required; no approval requirement in documented solo-maintainer mode; branch must be current; conversations must be resolved; administrators cannot bypass |
 | History protection | Force pushes and branch deletion disabled |
 | Required checks | All 17 stable names listed above are configured as mandatory |
 | Vulnerability intake | GitHub private vulnerability reporting enabled |
+| Conduct intake | The same private GitHub form accepts titles prefixed `[CONDUCT]`; `@yashumani` is the sole responder; retention and external escalation are defined in `CODE_OF_CONDUCT.md` |
 | Publication boundary | `github-pages` environment restricted to `main` |
 | Obsolete automation | All 16 workflow registrations listed below disabled in GitHub Actions |
 
@@ -87,10 +89,22 @@ Disabled registrations: `runtime-image.yml`, `export-source.yml`,
 `fix-pages-ci-once.yml`, `format-once.yml`, `report-demo-certification.yml`, and
 `publish-huggingface-space.yml`.
 
-These settings close the repository-owner configuration gates. They do not waive the still-open
-release requirements: an independent CODEOWNERS approval, an owner-approved confidential conduct
-channel, explicit disposition of unfixed base-image advisories, final accessibility review, and
-post-merge exact-SHA publication evidence.
+These settings close the repository-owner configuration gates for a solo-maintainer alpha. They
+do not waive the still-open final accessibility review or post-merge exact-SHA publication evidence.
+
+## Base-image advisory disposition
+
+The release owner accepts the currently unfixed Debian 13 base-image High advisories for
+`0.7.0-alpha.1` **only within the community-alpha boundary**. They are unresolved upstream findings,
+not false positives, and remain visible in GitHub code scanning. This acceptance is not permission
+to expose either container as a public runtime or claim production readiness.
+
+Risk is constrained because the public deliverable is source plus a network-disabled static Pages
+gallery; it does not deploy the flagged runtime image. CI continues to fail on any fixable
+High/Critical container finding, keep full SARIF visibility for unfixed findings, and rebuild the
+images on dependency or base-image changes. Reassess this exception when an upstream fixed package
+or replacement base becomes available and before any Internet-facing runtime deployment. Therefore,
+the present unfixed advisories are recorded risks, not a community-alpha release showstopper.
 
 ## Public boundary
 
