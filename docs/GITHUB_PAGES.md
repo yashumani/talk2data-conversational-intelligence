@@ -1,7 +1,7 @@
 # GitHub Pages static visualization gallery
 
 > **Release status:** the dedicated gallery is deployed from release source
-> `b803bd7bb443199abc2726af31454f2d16deda4c`. Its public `release.json` records that exact SHA and
+> `a31848bf5262c03c4fe3bb5a9d2b293a01682e9b`. Its public `release.json` records that exact SHA and
 > version `0.7.0-alpha.1`; the immutable Pages artifact and workflow evidence are linked from the
 > [public alpha checklist](PUBLIC_ALPHA_RELEASE_CHECKLIST.md).
 
@@ -66,7 +66,8 @@ https://yashumani.github.io/talk2data-conversational-intelligence/
 ```
 
 A reachable URL alone is not acceptance. For this release, the matching public receipt, immutable
-artifact digest, hosted workflow, renderer count, queue count, accessible names, keyboard controls,
-and desktop overflow checks bind the deployment to the release SHA. The responsive breakpoints and
-reduced-motion behavior remain regression-tested in source; future releases must repeat the hosted
-review instead of inheriting this decision.
+artifact digest, hosted workflow, renderer count, queue count, accessible names, selected-button
+state, polite result-count announcement, keyboard controls, and desktop overflow checks bind the
+deployment to the release SHA. Responsive breakpoints, visible keyboard focus, and reduced-motion
+behavior are also enforced by the release validator; future releases must repeat the hosted review
+instead of inheriting this decision.
