@@ -26,6 +26,7 @@ def files_under(path: Path) -> list[Path]:
 
 def validate_source() -> None:
     html = (ROOT / "apps/web/pages/index.html").read_text()
+    css = (ROOT / "apps/web/src/visualizations/gallery.css").read_text()
     if "connect-src 'none'" not in html:
         raise SystemExit("Dedicated Pages entry must disable all network connections")
     if (ROOT / "site/release.json").exists():
@@ -39,6 +40,18 @@ def validate_source() -> None:
     for marker in SOURCE_FORBIDDEN:
         if marker.lower() in source.lower():
             raise SystemExit(f"Pages source contains forbidden marker: {marker}")
+    accessibility_markers = (
+        "@media (max-width: 980px)",
+        "@media (max-width: 640px)",
+        "@media (prefers-reduced-motion: reduce)",
+        ":focus-visible",
+        ".sr-only",
+    )
+    for marker in accessibility_markers:
+        if marker not in css:
+            raise SystemExit(f"Pages gallery is missing accessibility marker: {marker}")
+    if 'aria-pressed={view === "accepted"}' not in source or 'aria-pressed={view === "queue"}' not in source:
+        raise SystemExit("Pages gallery status controls must expose their selected state")
 
 
 def validate_release(source_sha: str) -> None:

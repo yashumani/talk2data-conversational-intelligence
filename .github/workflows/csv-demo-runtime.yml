@@ -2,21 +2,6 @@ name: CSV demo release acceptance
 
 on:
   pull_request:
-    paths:
-      - "apps/web/**"
-      - "src/**"
-      - "pyproject.toml"
-      - "requirements/**"
-      - "scripts/dependencies.py"
-      - "Dockerfile"
-      - ".dockerignore"
-      - "docker-compose.csv-demo.yml"
-      - "docker-compose.csv-gemini.yml"
-      - "examples/gemini/**"
-      - "docker-compose.csv-recovery.yml"
-      - "scripts/csv_workspace_smoke.py"
-      - "scripts/durable_csv_smoke.py"
-      - ".github/workflows/csv-demo-runtime.yml"
   push:
     branches: [main]
     paths:

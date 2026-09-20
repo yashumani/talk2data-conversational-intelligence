@@ -15,16 +15,6 @@ on:
       - ".github/workflows/publish-internal-runtime-image.yml"
   pull_request:
     branches: [main, "feat/cycle-*"]
-    paths:
-      - "Dockerfile.internal"
-      - ".dockerignore"
-      - "apps/web/**"
-      - "pyproject.toml"
-      - "requirements/**"
-      - "scripts/dependencies.py"
-      - "README.md"
-      - "src/**"
-      - ".github/workflows/publish-internal-runtime-image.yml"
   workflow_dispatch:
     inputs:
       publish:

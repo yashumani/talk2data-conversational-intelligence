@@ -44,11 +44,26 @@ export function VisualizationGallery() {
       <div><strong>{queuedVisualizations.length}</strong><span>queued</span></div>
     </div>
     <div className="gallery-controls" role="group" aria-label="Visualization status">
-      <button className={view === "accepted" ? "active" : ""} onClick={() => setView("accepted")}>Implemented</button>
-      <button className={view === "queue" ? "active" : ""} onClick={() => setView("queue")}>Finite queue</button>
+      <button
+        type="button"
+        className={view === "accepted" ? "active" : ""}
+        aria-pressed={view === "accepted"}
+        aria-controls="gallery-results"
+        onClick={() => setView("accepted")}
+      >Implemented</button>
+      <button
+        type="button"
+        className={view === "queue" ? "active" : ""}
+        aria-pressed={view === "queue"}
+        aria-controls="gallery-results"
+        onClick={() => setView("queue")}
+      >Finite queue</button>
     </div>
-    <h2 id="gallery-title">{view === "accepted" ? "Batch 1 renderers" : "Batches 2–8"}</h2>
-    <div className={`gallery-grid ${view === "queue" ? "queue" : ""}`}>
+    <div id="gallery-results" aria-live="polite" aria-atomic="true">
+      <h2 id="gallery-title">{view === "accepted" ? "Batch 1 renderers" : "Batches 2–8"}</h2>
+      <p className="sr-only">{entries.length} visualization types shown.</p>
+    </div>
+    <div className={`gallery-grid ${view === "queue" ? "queue" : ""}`} aria-describedby="gallery-results">
       {entries.map((entry) => <article className="chart-card" key={entry.id}>
         <div className="card-heading"><div><p>Batch {entry.batch} · {entry.target}</p><h3>{entry.label}</h3></div><span>{entry.status}</span></div>
         {entry.status === "accepted"

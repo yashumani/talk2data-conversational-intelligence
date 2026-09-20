@@ -26,27 +26,6 @@ on:
       - ".github/workflows/postgres-integration.yml"
   pull_request:
     branches: [main, feat/postgresql-reference-connector, "feat/cycle-*"]
-    paths:
-      - "src/talk2data/connectors/**"
-      - "src/talk2data/api/routes/connectors.py"
-      - "src/talk2data/api/routes/physical_mappings.py"
-      - "src/talk2data/core/config.py"
-      - "src/talk2data/domain/physical_mapping.py"
-      - "src/talk2data/domain/**"
-      - "src/talk2data/services/semantic*.py"
-      - "src/talk2data/bootstrap.py"
-      - "src/talk2data/main.py"
-      - "src/talk2data/resources/physical_mappings/**"
-      - "src/talk2data/services/demo_chat.py"
-      - "tests/test_live_postgres.py"
-      - "tests/test_physical_mapping.py"
-      - "tests/test_postgres_connector.py"
-      - "docker-compose.postgres.yml"
-      - "infra/postgres/**"
-      - "pyproject.toml"
-      - "requirements/**"
-      - "scripts/dependencies.py"
-      - ".github/workflows/postgres-integration.yml"
   workflow_dispatch:
 
 permissions:

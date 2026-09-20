@@ -2,16 +2,6 @@ name: Internal runtime package
 
 on:
   pull_request:
-    paths:
-      - "src/**"
-      - "apps/web/**"
-      - "pyproject.toml"
-      - "requirements/**"
-      - "scripts/dependencies.py"
-      - "Dockerfile.internal"
-      - ".dockerignore"
-      - "docker-compose.internal.yml"
-      - ".github/workflows/internal-runtime.yml"
   push:
     branches: [main]
     paths:
