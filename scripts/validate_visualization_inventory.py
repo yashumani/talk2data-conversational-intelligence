@@ -36,6 +36,8 @@ def validate() -> None:
         raise SystemExit(f"Unexpected status totals: {dict(statuses)}")
     if any(entry["batch"] not in {1, 2} for entry in entries if entry["status"] == "accepted"):
         raise SystemExit("Only completed Batches 1 and 2 may be accepted in this candidate")
+    if any(entry["renderer"] != entry["id"] for entry in entries if entry["status"] == "accepted"):
+        raise SystemExit("Every accepted registry entry must name its callable renderer")
     catalog = (ROOT / "apps/web/src/visualizations/catalog.ts").read_text()
     for entry_id in ids:
         if f'["{entry_id}",' not in catalog:

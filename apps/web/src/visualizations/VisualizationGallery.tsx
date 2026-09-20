@@ -82,7 +82,8 @@ export function VisualizationGallery() {
     return acceptedVisualizations.filter((entry) => {
       const presentation = PRESENTATION[entry.id];
       const matchesCategory = activeCategory === "All" || presentation.category === activeCategory;
-      const matchesQuery = normalized.length === 0 || `${entry.label} ${presentation.category} ${presentation.description}`.toLowerCase().includes(normalized);
+      const categoryTerms = presentation.category === "Compare" ? "Compare comparison" : presentation.category;
+      const matchesQuery = normalized.length === 0 || `${entry.label} ${categoryTerms} ${presentation.description}`.toLowerCase().includes(normalized);
       return matchesCategory && matchesQuery;
     });
   }, [activeCategory, query]);

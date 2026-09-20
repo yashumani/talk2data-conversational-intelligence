@@ -29,5 +29,8 @@ describe("VisualizationGallery", () => {
     act(() => search.props.onChange({ target: { value: "correlation" } }));
     expect(tree!.root.findAllByType("article")).toHaveLength(1);
     expect(tree!.root.findByType("h3").children).toEqual(["Correlogram"]);
+
+    act(() => search.props.onChange({ target: { value: "comparison" } }));
+    expect(tree!.root.findAllByType("article")).toHaveLength(6);
   });
 });

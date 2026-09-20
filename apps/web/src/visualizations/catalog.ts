@@ -19,9 +19,10 @@ function batch(number: number, status: VisualizationStatus, entries: readonly En
 
 export const VISUALIZATION_REGISTRY: readonly VisualizationEntry[] = Object.freeze([
   ...batch(1, "accepted", [
-    ["bar", "Bar", "bar"], ["grouped-bar", "Grouped bar", "grouped-stacked-bar"],
-    ["stacked-bar", "Stacked bar", "grouped-stacked-bar"], ["horizontal-bar", "Horizontal bar", "bar"],
-    ["line", "Line", "line"], ["multi-line", "Multi-line", "line"], ["area", "Area", "area"],
+    ["bar", "Bar", "bar"], ["grouped-bar", "Grouped bar", "grouped-stacked-bar", "grouped-bar"],
+    ["stacked-bar", "Stacked bar", "grouped-stacked-bar", "stacked-bar"],
+    ["horizontal-bar", "Horizontal bar", "bar", "horizontal-bar"],
+    ["line", "Line", "line"], ["multi-line", "Multi-line", "line", "multi-line"], ["area", "Area", "area"],
     ["stacked-area", "Stacked area", "stacked-area"], ["scatter", "Scatter", "scatter"],
     ["bubble", "Bubble", "bubble"], ["histogram", "Histogram", "histogram"],
     ["boxplot", "Boxplot", "boxplot"], ["heatmap", "Heatmap", "heatmap"],

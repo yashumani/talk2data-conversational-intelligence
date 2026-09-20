@@ -21,6 +21,14 @@ describe("visualization registry", () => {
     const registry = JSON.parse(readFileSync("../../contracts/visualization_registry.v1.json", "utf8"));
     const taxonomy = JSON.parse(readFileSync("../../contracts/visualization_source_taxonomy.v1.json", "utf8"));
     expect(registry.entries.map((entry: { id: string }) => entry.id)).toEqual(VISUALIZATION_REGISTRY.map((entry) => entry.id));
+    expect(registry.entries.filter((entry: { status: string }) => entry.status === "accepted")).toEqual(acceptedVisualizations.map((entry) => ({
+      id: entry.id,
+      label: entry.label,
+      target: entry.target,
+      batch: entry.batch,
+      status: entry.status,
+      renderer: entry.rendererKind,
+    })));
     expect(taxonomy.targets).toHaveLength(44);
     expect(new Set(taxonomy.targets).size).toBe(44);
     expect(VISUALIZATION_REGISTRY.every((entry) => taxonomy.targets.includes(entry.target))).toBe(true);
