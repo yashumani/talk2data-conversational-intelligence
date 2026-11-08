@@ -54,9 +54,9 @@ jobs:
             --extra-index-url https://pypi.org/simple \
             'torch>=2.8,<3'
           python -m pip install \
-            'transformers>=4.51,<5' \
-            'accelerate>=1.2,<2' \
-            'safetensors>=0.4,<1'
+            'transformers>=5.17.0,<6' \
+            'accelerate>=1.15.0,<2' \
+            'safetensors>=0.8.0,<1'
       - name: Run real local-model interpretation
         run: |
           set -o pipefail

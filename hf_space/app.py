@@ -124,6 +124,8 @@ class HostedDemoRuntime:
             session_store=session_store,
             connector_registry=connector_registry,
             ai_model=f"{MODEL_ID} via Transformers",
+            # The public Space only serves the synthetic demo telecom warehouse.
+            synthetic_data=True,
         )
 
     async def initialize(self) -> None:
