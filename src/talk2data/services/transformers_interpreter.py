@@ -188,10 +188,11 @@ class TransformersQuestionInterpreter:
             }
             if self._configuration.cache_dir is not None:
                 model_kwargs["cache_dir"] = str(self._configuration.cache_dir)
+            # Transformers 5 renamed ``torch_dtype`` to ``dtype``.
             if device == "cpu":
-                model_kwargs["torch_dtype"] = torch.float32
+                model_kwargs["dtype"] = torch.float32
             else:
-                model_kwargs["torch_dtype"] = "auto"
+                model_kwargs["dtype"] = "auto"
 
             try:
                 tokenizer = transformers.AutoTokenizer.from_pretrained(

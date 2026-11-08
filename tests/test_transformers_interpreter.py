@@ -183,9 +183,15 @@ async def test_real_provider_path_can_load_and_generate_with_framework_contract(
     pack = _pack()
     tokenizer = _FakeTokenizer()
     model = _FakeModel()
+    model_load_kwargs: dict[str, Any] = {}
+
+    def load_model(*_: Any, **kwargs: Any) -> _FakeModel:
+        model_load_kwargs.update(kwargs)
+        return model
+
     transformers = SimpleNamespace(
         AutoTokenizer=SimpleNamespace(from_pretrained=lambda *args, **kwargs: tokenizer),
-        AutoModelForCausalLM=SimpleNamespace(from_pretrained=lambda *args, **kwargs: model),
+        AutoModelForCausalLM=SimpleNamespace(from_pretrained=load_model),
     )
     torch = SimpleNamespace(
         float32="float32",
@@ -221,6 +227,9 @@ async def test_real_provider_path_can_load_and_generate_with_framework_contract(
     assert proposal.candidate_dimensions == ["PLAN"]
     assert model.device == "cpu"
     assert model.eval_called is True
+    # Transformers 5 accepts ``dtype``; the deprecated ``torch_dtype`` must not be sent.
+    assert model_load_kwargs["dtype"] == "float32"
+    assert "torch_dtype" not in model_load_kwargs
     ready, detail = await interpreter.health()
     assert ready is True
     assert "loaded on cpu" in detail

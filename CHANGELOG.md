@@ -17,6 +17,15 @@ are evaluation candidates and do not imply a hosted production service.
 
 - The GitHub CSV workspace check no longer fails on Ubuntu 26.04 runners, which do not pre-create
   a pip cache folder.
+- The Hugging Face Space requirements can be installed again. They required huggingface_hub 1.x
+  together with transformers 4.x, and every transformers 4.x release needs huggingface_hub below 1.0.
+- The Hugging Face Space app starts again. It did not pass the `synthetic_data` argument that
+  `DemoChatService` has required since PostgreSQL reference execution was added.
+
+### Changed
+
+- The Hugging Face Space and the live model smoke test now use transformers 5 (5.17.0 or later).
+  The local model loader passes `dtype` instead of the deprecated `torch_dtype`.
 
 ## 0.7.0-alpha.2 — visualization studio
 
