@@ -3,6 +3,21 @@
 All notable changes are documented here. Talk2Data follows Semantic Versioning; alpha releases
 are evaluation candidates and do not imply a hosted production service.
 
+## Unreleased
+
+### Security
+
+- Updated vite to 8.3.6, vitest and its coverage plugin to 5.1.0, and source-map-js to 1.2.2 to
+  clear security advisories published after the alpha.2 release.
+- Updated certifi to 2026.10.23, which removes root certificates found to be compromised.
+- The runtime and internal images now apply Debian security updates at build time, which picks up
+  the patched zlib.
+
+### Fixed
+
+- The GitHub CSV workspace check no longer fails on Ubuntu 26.04 runners, which do not pre-create
+  a pip cache folder.
+
 ## 0.7.0-alpha.2 — visualization studio
 
 ### Added
