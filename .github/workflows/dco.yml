@@ -10,6 +10,9 @@ permissions:
 jobs:
   validate:
     name: DCO sign-off
+    # Dependabot cannot add a Signed-off-by trailer. Skip only pull requests that it opened.
+    # A job skipped by its condition reports success to a required status check.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
