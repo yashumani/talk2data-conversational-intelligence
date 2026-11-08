@@ -58,6 +58,9 @@ git commit -s -m "feat: describe the contribution"
 
 The sign-off certifies the [Developer Certificate of Origin](DCO). Do not sign for another person.
 
+The DCO check skips pull requests that Dependabot opens, because the bot cannot add a sign-off.
+Do not push your own commits to a Dependabot branch. Open a separate, signed-off pull request instead.
+
 ## Review and release
 
 Maintainers require green checks, CODEOWNERS review, resolved conversations, and the applicable
