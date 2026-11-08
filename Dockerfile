@@ -8,6 +8,11 @@ RUN npm run build
 
 FROM python:3.12-slim
 
+# Apply Debian security fixes that were published after the base image was built.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     T2D_WEB_DIRECTORY=/app/web
